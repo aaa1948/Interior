@@ -52,8 +52,7 @@ today housing/
 │   ├── layout.tsx
 │   └── globals.css
 ├── public/
-│   ├── plan3d.html   ← 도면→3D 변환 프로토타입
-│   └── gallery.html  ← 갤러리 페이지
+│   └── plan3d.html   ← 메인 페이지 (도면→3D 변환 + 갤러리까지 한 페이지에 통합)
 ├── package.json
 └── README.md
 ```
