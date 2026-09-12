@@ -511,7 +511,7 @@
     <ul class="nav-links">
       <li><a href="/" data-scroll="top">홈</a></li>
       <li><a href="/" data-scroll="steps">사용법</a></li>
-      <li><a href="/" data-scroll="gallery">갤러리</a></li>
+      <li><a href="#gallery">갤러리</a></li>
     </ul>
     <div class="nav-right">
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="다크·라이트 모드 전환"></button>
@@ -929,9 +929,9 @@
     }
   })();
 
-  /* ============ 0-2. 상단 네비게이션 (홈/사용법/갤러리) — 페이지 이동 없이 부드럽게 스크롤만 이동
-     링크 주소는 전부 사이트 루트("/")로 고정해서 클릭해도 주소창에 #steps, #gallery 같은
-     해시가 안 붙게 함 ============ */
+  /* ============ 0-2. 상단 네비게이션 (홈/사용법) — 페이지 이동 없이 부드럽게 스크롤만 이동
+     링크 주소는 사이트 루트("/")로 고정해서 클릭해도 주소창에 #steps 같은 해시가 안 붙게 함.
+     갤러리는 예전처럼 그냥 #gallery 앵커 링크 그대로 둠 ============ */
   document.querySelectorAll(".nav-links a[data-scroll]").forEach(function(link){
     link.addEventListener("click", function(e){
       e.preventDefault();
