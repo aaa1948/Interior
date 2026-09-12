@@ -16,7 +16,8 @@
 (function(){
   try{
     var saved = localStorage.getItem("oh-theme");
-    if (saved === "light" || saved === "dark") document.documentElement.setAttribute("data-theme", saved);
+    // 처음 방문한 유저는 시스템 설정과 상관없이 라이트 모드를 기본값으로 시작
+    document.documentElement.setAttribute("data-theme", (saved === "light" || saved === "dark") ? saved : "light");
   } catch(e){}
 })();
 </script>
