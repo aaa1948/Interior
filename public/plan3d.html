@@ -337,53 +337,6 @@
   .feature-card h3{font-size:1rem; font-family:'IBM Plex Sans KR'; font-weight:700; margin-bottom:8px;}
   .feature-card p{color:var(--ink-soft); font-size:.9rem;}
 
-  /* ---------- gallery (예전엔 gallery.html로 분리돼 있었으나, 링크 하나로 통합해달라는
-     요청에 따라 이 페이지의 한 섹션으로 합침) ---------- */
-  .gallery-page-head{
-    display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
-  }
-  .gallery-page-head h2{font-size:clamp(1.4rem,2.6vw,1.8rem); margin-bottom:8px;}
-  .gallery-page-head p{color:var(--ink-soft); font-size:.95rem; max-width:52ch;}
-  .gallery-page-head .btn{flex:none;}
-
-  .filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin:28px 0 24px;}
-  .filter-chip{
-    appearance:none; cursor:pointer; border:1px solid var(--line); background:var(--paper-raised);
-    color:var(--ink-soft); border-radius:100px; padding:7px 16px; font-size:.85rem; font-weight:600;
-    font-family:inherit;
-  }
-  .filter-chip:hover{color:var(--ink); border-color:var(--ink-soft);}
-  .filter-chip.is-active{background:var(--blueprint); color:#fff; border-color:var(--blueprint);}
-  .filter-chip:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
-
-  .gallery-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
-  @media (max-width:960px){ .gallery-grid{grid-template-columns:1fr 1fr;} }
-  @media (max-width:620px){ .gallery-grid{grid-template-columns:1fr;} }
-
-  .gallery-card{
-    background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; overflow:hidden;
-    display:flex; flex-direction:column; transition:border-color .15s ease, transform .15s ease;
-  }
-  .gallery-card:hover{border-color:var(--blueprint); transform:translateY(-2px);}
-
-  .gallery-thumb{
-    position:relative; aspect-ratio:4/3;
-    background:linear-gradient(155deg, var(--blueprint-soft), var(--paper) 78%);
-    display:flex; align-items:center; justify-content:center; color:var(--blueprint);
-  }
-  .gallery-thumb[data-variant="2"]{background:linear-gradient(155deg, var(--terra-soft), var(--paper) 78%); color:var(--terra);}
-  .gallery-thumb[data-variant="3"]{background:linear-gradient(155deg, var(--blueprint-soft) 0%, var(--terra-soft) 130%); color:var(--blueprint-deep);}
-  .gallery-badge{position:absolute; top:10px; right:10px;}
-
-  .gallery-body{padding:16px 18px 18px; display:flex; flex-direction:column; gap:6px; flex:1;}
-  .gallery-body h3{font-size:.96rem; font-family:'IBM Plex Sans KR'; font-weight:700; line-height:1.4;}
-  .gallery-user{font-size:.8rem; color:var(--ink-soft);}
-  .gallery-stats{display:flex; gap:14px; margin-top:auto; padding-top:10px; font-size:.82rem; color:var(--ink-soft);}
-  .gallery-stats span{display:inline-flex; align-items:center; gap:5px;}
-  .gallery-stats svg{flex:none;}
-
-  .gallery-note{margin-top:22px; font-size:.82rem; color:var(--ink-soft);}
-
   /* ---------- demo cta ---------- */
   .demo-panel{
     border:1px dashed var(--blueprint); border-radius:20px; padding:clamp(32px,6vw,56px);
@@ -511,7 +464,7 @@
     <ul class="nav-links">
       <li><a href="/" data-scroll="top">홈</a></li>
       <li><a href="/" data-scroll="steps">사용법</a></li>
-      <li><a href="#gallery">갤러리</a></li>
+      <li><a href="gallery.html">갤러리</a></li>
     </ul>
     <div class="nav-right">
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="다크·라이트 모드 전환"></button>
@@ -668,115 +621,6 @@
       </div>
     </div>
   </section>
-
-  <section id="gallery">
-    <div class="wrap">
-      <div class="gallery-page-head">
-        <div>
-          <span class="eyebrow">커뮤니티</span>
-          <h2>완성한 배치, 갤러리에서 의견 받기</h2>
-          <p>도면으로 세운 3D 벽에 가구까지 배치한 사용자들의 결과물이에요.<br>전문가와 다른 사용자들이 직접 보고 배치 조언을 남겨줘요.</p>
-        </div>
-        <button class="btn btn-primary js-open-modal">내 배치 올리기</button>
-      </div>
-
-      <div class="filter-bar" role="tablist" aria-label="갤러리 정렬">
-        <button type="button" class="filter-chip is-active">전체</button>
-        <button type="button" class="filter-chip">전문가 답변</button>
-        <button type="button" class="filter-chip">최신순</button>
-        <button type="button" class="filter-chip">인기순</button>
-      </div>
-
-      <div class="gallery-grid">
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="1">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9.5L12 3l9 6.5V21" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21v-7h6v7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-            <span class="badge gallery-badge">전문가 답변 2</span>
-          </div>
-          <div class="gallery-body">
-            <h3>래미안 강남 포레스트 · 24평형 거실</h3>
-            <p class="gallery-user">jumal2 · 3일 전</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 12</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 34</span>
-            </div>
-          </div>
-        </article>
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="2">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="14" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="14" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
-            <span class="badge gallery-badge">새 글</span>
-          </div>
-          <div class="gallery-body">
-            <h3>힐스테이트 데시앙 · 17평 원룸 배치</h3>
-            <p class="gallery-user">wooin_92 · 8시간 전</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 3</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 5</span>
-            </div>
-          </div>
-        </article>
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="3">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 7l9 5 9-5M12 12v10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-            <span class="badge gallery-badge">전문가 답변 1</span>
-          </div>
-          <div class="gallery-body">
-            <h3>부송동 신축 오피스텔 · 침실 배치 고민이에요</h3>
-            <p class="gallery-user">sooyeon.k · 1일 전</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 7</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 19</span>
-            </div>
-          </div>
-        </article>
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="1">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l6 6L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span class="badge gallery-badge">전문가 답변 4</span>
-          </div>
-          <div class="gallery-body">
-            <h3>동탄 파크자이 · 33평 안방 침실</h3>
-            <p class="gallery-user">minji_h</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 21</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 40</span>
-            </div>
-          </div>
-        </article>
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="2">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1.5"/></svg>
-            <span class="badge gallery-badge">새 글</span>
-          </div>
-          <div class="gallery-body">
-            <h3>다방에서 본 투룸 · 벽만 세워봤어요</h3>
-            <p class="gallery-user">kimjoon</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 1</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 2</span>
-            </div>
-          </div>
-        </article>
-        <article class="gallery-card">
-          <div class="gallery-thumb" data-variant="3">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-            <span class="badge gallery-badge">전문가 답변 6</span>
-          </div>
-          <div class="gallery-body">
-            <h3>마포 오피스텔 12평 · 소파 방향 고민</h3>
-            <p class="gallery-user">seulki.p</p>
-            <div class="gallery-stats">
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 33</span>
-              <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> 58</span>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <p class="gallery-note">* 지금은 구조를 잡기 위한 샘플 게시물이에요 — 실제 게시·댓글·좋아요 기능은 다음 단계에서 연결할 예정이에요.</p>
-    </div>
-  </section>
 </main>
 
 <footer>
@@ -929,9 +773,9 @@
     }
   })();
 
-  /* ============ 0-2. 상단 네비게이션 (홈/사용법) — 페이지 이동 없이 부드럽게 스크롤만 이동
-     링크 주소는 사이트 루트("/")로 고정해서 클릭해도 주소창에 #steps 같은 해시가 안 붙게 함.
-     갤러리는 예전처럼 그냥 #gallery 앵커 링크 그대로 둠 ============ */
+  /* ============ 0-2. 상단 네비게이션의 홈/사용법 — 갤러리는 별도 페이지(gallery.html)로 이동하지만,
+     홈/사용법은 이 페이지 안에서만 부드럽게 스크롤 이동시키고 주소창에 #steps 같은 해시가
+     안 붙게 함 ============ */
   document.querySelectorAll(".nav-links a[data-scroll]").forEach(function(link){
     link.addEventListener("click", function(e){
       e.preventDefault();
@@ -942,15 +786,6 @@
       }
       var section = document.getElementById(target);
       if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
-
-  /* ---------- 갤러리 정렬 칩 (예전 gallery.html에 있던 로직 — 페이지 통합하면서 그대로 가져옴,
-     지금은 구조만 잡는 단계라 실제 정렬/필터링 없이 선택 상태만 토글함) ---------- */
-  document.querySelectorAll(".filter-bar .filter-chip").forEach(function(chip){
-    chip.addEventListener("click", function(){
-      document.querySelectorAll(".filter-bar .filter-chip").forEach(function(c){ c.classList.remove("is-active"); });
-      chip.classList.add("is-active");
     });
   });
 
