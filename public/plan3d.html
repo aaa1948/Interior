@@ -789,6 +789,20 @@
     });
   });
 
+  /* ============ 0-3. 갤러리 페이지처럼 다른 곳에서 "/#steps" 해시를 달고 들어온 경우 —
+     사용법 섹션까지 스크롤해준 다음, 주소창의 해시는 지워서 그냥 "/" 상태로 맞춤 ============ */
+  if (window.location.hash === "#steps") {
+    var stepsFromLink = document.getElementById("steps");
+    if (stepsFromLink) {
+      requestAnimationFrame(function(){
+        stepsFromLink.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", "/");
+    }
+  }
+
   /* ============ 1. 샘플 매물 데이터 (백엔드 미연결 시 대체용) ============ */
   var SAMPLE_COMPLEXES = [
     {
