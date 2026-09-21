@@ -453,6 +453,124 @@
 
   [hidden]{display:none !important;}
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+
+  /* ---------- 3D 가구 배치 편집기 (팀원 구현 이식) ---------- */
+  .furniture-selected{outline:2px solid #ff9f43;outline-offset:2px}
+  .furniture-size-panel{position:absolute;right:10px;top:10px;z-index:3;width:176px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
+  .furniture-size-panel[hidden]{display:none!important}
+  .furniture-size-panel strong{display:block;margin-bottom:8px;font-size:.76rem}
+  .furniture-dimension{display:grid;grid-template-columns:40px 1fr 13px;align-items:center;gap:5px;margin:6px 0;color:var(--ink-soft)}
+  .furniture-dimension input{width:100%;min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit}
+  .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
+  @media (max-width:600px){.furniture-size-panel{right:8px;top:54px;width:150px}}
+
+  /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용 */
+  .modal.furniture-fullscreen{max-width:min(1240px,calc(100vw - 32px));max-height:calc(100vh - 32px);height:min(860px,calc(100vh - 32px));}
+  .modal.furniture-fullscreen .result-grid{display:block;height:calc(100% - 126px);margin-bottom:12px;}
+  .modal.furniture-fullscreen .result-grid .panel-box:first-child{display:none;}
+  .modal.furniture-fullscreen .result-grid .panel-box:last-child{height:100%;}
+  .modal.furniture-fullscreen #resultStage{height:calc(100% - 39px);min-height:470px;aspect-ratio:auto;}
+  .modal.furniture-fullscreen .result-stats{display:none;}
+  .modal.furniture-fullscreen .next-note{margin-top:8px;}
+  @media (max-width:600px){.modal.furniture-fullscreen{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);padding:18px}.modal.furniture-fullscreen #resultStage{min-height:400px;}}
+
+  /* ---------- 심즈 스타일 하단 가구 패널 ---------- */
+  .sims-bottom-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 130px;
+    background: var(--paper-raised);
+    border-top: 2px solid var(--line);
+    display: flex;
+    z-index: 10;
+    box-shadow: 0 -4px 15px var(--shadow);
+    user-select: none;
+  }
+  .sims-color-picker-panel {
+    width: 220px;
+    border-right: 1px solid var(--line);
+    padding: 14px;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .sims-color-picker-panel input[type="color"] {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    -webkit-appearance: none;
+  }
+  .sims-color-picker-panel input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .sims-color-picker-panel input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+  }
+  .sims-items {
+    flex: 1;
+    padding: 12px 20px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    align-items: center;
+  }
+  .sims-btn {
+    appearance: none;
+    width: 70px;
+    height: 70px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+  .sims-btn:hover {
+    background: var(--blueprint-soft);
+    border-color: var(--blueprint);
+    transform: translateY(-2px);
+  }
+  .sims-actions {
+    width: 120px;
+    border-left: 1px solid var(--line);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+  .sims-actions .sims-btn {
+    width: 100%;
+    height: 40px;
+    flex-direction: row;
+    gap: 6px;
+  }
+  .sims-actions .danger {
+    color: #c94c4c;
+  }
+  .sims-actions .danger:hover {
+    border-color: #c94c4c;
+    background: #fdf2f2;
+  }
+
+  /* 하단 패널이 있을 때 캔버스 힌트 위치 조정 */
+  .modal.furniture-fullscreen .canvas-hint {
+    bottom: 140px;
+  }
 </style>
 
 <header class="site">
@@ -695,7 +813,7 @@
           <div id="svgHost"></div>
         </div>
         <div class="panel-box">
-          <div class="panel-title">자동 변환 결과 (3D)</div>
+          <div class="panel-title" id="resultStageTitle">자동 변환 결과 (3D)</div>
           <div class="canvas-stage" id="resultStage">
             <span class="canvas-hint">드래그해서 회전</span>
           </div>
@@ -703,11 +821,11 @@
       </div>
       <div class="result-stats" id="resultStats"></div>
       <div class="result-actions">
-        <button class="btn btn-primary" id="nextStepBtn" disabled>다음: 가구 배치 시작하기</button>
+        <button class="btn btn-primary" id="nextStepBtn">다음: 가구 배치 시작하기</button>
         <button class="btn btn-ghost" id="editWallsBtn">편집</button>
         <button class="btn btn-ghost" data-back="search-from-result">다른 매물 검색하기</button>
       </div>
-      <p class="next-note">* 가구 배치 &amp; AI 코디네이터 기능은 2단계에서 개발 중입니다.</p>
+      <p class="next-note" id="furnitureNote">* 3D 변환 결과를 확인한 뒤, 가구 배치 화면에서 실제 배치를 시작할 수 있어요.</p>
     </div>
   </div>
 </div>
@@ -1070,6 +1188,301 @@
     plan.outer.forEach(function(s){ addWall(s, 0.22); });
     plan.inner.forEach(function(s){ addWall(s, 0.12); });
 
+    /* ============ 가구 배치 편집기 (팀원 구현 이식) — opts.furnitureEditor===true일 때만 활성화.
+       히어로/결과 미리보기에서 쓰는 이 함수는 그대로 두고, "가구 배치 시작하기"를 눌렀을 때만
+       이 플래그를 켜서 씀. ============ */
+    var furnitureEditor = opts.furnitureEditor === true;
+    var furniture = [], selectedFurniture = null, furnitureDragging = false;
+    var isRotateMode = false, isRotating = false, dragAngleOffset = 0;
+    var raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+    var dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    var dragOffset = new THREE.Vector3();
+    var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
+
+    var rotateBtn;
+    var furnitureColorPicker;
+
+    function furniturePart(geo, color, x, y, z, colorable){
+      var mat = new THREE.MeshStandardMaterial({color:color, roughness:.78});
+      var m = new THREE.Mesh(geo, mat);
+      m.position.set(x,y,z);
+      // 색상 변경이 가능한 파츠인지 식별
+      m.userData.colorable = (colorable !== false);
+      return m;
+    }
+    function addFurniture(type, x, z){
+      if (!furnitureEditor) return;
+      type = type || 'sofa';
+      var group = new THREE.Group(), c = furnitureColors[type] || furnitureColors.sofa;
+      if (type === 'sofa'){
+        group.add(furniturePart(new THREE.BoxGeometry(1.55,.38,.72),c,0,.28,0));
+        group.add(furniturePart(new THREE.BoxGeometry(1.55,.52,.16),c,0,.68,.28));
+        group.add(furniturePart(new THREE.BoxGeometry(.16,.52,.72),c,-.7,.58,0));
+        group.add(furniturePart(new THREE.BoxGeometry(.16,.52,.72),c,.7,.58,0));
+      } else if (type === 'table'){
+        group.add(furniturePart(new THREE.CylinderGeometry(.52,.52,.08,24),c,0,.62,0));
+        group.add(furniturePart(new THREE.CylinderGeometry(.08,.11,.6,16),c,0,.3,0));
+      } else if (type === 'bed'){
+        group.add(furniturePart(new THREE.BoxGeometry(1.5,.26,2.0),c,0,.28,0));
+        group.add(furniturePart(new THREE.BoxGeometry(1.5,.55,.14),c,0,.6,.9));
+        group.add(furniturePart(new THREE.BoxGeometry(1.24,.10,.62),0xe9edf0,0,.46,-.35, false));
+      } else {
+        group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0, false));
+        group.add(furniturePart(new THREE.SphereGeometry(.34,16,12),c,0,.6,0));
+      }
+      group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
+      group.userData.isFurniture = true; group.userData.type = type;
+      group.userData.baseSize = type === 'sofa' ? {w:1.55,d:.72,h:.94} :
+        type === 'table' ? {w:1.04,d:1.04,h:.66} :
+        type === 'bed' ? {w:1.5,d:2.0,h:.88} : {w:.68,d:.68,h:.94};
+      group.userData.size = {w:group.userData.baseSize.w,d:group.userData.baseSize.d,h:group.userData.baseSize.h};
+      scene.add(group); furniture.push(group); selectFurniture(group);
+    }
+
+    var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput;
+    function syncSizePanel(){
+      if (!sizePanel) return;
+      var item=selectedFurniture;
+      sizePanel.hidden=!item;
+      if (!item) return;
+      var dims=item.userData.size;
+      sizeWidthInput.value=dims.w.toFixed(2); sizeDepthInput.value=dims.d.toFixed(2); sizeHeightInput.value=dims.h.toFixed(2);
+    }
+    function applyFurnitureSize(){
+      if (!selectedFurniture) return;
+      var base=selectedFurniture.userData.baseSize, dims=selectedFurniture.userData.size;
+      var w=parseFloat(sizeWidthInput.value), d=parseFloat(sizeDepthInput.value), h=parseFloat(sizeHeightInput.value);
+      if (isFinite(w) && w>=.1) dims.w=w;
+      if (isFinite(d) && d>=.1) dims.d=d;
+      if (isFinite(h) && h>=.1) dims.h=h;
+      selectedFurniture.scale.set(dims.w/base.w,dims.h/base.h,dims.d/base.d);
+      syncSizePanel();
+    }
+    function selectFurniture(obj){
+      if (selectedFurniture) selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x000000); });
+      selectedFurniture = obj || null;
+      if (selectedFurniture) {
+          selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x4a2600); });
+
+          if (furnitureColorPicker) {
+              var foundColor = false;
+              selectedFurniture.traverse(function(child) {
+                  if (!foundColor && child.isMesh && child.userData.colorable !== false) {
+                      furnitureColorPicker.value = '#' + child.material.color.getHexString();
+                      foundColor = true;
+                  }
+              });
+          }
+      }
+
+      // 가구가 선택 해제되면 회전 모드도 종료
+      if (!selectedFurniture && isRotateMode) {
+          isRotateMode = false;
+          if (rotateBtn) {
+              rotateBtn.style.background = '';
+              rotateBtn.style.borderColor = '';
+              rotateBtn.innerHTML = '↻ 회전';
+          }
+      }
+      syncSizePanel();
+    }
+    function pointerToFloor(e, target){
+      var rect = canvas.getBoundingClientRect();
+      pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(pointer,camera); return raycaster.ray.intersectPlane(dragPlane,target);
+    }
+    function findFurniture(hit){
+      var o=hit.object; while(o && !o.userData.isFurniture) o=o.parent; return o;
+    }
+    function beginFurnitureDrag(e){
+      var rect=canvas.getBoundingClientRect();
+      pointer.x=((e.clientX-rect.left)/rect.width)*2-1; pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(pointer,camera);
+      var hit=raycaster.intersectObjects(furniture,true)[0];
+
+      if (!hit) {
+          selectFurniture(null);
+          return false; // 빈 공간 클릭 시 선택 해제 후 카메라 회전 허용
+      }
+
+      var obj = findFurniture(hit);
+      if (!obj) return false;
+
+      selectFurniture(obj);
+
+      // 회전 모드가 활성화되어 있다면 위치 이동 대신 회전을 시작
+      if (isRotateMode) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+              var angle = Math.atan2(point.x - obj.position.x, point.z - obj.position.z);
+              dragAngleOffset = obj.rotation.y - angle;
+              isRotating = true;
+              canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+              return true;
+          }
+      }
+
+      // 회전 모드가 아니라면 기본 위치 이동 시작
+      var point=new THREE.Vector3(); pointerToFloor(e,point);
+      dragOffset.copy(obj.position).sub(point);
+      furnitureDragging=true;
+      canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+      return true;
+    }
+    function dragFurniture(e){
+      // 회전 중일 때 드래그 방향에 맞춰 회전
+      if (isRotating && selectedFurniture) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+              var angle = Math.atan2(point.x - selectedFurniture.position.x, point.z - selectedFurniture.position.z);
+              selectedFurniture.rotation.y = angle + dragAngleOffset;
+          }
+          return true;
+      }
+      if(!furnitureDragging || !selectedFurniture) return false;
+      var point=new THREE.Vector3(); if(pointerToFloor(e,point)){
+        selectedFurniture.position.x=Math.max(0.3,Math.min(b.w-.3,point.x+dragOffset.x));
+        selectedFurniture.position.z=Math.max(0.3,Math.min(b.d-.3,point.z+dragOffset.z));
+      } return true;
+    }
+    function endFurnitureDrag(e){
+      if (isRotating) {
+          isRotating = false;
+          if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+          return true;
+      }
+      if(!furnitureDragging) return false; furnitureDragging=false;
+      if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      return true;
+    }
+
+    if (furnitureEditor) {
+      // 1. 바닥에 심즈 스타일 그리드(격자) 추가
+      var gridHelper = new THREE.GridHelper(size * 1.5, Math.floor(size * 3), 0xffffff, 0xffffff);
+      gridHelper.material.opacity = 0.35;
+      gridHelper.material.transparent = true;
+      gridHelper.position.set(center.x, 0.01, center.z);
+      scene.add(gridHelper);
+
+      // 2. 하단 UI 패널 컨테이너 생성
+      var bottomPanel = document.createElement('div');
+      bottomPanel.className = 'sims-bottom-panel';
+
+      // 2-1. 좌측 색상 팔레트 영역 (OS 네이티브 컬러 피커)
+      var palette = document.createElement('div');
+      palette.className = 'sims-color-picker-panel';
+
+      var paletteLabel = document.createElement('div');
+      paletteLabel.style.cssText = 'font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 8px;';
+      paletteLabel.textContent = '🎨 가구 색상 변경';
+      palette.appendChild(paletteLabel);
+
+      furnitureColorPicker = document.createElement('input');
+      furnitureColorPicker.type = 'color';
+      furnitureColorPicker.value = '#c98f72';
+
+      furnitureColorPicker.addEventListener('input', function(e) {
+          if (selectedFurniture) {
+              var hex = parseInt(e.target.value.replace('#', ''), 16);
+              selectedFurniture.traverse(function(child) {
+                  if (child.isMesh && child.userData.colorable !== false) {
+                      child.material.color.setHex(hex);
+                  }
+              });
+          }
+      });
+      palette.appendChild(furnitureColorPicker);
+
+      var paletteHint = document.createElement('div');
+      paletteHint.style.cssText = 'font-size: 0.72rem; color: var(--ink-soft); margin-top: 8px; line-height: 1.4;';
+      paletteHint.innerHTML = '클릭하면 무한한 스펙트럼 및<br>RGB 색상 지정이 가능합니다.';
+      palette.appendChild(paletteHint);
+
+      bottomPanel.appendChild(palette);
+
+      // 2-2. 중앙 가구 아이템 목록
+      var itemsPanel = document.createElement('div');
+      itemsPanel.className = 'sims-items';
+
+      var furnitureList = [
+        { id: 'sofa', label: '소파', icon: '🛋️' },
+        { id: 'table', label: '테이블', icon: '🪑' },
+        { id: 'bed', label: '침대', icon: '🛏️' },
+        { id: 'plant', label: '식물', icon: '🪴' }
+      ];
+
+      furnitureList.forEach(function(item) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sims-btn';
+        btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px;">' + item.icon + '</span>' + item.label;
+        btn.addEventListener('click', function() { addFurniture(item.id); });
+        itemsPanel.appendChild(btn);
+      });
+      bottomPanel.appendChild(itemsPanel);
+
+      // 2-3. 우측 액션(회전 모드 토글, 삭제) 영역
+      var actionsPanel = document.createElement('div');
+      actionsPanel.className = 'sims-actions';
+
+      rotateBtn = document.createElement('button');
+      rotateBtn.type = 'button';
+      rotateBtn.className = 'sims-btn';
+      rotateBtn.innerHTML = '↻ 회전';
+      rotateBtn.addEventListener('click', function() {
+          if (!selectedFurniture) {
+              alert("회전할 가구를 먼저 선택해주세요.");
+              return;
+          }
+          isRotateMode = !isRotateMode;
+          if (isRotateMode) {
+              rotateBtn.style.background = 'var(--blueprint-soft)';
+              rotateBtn.style.borderColor = 'var(--blueprint)';
+              rotateBtn.innerHTML = '↻ 회전 중...';
+          } else {
+              rotateBtn.style.background = '';
+              rotateBtn.style.borderColor = '';
+              rotateBtn.innerHTML = '↻ 회전';
+          }
+      });
+      actionsPanel.appendChild(rotateBtn);
+
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'sims-btn danger';
+      removeBtn.innerHTML = '🗑️ 삭제';
+      removeBtn.addEventListener('click', function() {
+        if(!selectedFurniture) return;
+        scene.remove(selectedFurniture);
+        furniture = furniture.filter(function(f){ return f !== selectedFurniture; });
+        selectFurniture(null);
+      });
+      actionsPanel.appendChild(removeBtn);
+      bottomPanel.appendChild(actionsPanel);
+
+      container.appendChild(bottomPanel);
+
+      // 3. 우측 상단 사이즈 조절 패널
+      sizePanel = document.createElement('div');
+      sizePanel.className = 'furniture-size-panel';
+      sizePanel.hidden = true;
+      sizePanel.innerHTML = '<strong>선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><label class="furniture-dimension">높이 <input type="number" min="0.1" step="0.05" aria-label="높이"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
+      var sizeInputs = sizePanel.querySelectorAll('input');
+      sizeWidthInput = sizeInputs[0]; sizeDepthInput = sizeInputs[1]; sizeHeightInput = sizeInputs[2];
+
+      sizeInputs.forEach(function(input){
+        input.addEventListener('change', applyFurnitureSize);
+        input.addEventListener('blur', applyFurnitureSize);
+        input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); applyFurnitureSize(); input.blur(); } });
+      });
+      container.appendChild(sizePanel);
+
+      // 초기 기본 가구 배치
+      addFurniture('sofa', center.x - size*.18, center.z);
+      addFurniture('table', center.x + size*.13, center.z - size*.12);
+      selectFurniture(null);
+    }
+
     // orbit state — start from a slightly top-down "dollhouse" angle so the
     // room layout reads clearly before anyone drags
     var radius = size * 1.85;
@@ -1114,9 +1527,19 @@
       }
     }
     var canvas = renderer.domElement;
-    canvas.addEventListener("pointerdown", function(e){ spinning=false; onDown(e.clientX, e.clientY); });
-    window.addEventListener("pointermove", function(e){ onMove(e.clientX, e.clientY); });
-    window.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointerdown", function(e){
+      spinning=false;
+      if (furnitureEditor && beginFurnitureDrag(e)) return;
+      onDown(e.clientX, e.clientY);
+    });
+    window.addEventListener("pointermove", function(e){
+      if (furnitureEditor && dragFurniture(e)) return;
+      onMove(e.clientX, e.clientY);
+    });
+    window.addEventListener("pointerup", function(e){
+      if (furnitureEditor && endFurnitureDrag(e)) return;
+      onUp();
+    });
     canvas.addEventListener("wheel", function(e){
       e.preventDefault();
       radius = Math.min(Math.max(radius + e.deltaY * 0.01 * (size*0.05), size*0.8), size*3.2);
@@ -1210,6 +1633,8 @@
         renderer.dispose();
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
         if (viewControls.parentNode) viewControls.parentNode.removeChild(viewControls);
+        if (typeof bottomPanel !== 'undefined' && bottomPanel.parentNode) bottomPanel.parentNode.removeChild(bottomPanel);
+        if (sizePanel && sizePanel.parentNode) sizePanel.parentNode.removeChild(sizePanel);
       }
     };
   }
@@ -1245,6 +1670,8 @@
   var urlHint = document.getElementById("urlHint");
 
   var resultScene = null;
+  var furniturePlan = null;
+  var furnitureMode = false;
 
   function showOnly(panel){
     [panelSearch, panelLoading, panelTrace].forEach(function(p){ p.hidden = (p !== panel); });
@@ -1329,6 +1756,27 @@
   document.querySelector('[data-back="search-from-result"]').addEventListener("click", function(){
     if (resultScene){ resultScene.dispose(); resultScene = null; }
     openModal();
+  });
+
+  /* "다음: 가구 배치 시작하기" — 3D 변환 결과 화면을 가구 배치 전용 풀스크린으로 전환하고,
+     동일한 createWallScene을 furnitureEditor:true로 다시 띄움 (팀원 구현 이식) */
+  document.getElementById("nextStepBtn").addEventListener("click", function(){
+    if (!furniturePlan){
+      alert("먼저 3D 변환이 완료된 도면을 준비해 주세요.");
+      return;
+    }
+    if (!furnitureMode){
+      furnitureMode = true;
+      modalResultBox.classList.add("furniture-fullscreen");
+      document.getElementById("resultStageTitle").innerHTML = '가구 배치 작업 화면 <small style="font-weight:400;color:var(--ink-soft);">· 드래그 앤 드롭</small>';
+      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. '회전' 버튼을 누른 뒤 마우스를 돌리면 회전도 가능합니다.";
+      this.textContent = "가구 배치 완료";
+      if (resultScene){ resultScene.dispose(); resultScene = null; }
+      resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동 및 회전</span>';
+      resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true });
+    } else {
+      alert("가구 배치가 완료되었습니다. 필요하면 이 화면에서 계속 수정할 수 있어요.");
+    }
   });
 
   // "편집" — 방금 그린 벽을 그대로 유지한 채 트레이싱 화면으로 돌아가서 이어서 고칠 수 있게 함
@@ -1540,6 +1988,12 @@
   function showResult(complex, plan){
     modalBox.hidden = true;
     modalResultBox.hidden = false;
+    furnitureMode = false;
+    furniturePlan = plan.wallData || (!plan.isReal ? plan : null);
+    modalResultBox.classList.remove("furniture-fullscreen");
+    document.getElementById("nextStepBtn").textContent = "다음: 가구 배치 시작하기";
+    document.getElementById("resultStageTitle").textContent = "자동 변환 결과 (3D)";
+    document.getElementById("furnitureNote").textContent = "* 3D 변환 결과를 확인한 뒤, 가구 배치 화면에서 실제 배치를 시작할 수 있어요.";
 
     resultTitle.textContent = complex.name;
     resultSubtitle.textContent = planLabelText(plan) + " · " + planAreaText(plan);
