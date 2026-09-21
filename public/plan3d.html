@@ -475,19 +475,30 @@
   .furniture-dimension input{width:100%;min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit}
   .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
   @media (max-width:600px){.furniture-size-panel{right:8px;top:54px;width:150px}}
-  .furniture-rotate-panel{position:absolute;left:10px;top:10px;z-index:3;width:190px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
-  .furniture-rotate-panel[hidden]{display:none!important}
-  .furniture-rotate-panel strong{display:block;margin-bottom:8px;font-size:.76rem}
-  .rotate-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
-  .rotate-row input{width:0;flex:1;min-width:0;text-align:center;padding:5px 4px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:600 .78rem system-ui}
-  .rotate-row span{color:var(--ink-soft)}
-  .handle-btn{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:.85rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  /* 가구를 선택했을 때만 그 가구 머리 위에 "뿅" 뜨는 투명 핸들 — 평상시엔 완전히 숨겨둠(opacity:0
+     + pointer-events:none)이라 화면을 가리지 않고, 선택되면 3D 좌표를 매 프레임 화면 좌표로 변환해서
+     그 자리를 따라다님(updateRotatePanelPosition 참고). */
+  .furniture-rotate-panel{
+    position:absolute; left:0; top:0; z-index:4;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:7px 9px; border-radius:14px;
+    border:1px solid color-mix(in srgb, var(--blueprint) 40%, transparent);
+    background:color-mix(in srgb, var(--paper-raised) 58%, transparent);
+    backdrop-filter:blur(7px) saturate(1.3); -webkit-backdrop-filter:blur(7px) saturate(1.3);
+    box-shadow:0 8px 20px var(--shadow);
+    opacity:0; pointer-events:none;
+    transform:translate(-50%,calc(-100% - 14px)) scale(.8);
+    transform-origin:center bottom;
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .furniture-rotate-panel.visible{ opacity:1; pointer-events:auto; transform:translate(-50%,calc(-100% - 14px)) scale(1); }
+  .handle-row{display:flex; align-items:center; gap:6px}
+  .handle-btn{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 80%,transparent);color:var(--ink);font-size:.95rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .handle-btn:hover{background:var(--blueprint-soft);border-color:var(--blueprint)}
-  .nudge-pad{display:flex;flex-direction:column;align-items:center;gap:4px}
-  .nudge-mid{display:flex;gap:28px}
-  .nudge-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:.8rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .nudge-pad{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .nudge-mid{display:flex;gap:22px}
+  .nudge-btn{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 80%,transparent);color:var(--ink);font-size:.72rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .nudge-btn:hover{background:var(--blueprint-soft);border-color:var(--blueprint)}
-  @media (max-width:600px){.furniture-rotate-panel{left:8px;top:54px;width:168px}}
 
   /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용.
      가구 배치는 실제로 작업하는 화면이라 작게 뜨면 불편함 — 화면 거의 꽉 채우는 크기로 키움.
@@ -1291,7 +1302,7 @@
     }
 
     var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput;
-    var rotatePanel, rotateAngleInput, rotateLeftBtn, rotateRightBtn;
+    var rotatePanel;
     function syncSizePanel(){
       if (!sizePanel) return;
       var item=selectedFurniture;
@@ -1315,58 +1326,66 @@
       obj.position.x = Math.max(0.3, Math.min(b.w-.3, obj.position.x));
       obj.position.z = Math.max(0.3, Math.min(b.d-.3, obj.position.z));
     }
-    // 가구가 벽을 뚫고 들어가면, 가구를 원으로 근사해서 벽 중심선 밖으로 밀어냄
+    // 가구의 실제 네 모서리(회전 반영) 좌표를 world 공간으로 계산
+    function getFurnitureCorners(obj){
+      var dims = obj.userData.size || {w:.6,d:.6};
+      var hw = dims.w/2, hd = dims.d/2;
+      var cosR = Math.cos(obj.rotation.y), sinR = Math.sin(obj.rotation.y);
+      var local = [[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]];
+      return local.map(function(c){
+        return {
+          x: obj.position.x + c[0]*cosR + c[1]*sinR,
+          z: obj.position.z - c[0]*sinR + c[1]*cosR
+        };
+      });
+    }
+    // 가구가 벽을 뚫고 들어가면 밀어냄 — 원으로 뭉뚱그리지 않고 회전이 반영된 실제 네 모서리
+    // 각각이 벽 중심선에서 벽 두께 절반보다 가까워지는지 검사해서, 가장 깊이 박힌 모서리 기준으로
+    // 그 벽 밖으로 밀어냄(대각선으로 배치했을 때 모서리만 벽을 뚫는 문제를 없애기 위함)
     function resolveWallCollision(obj){
       if (!obj || !collisionWalls.length) return;
-      var dims = obj.userData.size || {w:.6,d:.6};
-      var half = Math.max(dims.w, dims.d) / 2 * 0.82;
       for (var i=0;i<collisionWalls.length;i++){
         var w = collisionWalls[i];
         var dx = w.x2-w.x1, dz = w.y2-w.y1;
         var lenSq = dx*dx+dz*dz;
-        var t = lenSq > 1e-9 ? ((obj.position.x-w.x1)*dx + (obj.position.z-w.y1)*dz)/lenSq : 0;
-        t = Math.max(0, Math.min(1, t));
-        var cx = w.x1+dx*t, cz = w.y1+dz*t;
-        var ddx = obj.position.x-cx, ddz = obj.position.z-cz;
-        var dist = Math.hypot(ddx, ddz);
-        var minDist = w.thickness/2 + half;
-        if (dist < minDist){
-          if (dist < 1e-6){ ddx = 1; ddz = 0; dist = 1; }
-          var push = (minDist - dist) / dist;
-          obj.position.x += ddx*push;
-          obj.position.z += ddz*push;
+        var corners = getFurnitureCorners(obj);
+        var worst = null;
+        for (var c=0;c<corners.length;c++){
+          var px = corners[c].x, pz = corners[c].z;
+          var t = lenSq > 1e-9 ? ((px-w.x1)*dx + (pz-w.y1)*dz)/lenSq : 0;
+          t = Math.max(0, Math.min(1, t));
+          var cx = w.x1+dx*t, cz = w.y1+dz*t;
+          var ddx = px-cx, ddz = pz-cz;
+          var dist = Math.hypot(ddx, ddz);
+          var minDist = w.thickness/2;
+          if (dist < minDist && (!worst || (minDist-dist) > worst.pen)){
+            worst = {
+              pen: minDist-dist,
+              nx: dist>1e-6 ? ddx/dist : 1,
+              nz: dist>1e-6 ? ddz/dist : 0
+            };
+          }
+        }
+        if (worst){
+          obj.position.x += worst.nx * worst.pen;
+          obj.position.z += worst.nz * worst.pen;
         }
       }
       clampFurniturePosition(obj);
     }
-    // 선택된 가구의 회전각(도)을 좌우 핸들 사이 입력창에 반영
+    // 가구가 선택/해제될 때 머리 위 회전·이동 핸들을 보이거나 숨김
     function syncRotatePanel(){
       if (!rotatePanel) return;
-      var item = selectedFurniture;
-      rotatePanel.hidden = !item;
-      if (!item) return;
-      var deg = Math.round(item.rotation.y * 180 / Math.PI) % 360;
-      if (deg < 0) deg += 360;
-      rotateAngleInput.value = deg;
+      if (selectedFurniture) rotatePanel.classList.add('visible');
+      else rotatePanel.classList.remove('visible');
     }
-    // 입력창에 각도를 직접 입력했을 때 그 각도로 바로 회전
-    function applyRotationAngle(){
-      if (!selectedFurniture) return;
-      var deg = parseFloat(rotateAngleInput.value);
-      if (!isFinite(deg)) { syncRotatePanel(); return; }
-      deg = ((deg % 360) + 360) % 360;
-      selectedFurniture.rotation.y = deg * Math.PI / 180;
-      resolveWallCollision(selectedFurniture);
-      rotateAngleInput.value = deg;
-    }
-    // 좌우 핸들을 눌렀을 때 정해진 각도만큼 회전
+    // 좌우 핸들을 눌렀을 때 15도씩 회전
     function rotateBy(deltaDeg){
       if (!selectedFurniture) return;
       var deg = (selectedFurniture.rotation.y * 180 / Math.PI) + deltaDeg;
       deg = ((deg % 360) + 360) % 360;
       selectedFurniture.rotation.y = deg * Math.PI / 180;
       resolveWallCollision(selectedFurniture);
-      syncRotatePanel();
     }
     // 화살표 핸들로 미세하게 위치 조정
     function nudgeFurniture(dir){
@@ -1539,19 +1558,15 @@
       });
       container.appendChild(sizePanel);
 
-      // 4. 좌측 상단 회전 / 미세 위치 조정 패널 (심즈 스타일 핸들)
+      // 4. 선택한 가구 머리 위에 뜨는 투명 핸들 (회전 15도씩 + 미세 위치 조정) — 심즈 스타일.
+      //    평소엔 완전히 안 보이다가 가구를 선택하면 그 가구 위치에 맞춰 나타남(위치 갱신은
+      //    updateRotatePanelPosition()이 매 프레임 처리).
       rotatePanel = document.createElement('div');
       rotatePanel.className = 'furniture-rotate-panel';
-      rotatePanel.hidden = true;
-      rotatePanel.innerHTML = '<strong>회전 / 위치 조정</strong><div class="rotate-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 회전">◀</button><input type="number" min="0" max="359" step="1" aria-label="회전 각도"><span>°</span><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 회전">▶</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div>';
-      rotateAngleInput = rotatePanel.querySelector('input[type="number"]');
-      var rotateHandleBtns = rotatePanel.querySelectorAll('.handle-btn');
-      rotateLeftBtn = rotateHandleBtns[0]; rotateRightBtn = rotateHandleBtns[1];
-      rotateHandleBtns.forEach(function(btn){
+      rotatePanel.innerHTML = '<div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div>';
+      rotatePanel.querySelectorAll('.handle-btn').forEach(function(btn){
         btn.addEventListener('click', function(){ rotateBy(parseFloat(btn.getAttribute('data-rotate')) * ROTATE_STEP_DEG); });
       });
-      rotateAngleInput.addEventListener('change', applyRotationAngle);
-      rotateAngleInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); applyRotationAngle(); rotateAngleInput.blur(); } });
       rotatePanel.querySelectorAll('.nudge-btn').forEach(function(btn){
         btn.addEventListener('click', function(){ nudgeFurniture(btn.getAttribute('data-dir')); });
       });
@@ -1695,6 +1710,23 @@
     });
     ro.observe(container);
 
+    // 선택된 가구 머리 위(회전/이동 핸들)를 그 가구의 현재 3D 위치에 맞춰 화면 좌표로 옮김.
+    // 카메라가 궤도로 계속 움직이므로(또는 드래그로 회전) 매 프레임 다시 계산해야 함.
+    var rotatePanelAnchor = furnitureEditor ? new THREE.Vector3() : null;
+    function updateRotatePanelPosition(){
+      if (!rotatePanel || !selectedFurniture) return;
+      var dims = selectedFurniture.userData.size || {w:.6,d:.6,h:.9};
+      rotatePanelAnchor.set(selectedFurniture.position.x, dims.h + 0.3, selectedFurniture.position.z);
+      rotatePanelAnchor.project(camera);
+      if (rotatePanelAnchor.z > 1) return; // 카메라 뒤쪽이면 갱신하지 않음(직전 위치 유지)
+      var w = container.clientWidth, h = container.clientHeight;
+      if (!w || !h) return;
+      var sx = (rotatePanelAnchor.x * 0.5 + 0.5) * w;
+      var sy = (1 - (rotatePanelAnchor.y * 0.5 + 0.5)) * h;
+      rotatePanel.style.left = sx + 'px';
+      rotatePanel.style.top = sy + 'px';
+    }
+
     var rafId;
     function tick(){
       rafId = requestAnimationFrame(tick);
@@ -1702,6 +1734,7 @@
         theta += 0.0022;
         updateCamera();
       }
+      if (furnitureEditor) updateRotatePanelPosition();
       renderer.render(scene, camera);
     }
     tick();
