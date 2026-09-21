@@ -476,16 +476,37 @@
   .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
   @media (max-width:600px){.furniture-size-panel{right:8px;top:54px;width:150px}}
 
-  /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용 */
-  /* 가구 배치는 실제로 작업하는 화면이라 작게 뜨면 불편함 — 화면 거의 꽉 채우는 크기로 키움 */
-  .modal.furniture-fullscreen{width:calc(100vw - 24px);max-width:calc(100vw - 24px);height:calc(100vh - 24px);max-height:calc(100vh - 24px);}
-  .modal.furniture-fullscreen .result-grid{display:block;height:calc(100% - 126px);margin-bottom:12px;}
+  /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용.
+     가구 배치는 실제로 작업하는 화면이라 작게 뜨면 불편함 — 화면 거의 꽉 채우는 크기로 키움.
+     예전엔 result-grid/#resultStage 높이를 calc(100% - 126px) 식으로 고정 숫자를 빼는
+     방식으로 잡았는데, #panelResult에 높이가 명시돼 있지 않아서 그 "100%"가 실제로는
+     계산이 안 되고(퍼센트 높이는 부모 높이가 명시돼야 동작함) 내용물 실제 크기만큼 쌓이다가
+     모달 높이를 넘기면 스크롤이 생기는 문제가 있었음. 세로 전체를 flex 컬럼으로 엮어서
+     3D 캔버스 영역(마지막 panel-box)이 "남는 공간을 정확히 채우는" 방식으로 바꿔서
+     스크롤이 아예 생기지 않게 함. */
+  .modal.furniture-fullscreen{
+    width:calc(100vw - 24px);max-width:calc(100vw - 24px);
+    height:calc(100vh - 24px);max-height:calc(100vh - 24px);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .modal.furniture-fullscreen #panelResult{
+    display:flex;flex-direction:column;flex:1;min-height:0;
+  }
+  .modal.furniture-fullscreen .result-head{flex:none;}
+  .modal.furniture-fullscreen .result-grid{
+    display:block;flex:1;min-height:0;margin-bottom:12px;
+  }
   .modal.furniture-fullscreen .result-grid .panel-box:first-child{display:none;}
-  .modal.furniture-fullscreen .result-grid .panel-box:last-child{height:100%;}
-  .modal.furniture-fullscreen #resultStage{height:calc(100% - 39px);min-height:470px;aspect-ratio:auto;}
+  .modal.furniture-fullscreen .result-grid .panel-box:last-child{
+    height:100%;display:flex;flex-direction:column;
+  }
+  .modal.furniture-fullscreen #resultStage{
+    flex:1;min-height:0;height:auto;aspect-ratio:auto;
+  }
   .modal.furniture-fullscreen .result-stats{display:none;}
-  .modal.furniture-fullscreen .next-note{margin-top:8px;}
-  @media (max-width:600px){.modal.furniture-fullscreen{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);padding:18px}.modal.furniture-fullscreen #resultStage{min-height:400px;}}
+  .modal.furniture-fullscreen .result-actions{flex:none;}
+  .modal.furniture-fullscreen .next-note{flex:none;margin-top:8px;}
+  @media (max-width:600px){.modal.furniture-fullscreen{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);padding:18px}}
 
   /* ---------- 심즈 스타일 하단 가구 패널 ---------- */
   .sims-bottom-panel {
