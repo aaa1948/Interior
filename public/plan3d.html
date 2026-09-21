@@ -362,7 +362,9 @@
     background:var(--paper-raised); border-radius:18px; padding:clamp(22px,4vw,34px);
     box-shadow:0 24px 60px -20px var(--shadow); position:relative;
   }
-  .modal.wide{max-width:820px;}
+  /* 도면 그리기 패널(panelTrace)일 때 붙는 wide 모달 — 도면 이미지+툴바+버튼까지 스크롤 없이
+     한 번에 보이도록 기존 820px보다 훨씬 크게, 화면 안에 항상 들어오도록 vw/vh 기준 상한도 둠 */
+  .modal.wide{max-width:min(94vw, 1180px); max-height:min(94vh, 920px);}
   .modal-close{
     position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
     border:1px solid var(--line); background:var(--paper-raised); color:var(--ink-soft);
