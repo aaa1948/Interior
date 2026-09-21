@@ -2118,6 +2118,23 @@
     var widthM = parseFloat(traceWidthInput.value) || 9;
     var depthM = parseFloat(traceDepthInput.value) || 7;
 
+    // "실제 가로/세로" 입력값은 방금 그린 벽 범위(bboxW×bboxH)를 그 크기로 강제로 늘려/줄여
+    // 맞추는 값이라, 예를 들어 발코니처럼 좁고 긴 방만 그렸는데 입력창엔 이전에 아파트 전체를
+    // 그릴 때 쓰던 9×7 같은 값이 그대로 남아있으면 좁고 긴 모양이 억지로 넓적하게 찌그러져
+    // 버림. 그려진 범위의 가로세로 비율과 입력한 실제 가로/세로 비율 차이가 너무 크면 진행
+    // 전에 한 번 확인시켜서, 방을 새로 그릴 때 실제 가로/세로 갱신을 깜빡하는 실수를 막음.
+    var drawnAspect = bboxW / bboxH;
+    var enteredAspect = widthM / depthM;
+    var aspectMismatch = drawnAspect / enteredAspect;
+    if (aspectMismatch > 1.5 || aspectMismatch < 1/1.5){
+      var proceedAnyway = confirm(
+        "그린 영역의 가로세로 비율이 입력한 실제 가로(" + widthM + "m) · 세로(" + depthM + "m)와 많이 달라요.\n" +
+        "방 하나만 그렸다면 그 방의 실제 가로/세로를 다시 입력했는지 확인해주세요 — 이대로 만들면 모양이 찌그러져요.\n\n" +
+        "그래도 지금 값으로 계속할까요?"
+      );
+      if (!proceedAnyway) return;
+    }
+
     var walls = segs.map(function(seg){
       var p1 = seg[0], p2 = seg[1];
       return [
