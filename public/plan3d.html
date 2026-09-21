@@ -362,9 +362,10 @@
     background:var(--paper-raised); border-radius:18px; padding:clamp(22px,4vw,34px);
     box-shadow:0 24px 60px -20px var(--shadow); position:relative;
   }
-  /* 도면 그리기 패널(panelTrace)일 때 붙는 wide 모달 — 도면 이미지+툴바+버튼까지 스크롤 없이
-     한 번에 보이도록 기존 820px보다 훨씬 크게, 화면 안에 항상 들어오도록 vw/vh 기준 상한도 둠 */
-  .modal.wide{max-width:min(94vw, 1180px); max-height:min(94vh, 920px);}
+  /* 도면 그리기 패널(panelTrace)일 때 붙는 wide 모달 — 도면 이미지(아래 .trace-stage에서
+     높이 상한을 둬서 조절)+툴바+버튼까지 스크롤 없이 한 번에 보이도록 기존 820px보다 크게,
+     화면 안에 항상 들어오도록 vw/vh 기준 상한도 둠 */
+  .modal.wide{max-width:min(94vw, 1000px); max-height:min(92vh, 880px);}
   .modal-close{
     position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
     border:1px solid var(--line); background:var(--paper-raised); color:var(--ink-soft);
@@ -398,11 +399,20 @@
   .settings-hint{font-size:.74rem; color:var(--ink-soft); margin:-8px 0 16px;}
 
   /* ---------- 도면 위에 직접 벽 그리기 ---------- */
+  /* 예전엔 width:100%로 항상 팝업 가로폭에 꽉 채웠는데, 가로로 긴 도면일 때 이미지가 너무
+     커져서(높이도 같이 늘어남) 세로 공간을 다 잡아먹고 아래 버튼이 스크롤해야만 보이는
+     문제가 있었음. 이제 이미지 높이에도 상한(max-height)을 두고, .trace-stage는
+     width:fit-content로 이미지가 실제로 그려지는 크기에 딱 맞게 줄어들게 함 — 컨테이너가
+     항상 이미지 영역과 정확히 같은 크기여야 클릭 좌표(u,v) 계산이 어긋나지 않음. */
   .trace-stage{
-    position:relative; width:100%; border-radius:10px; overflow:hidden;
-    border:1px solid var(--line); background:var(--paper); margin-bottom:14px;
+    position:relative; width:fit-content; max-width:100%; margin:0 auto 14px;
+    border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); background:var(--paper);
   }
-  .trace-stage img{display:block; width:100%; height:auto; user-select:none; pointer-events:none;}
+  .trace-stage img{
+    display:block; max-width:100%; max-height:min(46vh, 480px); width:auto; height:auto;
+    user-select:none; pointer-events:none;
+  }
   .trace-stage svg{position:absolute; inset:0; width:100%; height:100%; cursor:crosshair;}
   .trace-toolbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
   .trace-count{margin-left:auto; font-size:.82rem; color:var(--ink-soft);}
