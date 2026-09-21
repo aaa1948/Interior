@@ -1839,16 +1839,16 @@
     showOnly(panelSearch);
     modalBox.hidden = false;
     modalResultBox.hidden = true;
-    document.addEventListener("keydown", onKeydown);
     setTimeout(function(){ searchInput.focus(); }, 30);
     renderSuggestions("");
   }
   function closeModal(){
     overlay.hidden = true;
-    document.removeEventListener("keydown", onKeydown);
     if (resultScene){ resultScene.dispose(); resultScene = null; }
   }
-  function onKeydown(e){ if (e.key === "Escape") closeModal(); }
+  // Esc 키로는 팝업이 닫히지 않게 함 — 작업하다 실수로 Esc를 연타하면
+  // (특히 전체화면 종료하려고 누르다가) 도면/가구 작업 중이던 팝업이 통째로
+  // 닫혀서 처음 화면으로 튕겨나가는 문제가 있었음. 닫기는 X 버튼으로만.
 
   document.querySelectorAll(".js-open-modal").forEach(function(b){ b.addEventListener("click", openModal); });
   document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
