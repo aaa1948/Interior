@@ -392,6 +392,14 @@
   .suggest-item .count{font-size:.78rem; color:var(--blueprint); white-space:nowrap;}
   .empty-msg{font-size:.88rem; color:var(--ink-soft); padding:14px 2px;}
 
+  .search-divider{
+    display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--ink-soft); font-size:.78rem;
+  }
+  .search-divider::before, .search-divider::after{ content:""; flex:1; height:1px; background:var(--line); }
+  .local-file-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+
   .status-settings-btn{
     margin-left:auto; background:none; border:none; color:var(--ink-soft); cursor:pointer;
     font-size:.78rem; text-decoration:underline; text-underline-offset:2px; padding:2px;
@@ -824,12 +832,15 @@
     <button class="modal-close" id="modalCloseBtn" aria-label="닫기">×</button>
 
     <div id="panelSearch">
-      <h2 id="modalTitle">도면 이미지 주소를 붙여넣어주세요</h2>
-      <p class="sub">네이버 부동산·다방에서 복사한 평면도 이미지 주소를 붙여넣으면 바로 3D 변환을 확인할 수 있어요.</p>
+      <h2 id="modalTitle">도면 이미지를 불러와주세요</h2>
+      <p class="sub">네이버 부동산·다방에서 복사한 평면도 이미지 주소를 붙여넣거나, 내 PC에 저장된 도면 이미지를 직접 불러올 수 있어요.</p>
       <button type="button" class="status-settings-btn" id="urlHintToggle" style="margin:-6px 0 14px; display:block;">💡 도면 이미지 주소는 어떻게 가져오나요?</button>
       <p class="settings-hint" id="urlHint" hidden>네이버 부동산·다방에서 평면도 이미지를 마우스 오른쪽 클릭 → "이미지 주소 복사"를 누른 뒤, 아래 입력창에 붙여넣고 뜨는 항목을 클릭하세요.</p>
       <input type="text" class="search-input" id="searchInput" placeholder="https://landthumb-phinf.pstatic.net/... 붙여넣기" autocomplete="off">
       <ul class="suggest-list" id="suggestList"></ul>
+      <div class="search-divider"><span>또는</span></div>
+      <input type="file" id="localFileInput" accept="image/*" class="visually-hidden">
+      <button type="button" class="btn btn-ghost local-file-btn" id="localFileBtn">🖼️ 내 PC에서 도면 이미지 불러오기</button>
     </div>
 
     <div id="panelLoading" hidden>
@@ -1179,8 +1190,14 @@
       texLoader.crossOrigin = "anonymous";
       // WebGL 텍스처로 쓰려면 CORS가 허용된 곳에서 와야 하는데(2D <img>로 그냥 "보여주기"랑은 다른
       // 규칙임), 네이버 이미지 서버는 CORS 헤더를 안 붙여줘서 우리 서버가 대신 받아와 넘겨주는
-      // 프록시(/api/image-proxy)를 거쳐서 불러옴.
-      texLoader.load("/api/image-proxy?url=" + encodeURIComponent(plan.floorplanImageUrl), function(tex){
+      // 프록시(/api/image-proxy)를 거쳐서 불러옴. 단, PC에서 직접 불러온 이미지(data: URL)는
+      // 이미 브라우저 안에 있는 로컬 데이터라 CORS 문제 자체가 없으므로 프록시를 거치지 않고
+      // 바로 읽음(오히려 프록시로 보내면 매우 긴 data: URL이 쿼리스트링에 안 맞을 수 있음).
+      var isLocalDataUrl = /^data:/i.test(plan.floorplanImageUrl);
+      var textureSrc = isLocalDataUrl
+        ? plan.floorplanImageUrl
+        : "/api/image-proxy?url=" + encodeURIComponent(plan.floorplanImageUrl);
+      texLoader.load(textureSrc, function(tex){
         var bb = plan.imageBBox;
         tex.wrapS = THREE.ClampToEdgeWrapping;
         tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -1876,7 +1893,7 @@
     li.tabIndex = 0;
     li.innerHTML =
       '<span class="name">이 주소로 도면 가져오기<span class="region">· ' + url.slice(0, 50) + (url.length > 50 ? "…" : "") + '</span></span>' +
-      '<span class="count">실시간</span>';
+      '<span class="count">직접 입력</span>';
     li.addEventListener("click", function(){ selectPastedUrl(url); });
     li.addEventListener("keydown", function(e){ if (e.key === "Enter") selectPastedUrl(url); });
     suggestList.appendChild(li);
@@ -1894,6 +1911,45 @@
       aiError: null
     };
     startTracing(complexLike, plan, url);
+  }
+
+  // PC에 저장된 도면 이미지 파일을 직접 불러오는 기능. 네이버 이미지 서버처럼 CORS를 막아둔
+  // 곳이 없어서(내 컴퓨터 파일이니까) /api/image-proxy를 거칠 필요가 없음 — FileReader로
+  // data: URL로 바꿔서 바로 씀(3D 바닥 텍스처 로딩 쪽도 이 data: URL은 프록시 없이 바로 읽게
+  // 되어 있음, createWallScene 안 텍스처 로드 부분 참고).
+  var localFileInput = document.getElementById("localFileInput");
+  var localFileBtn = document.getElementById("localFileBtn");
+  localFileBtn.addEventListener("click", function(){ localFileInput.click(); });
+  localFileInput.addEventListener("change", function(){
+    var file = localFileInput.files && localFileInput.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)){
+      alert("이미지 파일만 불러올 수 있어요 (jpg, png 등).");
+      localFileInput.value = "";
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(){
+      selectLocalImage(reader.result, file.name);
+      localFileInput.value = ""; // 같은 파일을 다시 선택해도 change 이벤트가 또 뜨도록 초기화
+    };
+    reader.onerror = function(){
+      alert("이미지를 불러오지 못했어요. 다른 파일로 다시 시도해주세요.");
+    };
+    reader.readAsDataURL(file);
+  });
+  function selectLocalImage(dataUrl, fileName){
+    var complexLike = { name: "PC에서 불러온 도면", address: fileName || "" };
+    var plan = {
+      isReal: true,
+      pyeongName: "PC에서 불러온 도면",
+      supplyArea: null,
+      exclusiveArea: null,
+      floorplanImageUrl: dataUrl,
+      wallData: null,
+      aiError: null
+    };
+    startTracing(complexLike, plan, dataUrl);
   }
 
   function renderSuggestions(query){
@@ -1924,7 +1980,7 @@
       furnitureMode = true;
       modalResultBox.classList.add("furniture-fullscreen");
       document.getElementById("resultStageTitle").innerHTML = '가구 배치 작업 화면 <small style="font-weight:400;color:var(--ink-soft);">· 드래그 앤 드롭</small>';
-      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. '회전' 버튼을 누른 뒤 마우스를 돌리면 회전도 가능합니다.";
+      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. 가구를 선택하면 위에 뜨는 핸들로 회전(↺↻)과 미세 위치 조정도 가능합니다.";
       this.textContent = "가구 배치 완료";
       if (resultScene){ resultScene.dispose(); resultScene = null; }
       resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동 및 회전</span>';
@@ -2169,7 +2225,9 @@
 
     resultTitle.textContent = complex.name;
     resultSubtitle.textContent = planLabelText(plan) + " · " + planAreaText(plan);
-    resultBadge.textContent = plan.isReal ? "네이버 부동산 실시간 데이터" : "샘플 데이터";
+    // "실시간 데이터"라고 하면 마치 네이버 부동산과 실시간으로 연동된 것처럼 오해할 수 있어서
+    // (실제로는 사용자가 붙여넣거나 불러온 이미지 한 장을 그 시점에 처리하는 것뿐) 표현을 바꿈.
+    resultBadge.textContent = plan.isReal ? "불러온 도면 데이터" : "샘플 데이터";
 
     resultStage.querySelectorAll("canvas").forEach(function(c){ c.remove(); });
     if (resultScene){ resultScene.dispose(); resultScene = null; }
