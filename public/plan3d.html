@@ -1473,8 +1473,10 @@
 
     if (furnitureEditor) {
       // 1. 바닥에 심즈 스타일 그리드(격자) 추가
-      var gridHelper = new THREE.GridHelper(size * 1.5, Math.floor(size * 3), 0xffffff, 0xffffff);
-      gridHelper.material.opacity = 0.35;
+      // 도면 사진을 안 깔기로 했으니 격자가 바닥의 유일한 기준선이 됨 — 이전(0.35)보다 진하게 키워서
+      // 잘 보이게 하고, 0.5m 간격 보조선 위에 1m 간격 중심선을 더 굵게 얹어 두 단계로 나눠줌.
+      var gridHelper = new THREE.GridHelper(size * 1.5, Math.floor(size * 3), 0x8fb3d9, 0xffffff);
+      gridHelper.material.opacity = 0.55;
       gridHelper.material.transparent = true;
       gridHelper.position.set(center.x, 0.01, center.z);
       scene.add(gridHelper);
