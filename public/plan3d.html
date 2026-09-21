@@ -71,9 +71,6 @@
     font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
-    /* 한글은 스페이스가 없으면 브라우저가 음절 아무 데서나 줄을 바꿔버려서(단어 중간 잘림) 줄바꿈이
-       들쭉날쭉해 보임 — keep-all로 스페이스 기준으로만 줄바꿈되게 하고, 정말 긴 글자가 박스를 넘칠
-       때만 break-word로 강제로 잘리게 안전장치를 둠. */
     word-break:keep-all;
     overflow-wrap:break-word;
   }
@@ -88,8 +85,6 @@
   p{margin:0;}
   a{color:inherit;}
   button{font-family:inherit;}
-  /* 최대 폭 제한을 없애서 창 크기에 딱 맞춰 늘어나게 함 — 넓은 PC 화면에서 오른쪽에 빈 공간이
-     남지 않고 히어로/카드/그리드가 화면을 거의 다 채움. 왼쪽부터 채워지고(margin auto 아님) */
   .wrap{max-width:none; margin:0; padding:0 clamp(20px,4vw,64px);}
   section{padding:clamp(56px,8vw,104px) 0;}
 
@@ -166,19 +161,10 @@
 
   /* ---------- hero ---------- */
   .hero{padding-top:clamp(48px,7vw,88px);}
-  /* 헤드라인(아이캐치+제목)은 히어로 폭 전체를 쓰는 한 줄로 따로 빼두고, 그 아래에 글/카드
-     두 칸짜리 줄을 둠 — "글 시작~핵심 기능 링크 끝"과 카드가 정확히 같은 구간에 오도록 함 */
   .hero-head{margin-bottom:clamp(28px,4vw,40px);}
   .hero-grid{
-    /* 예전엔 1.05fr/.95fr 그리드로 나눴는데, 화면이 넓어지면 글 칸이 실제 글자 폭보다 훨씬
-       넓게 배정돼서 글과 카드 사이에 텅 빈 공간이 생겼음(글은 줄바꿈 때문에 짧게 끝나는데
-       칸 자체는 넓으니까). flex로 바꿔서 글·카드가 실제 크기만큼만 차지하고 서로 바로
-       붙게 하고, 남는 공간은 전체 줄 맨 끝에만 남도록 함 */
     display:flex; flex-wrap:wrap; gap:clamp(32px,5vw,64px);
   }
-  /* max-width가 너무 좁으면(예전 640px) 문장 하나가 그 폭 안에 안 들어가서 브라우저가
-     중간 단어에서 강제로 줄바꿈을 넣어버림(예: "배치" / "해보세요."로 쪼개짐) — 직접 넣은
-     <br> 지점에서만 줄이 바뀌도록 가장 긴 문장이 한 줄에 들어갈 만큼 넉넉하게 잡음 */
   .hero-text{flex:1 1 420px; max-width:960px;}
   @media (max-width:860px){ .hero-text{flex-basis:100%; max-width:none;} }
 
@@ -201,9 +187,6 @@
   .preview-card{
     background:var(--paper-raised); border:1px solid var(--line); border-radius:16px;
     padding:18px 18px 16px; box-shadow:0 10px 32px -12px var(--shadow);
-    /* 카드는 늘어나지 않고 항상 고정 크기(760px) — margin-left:auto로 남는 공간을
-       카드 앞쪽 여백으로 흡수시켜서 카드 자체는 오른쪽 끝에 붙어 있게 함(내비 우측 버튼들과 정렬).
-       도면 사진+3D를 좌우로 같이 보여주면서 600px는 좁아 보여서 키움. */
     flex:0 0 760px; max-width:760px; margin-left:auto;
     display:flex; flex-direction:column;
   }
@@ -212,9 +195,6 @@
   }
   .preview-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
   .preview-label{font-size:.78rem; color:var(--ink-soft); border-bottom:1px dashed var(--line); padding-bottom:3px;}
-  /* 히어로 미리보기를 가운데 기준 좌/우 2분할: 왼쪽=도면 사진, 오른쪽=기존 3D 캔버스(.canvas-stage,
-     변경 없음). .canvas-stage가 이미 flex:1로 짜여 있어서 이 안에 넣기만 해도 오른쪽 칸을 꽉 채움 —
-     결과 모달의 #resultStage(.canvas-stage 재사용)는 이 래퍼 밖에 있어 영향 없음. */
   .preview-split{
     display:flex; flex:1; min-height:320px; border-radius:10px; overflow:hidden;
   }
@@ -243,16 +223,6 @@
   }
   @media (max-width:860px){ .canvas-stage{flex:none; aspect-ratio:6/5; min-height:0;} }
   .canvas-stage:active{cursor:grabbing;}
-  /* canvas를 absolute로 빼서 정상 흐름 높이 계산에서 완전히 제외함 — three.js가
-     renderer.setSize()로 캔버스 width/height 속성(렌더 버퍼, 고DPI에서 CSS 크기의 2배)을
-     바꿀 때마다 이 값이 flex 높이 계산(auto 높이 부모 안에서 percentage-height 자식의
-     "hypothetical size")에 섞여 들어가면, 창을 줄였다 늘릴 때마다 버퍼 크기 → 레이아웃
-     높이 → 버퍼 크기 순으로 서로를 부풀리는 피드백 루프가 생겨 화면이 계속 커짐.
-     absolute + inset:0이면 canvas는 항상 부모(canvas-stage)의 이미 정해진 크기를 그대로
-     따라가기만 하고, 부모 크기를 계산하는 데는 전혀 관여하지 않음. */
-  /* canvas가 span/버튼들보다 DOM상 나중에 붙지만(three.js가 JS로 appendChild), position:absolute라서
-     z-index 없이는 나중에 붙는 쪽이 위로 그려짐 — 힌트 글자·컨트롤 버튼이 캔버스에 가려지지 않도록
-     canvas를 가장 아래(z-index:0)에 명시적으로 깔아둠 */
   .canvas-stage canvas{position:absolute; inset:0; z-index:0; display:block; width:100%; height:100%;}
   .canvas-hint{
     position:absolute; left:10px; bottom:10px; z-index:1; font-size:.7rem; color:var(--ink-soft);
@@ -278,9 +248,6 @@
 
   /* ---------- steps ---------- */
   .section-head{max-width:56ch; margin-bottom:clamp(32px,5vw,48px);}
-  /* #features의 설명 문단 두 번째 문장이 꽤 길어서(약 60자) 56ch 폭 안에서는 화면이 넓어도
-     자동으로 중간에 줄바꿈됨 — 직접 넣은 <br> 지점(문장 사이)에서만 끊기고 문장 자체는 안 끊기게
-     이 섹션만 폭을 넉넉하게 넓힘. */
   #features .section-head{max-width:min(100%, 1000px);}
   .section-head .eyebrow{margin-bottom:12px;}
   .section-head h2{font-size:clamp(1.6rem,3vw,2.15rem); margin-bottom:10px;}
@@ -324,7 +291,7 @@
   .feature-card h3{font-size:1rem; font-family:'IBM Plex Sans KR'; font-weight:700; margin-bottom:8px;}
   .feature-card p{color:var(--ink-soft); font-size:.9rem;}
 
-  /* ---------- gallery teaser (전체 게시판은 gallery.html에 따로 있음) ---------- */
+  /* ---------- gallery teaser ---------- */
   .gallery-teaser-panel{
     display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
     background:var(--paper-raised); border:1px solid var(--line); border-radius:16px;
@@ -452,11 +419,6 @@
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
 
   /* ---------- 3D 가구 배치 편집기 ---------- */
-  .furniture-toolbar{position:absolute;left:10px;top:10px;z-index:3;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 120px)}
-  .furniture-tool{appearance:none;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:color-mix(in srgb,var(--paper-raised) 92%,transparent);color:var(--ink);font:600 .7rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;cursor:pointer;box-shadow:0 1px 3px var(--shadow)}
-  .furniture-tool:hover{border-color:var(--blueprint);color:var(--blueprint)}
-  .furniture-tool.danger:hover{border-color:#c94c4c;color:#b43b3b}
-  .furniture-editor-hint{position:absolute;left:10px;bottom:10px;z-index:2;max-width:72%;font-size:.7rem;color:var(--ink-soft);background:color-mix(in srgb,var(--paper-raised) 82%,transparent);padding:4px 8px;border-radius:6px}
   .furniture-selected{outline:2px solid #ff9f43;outline-offset:2px}
   .furniture-size-panel{position:absolute;right:10px;top:10px;z-index:3;width:176px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
   .furniture-size-panel[hidden]{display:none!important}
@@ -464,8 +426,7 @@
   .furniture-dimension{display:grid;grid-template-columns:40px 1fr 13px;align-items:center;gap:5px;margin:6px 0;color:var(--ink-soft)}
   .furniture-dimension input{width:100%;min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit}
   .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
-  @media (max-width:600px){.furniture-size-panel{right:8px;top:54px;width:150px}.furniture-toolbar{max-width:calc(100% - 12px)}}
-
+  @media (max-width:600px){.furniture-size-panel{right:8px;top:54px;width:150px}}
 
   /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용 */
   .modal.furniture-fullscreen{max-width:min(1240px,calc(100vw - 32px));max-height:calc(100vh - 32px);height:min(860px,calc(100vh - 32px));}
@@ -477,6 +438,103 @@
   .modal.furniture-fullscreen .next-note{margin-top:8px;}
   @media (max-width:600px){.modal.furniture-fullscreen{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);padding:18px}.modal.furniture-fullscreen #resultStage{min-height:400px;}}
 
+  /* ---------- 심즈 스타일 하단 가구 패널 ---------- */
+  .sims-bottom-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 130px;
+    background: var(--paper-raised);
+    border-top: 2px solid var(--line);
+    display: flex;
+    z-index: 10;
+    box-shadow: 0 -4px 15px var(--shadow);
+    user-select: none;
+  }
+  .sims-color-picker-panel {
+    width: 220px;
+    border-right: 1px solid var(--line);
+    padding: 14px;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .sims-color-picker-panel input[type="color"] {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    -webkit-appearance: none;
+  }
+  .sims-color-picker-panel input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .sims-color-picker-panel input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+  }
+  .sims-items {
+    flex: 1;
+    padding: 12px 20px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    align-items: center;
+  }
+  .sims-btn {
+    appearance: none;
+    width: 70px;
+    height: 70px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+  .sims-btn:hover {
+    background: var(--blueprint-soft);
+    border-color: var(--blueprint);
+    transform: translateY(-2px);
+  }
+  .sims-actions {
+    width: 120px;
+    border-left: 1px solid var(--line);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+  .sims-actions .sims-btn {
+    width: 100%;
+    height: 40px;
+    flex-direction: row;
+    gap: 6px;
+  }
+  .sims-actions .danger {
+    color: #c94c4c;
+  }
+  .sims-actions .danger:hover {
+    border-color: #c94c4c;
+    background: #fdf2f2;
+  }
+  
+  /* 하단 패널이 있을 때 캔버스 힌트 위치 조정 */
+  .modal.furniture-fullscreen .canvas-hint {
+    bottom: 140px;
+  }
 </style>
 
 <header class="site">
@@ -560,7 +618,7 @@
       <div class="section-head">
         <span class="eyebrow">사용 흐름</span>
         <h2>도면 불러오기부터 게시까지, 4단계</h2>
-        <p>도면 이미지 주소 하나면 시작 —<br>벽은 클릭 몇 번으로 직접 세우고, 가구는 준비된 에셋으로 배치해요.</p>
+        <p>도면 이미지 주소 하나면 시작 —<br>벽은 클릭 몇 번으로 직접 세우고, 가구를 준비된 에셋으로 배치해요.</p>
       </div>
       <div class="steps">
         <div class="step">
@@ -617,7 +675,7 @@
         <div class="feature-card" data-tag="AI">
           <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
           <h3>무료 AI 코디네이터</h3>
-          <p>Gemma 기반 무료 AI가 채팅으로 가구 배치를 실시간으로 조언해줘요.</p>
+          <p>Gemma 기반 무료 AI가 채팅으로 가구 배치를 실시간 조언해줘요.</p>
         </div>
         <div class="feature-card" data-tag="1-CLICK">
           <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 12l6 6L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -627,7 +685,7 @@
         <div class="feature-card" data-tag="♥">
           <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8.5" cy="11" r="1" fill="currentColor"/><circle cx="12" cy="11" r="1" fill="currentColor"/><circle cx="15.5" cy="11" r="1" fill="currentColor"/></svg></div>
           <h3>커뮤니티 피드백</h3>
-          <p>게시한 배치에 다른 사용자가 댓글과 좋아요로 의견을 남길 수 있어요.</p>
+          <p>게시한 배치에 다른 사용자가 댓글과 좋아요로 의견 남길 수 있어요.</p>
         </div>
       </div>
     </div>
@@ -766,7 +824,6 @@
       return (mql && mql.matches) ? "dark" : "light";
     }
     function applyIcon(){
-      // 버튼에는 "지금 상태"가 아니라 "눌렀을 때 바뀔 모드"를 아이콘으로 보여줌
       themeToggle.innerHTML = currentTheme() === "dark" ? SUN_ICON : MOON_ICON;
     }
     themeToggle.addEventListener("click", function(){
@@ -778,7 +835,7 @@
     applyIcon();
   })();
 
-  /* ============ 0-1. 상단 로그인 드롭다운 (백엔드 미연결 — 폼은 자리만 잡아둠) ============ */
+  /* ============ 0-1. 상단 로그인 드롭다운 ============ */
   (function(){
     var loginBtn = document.getElementById("loginBtn");
     var loginDropdown = document.getElementById("loginDropdown");
@@ -804,19 +861,13 @@
     if (loginForm){
       loginForm.addEventListener("submit", function(e){
         e.preventDefault();
-        // TODO: 로그인 API 연결 전까지는 제출해도 아무 동작 안 함
       });
     }
   })();
 
-  /* ============ 1. 샘플 매물 데이터 (백엔드 미연결 시 대체용) ============ */
+  /* ============ 1. 샘플 매물 데이터 ============ */
   var SAMPLE_COMPLEXES = [
     {
-      /* 사용자가 준 네이버 부동산 도면 스샷(9600×4800, 발코니/거실·침실/화장실/침실/주방·식당)을
-         그대로 손으로 트레이싱해서 만든 벽 데이터 — 히어로 3D 미리보기 예시로 사용(SAMPLE_COMPLEXES[0]).
-         복도(우측 1400 구간)는 도면상 색칠 안 된 공용 통로라 실제 세대 내부 벽이 아닌데, 그대로 벽으로
-         넣었더니 3D에서 오른쪽에 안 써야 할 밀폐 공간이 하나 더 생겨버림 — 세대 경계(9600 기준)만
-         남기고 복도 벽은 제거함. */
       id: "buyoung1", name: "익산 영등 부영1차", region: "전북 익산시",
       plans: [
         { id:"buyoung1-163", label:"16.3평형", area:54, pyeong:16.3,
@@ -893,7 +944,6 @@
 
     var ink = getCss("--ink"), inkSoft = getCss("--ink-soft"), line = getCss("--line");
 
-    // graph paper background
     var patId = "grid" + Math.random().toString(36).slice(2,8);
     var defs = el("defs", {});
     var pattern = el("pattern", { id: patId, width:1, height:1, patternUnits:"userSpaceOnUse" });
@@ -902,21 +952,17 @@
     svg.appendChild(defs);
     svg.appendChild(el("rect", { x:-pad, y:-pad, width:b.w+pad*2, height:b.d+pad*2, fill:"url(#"+patId+")" }));
 
-    // outer walls
     plan.outer.forEach(function(s){
       svg.appendChild(el("line", { x1:s[0], y1:s[1], x2:s[2], y2:s[3], stroke:ink, "stroke-width":0.16, "stroke-linecap":"square" }));
     });
-    // inner walls
     plan.inner.forEach(function(s){
       svg.appendChild(el("line", { x1:s[0], y1:s[1], x2:s[2], y2:s[3], stroke:ink, "stroke-width":0.09, "stroke-linecap":"square", opacity:0.8 }));
     });
-    // room labels
     plan.rooms.forEach(function(r){
       var t = el("text", { x:r.x, y:r.y, "text-anchor":"middle", "font-size":0.42, fill:inkSoft, "font-family":"IBM Plex Sans KR, sans-serif" });
       t.textContent = r.t;
       svg.appendChild(t);
     });
-    // top dimension line
     var dimY = -0.32;
     svg.appendChild(el("line", { x1:0, y1:dimY, x2:b.w, y2:dimY, stroke:inkSoft, "stroke-width":0.02, "stroke-dasharray":"0.08 0.08" }));
     var dimLabel = el("text", { x:b.w/2, y:dimY-0.12, "text-anchor":"middle", "font-size":0.32, fill:inkSoft, "font-family":"IBM Plex Mono, monospace" });
@@ -949,9 +995,6 @@
 
     var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    // updateStyle=false: 캔버스에 인라인 px 크기를 직접 박지 않음. 인라인 스타일이 붙으면 창을
-    // 줄였다 늘릴 때 예전 크기가 남아있다가 겹쳐 쌓여서 "계속 커지는" 버그가 생김 — 항상 스타일시트의
-    // width:100%/height:100%(컨테이너 크기 그대로 따라감)만 쓰게 하고, 렌더 해상도(내부 버퍼)만 갱신.
     renderer.setSize(width, height, false);
     container.appendChild(renderer.domElement);
 
@@ -988,16 +1031,9 @@
     floorLine.position.set(center.x, -0.01, center.z);
     scene.add(floorLine);
 
-    // 바닥에 원본 도면 사진을 그대로 깔아줌 — 벽 바운딩박스(imageBBox)에 맞춰 이미지를 크롭해서
-    // 딱 벽 영역 크기(b.w × b.d)에 맞게 얹음. 여백용 큰 바닥판(floor) 위에 살짝 띄워서 겹쳐 그림.
-    // 이미지 서버가 CORS를 막아두면 텍스처 로드가 조용히 실패할 수 있는데, 그럴 땐 그냥 기존 단색
-    // 바닥이 그대로 보임(별도 에러 처리 불필요).
     if (plan.floorplanImageUrl && plan.imageBBox){
       var texLoader = new THREE.TextureLoader();
       texLoader.crossOrigin = "anonymous";
-      // WebGL 텍스처로 쓰려면 CORS가 허용된 곳에서 와야 하는데(2D <img>로 그냥 "보여주기"랑은 다른
-      // 규칙임), 네이버 이미지 서버는 CORS 헤더를 안 붙여줘서 우리 서버가 대신 받아와 넘겨주는
-      // 프록시(/api/image-proxy)를 거쳐서 불러옴.
       texLoader.load("/api/image-proxy?url=" + encodeURIComponent(plan.floorplanImageUrl), function(tex){
         var bb = plan.imageBBox;
         tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -1005,8 +1041,6 @@
         tex.repeat.set(Math.max(0.001, bb.maxU - bb.minU), Math.max(0.001, bb.maxV - bb.minV));
         tex.offset.set(bb.minU, 1 - bb.maxV);
         tex.needsUpdate = true;
-        // MeshStandardMaterial을 쓰면 씬 조명(헤미스피어+directional 2개)이 겹쳐 사진이 하얗게
-        // 뜨는 문제가 있어서, 조명 영향을 안 받고 원본 색 그대로 보여주는 MeshBasicMaterial로 둠.
         var photoFloor = new THREE.Mesh(
           new THREE.PlaneGeometry(b.w, b.d),
           new THREE.MeshBasicMaterial({ map: tex })
@@ -1014,7 +1048,7 @@
         photoFloor.rotation.x = -Math.PI/2;
         photoFloor.position.set(center.x, -0.015, center.z);
         scene.add(photoFloor);
-      }, undefined, function(){ /* 로드 실패 시 무시 — 기존 단색 바닥만 보임 */ });
+      }, undefined, function(){ });
     }
 
     var wallColor = new THREE.Color(getCss("--blueprint"));
@@ -1023,7 +1057,7 @@
 
     function buildWallPiece(sx, sy, ex, ey, thickness){
       var segLen = Math.hypot(ex-sx, ey-sy);
-      if (segLen < 0.03) return; // skip slivers left by a door right at a corner
+      if (segLen < 0.03) return; 
       var geo = new THREE.BoxGeometry(segLen, wallHeight, thickness);
       var mat = new THREE.MeshStandardMaterial({ color: wallColor, roughness:0.85, metalness:0.05 });
       var mesh = new THREE.Mesh(geo, mat);
@@ -1036,15 +1070,13 @@
       scene.add(edges);
     }
 
-    // seg: [x1,y1,x2,y2]. doors: [{pos:0-1 대략 위치, width:문 폭(m)}, ...] on this segment.
-    // 문이 있으면 그 구간만 벽을 비워(뚫어) 통로를 만든다.
     function addWall(seg, thickness, doors){
       var x1=seg[0], y1=seg[1], x2=seg[2], y2=seg[3];
       var dx = x2-x1, dy = y2-y1;
       var length = Math.hypot(dx, dy);
       if (length < 0.001) return;
       var ux = dx/length, uy = dy/length;
-      var ext = thickness/2; // 벽 진짜 끝(코너)만 살짝 늘려서 이웃 벽과 자연스럽게 맞물리게 함
+      var ext = thickness/2; 
 
       if (!doors || doors.length === 0){
         buildWallPiece(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext, thickness);
@@ -1067,27 +1099,27 @@
       buildWallPiece(x1 + ux*cursor, y1 + uy*cursor, x2+ux*ext, y2+uy*ext, thickness);
     }
 
-    function doorsOnWall(wallType, index){
-      if (!plan.doors) return null;
-      return plan.doors.filter(function(d){ return d.wall === wallType && d.index === index; });
-    }
-    // 문 뚫기는 AI가 잡아준 문 위치가 아직 부정확할 때가 있어서 당분간 꺼둠 — 지금은 벽만 그대로 세움.
-    // (다시 켜려면 아래 두 줄을 addWall(s, 0.22, doorsOnWall("outer", i)) 형태로 되돌리면 됨)
     plan.outer.forEach(function(s){ addWall(s, 0.22); });
     plan.inner.forEach(function(s){ addWall(s, 0.12); });
 
-    // ---- 가구 배치: 간단한 3D 프리미티브를 바닥 평면 위에서 드래그할 수 있게 구성 ----
-    // 가구의 좌표/회전은 각 mesh.userData에 보관되어, 카메라 회전과 분리되어 동작함.
     var furnitureEditor = opts.furnitureEditor === true;
     var furniture = [], selectedFurniture = null, furnitureDragging = false;
+    var isRotateMode = false, isRotating = false, dragAngleOffset = 0;
     var raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
     var dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     var dragOffset = new THREE.Vector3();
     var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
+    
+    var rotateBtn; 
+    var furnitureColorPicker; 
 
-    function furniturePart(geo, color, x, y, z){
-      var m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:color, roughness:.78}));
-      m.position.set(x,y,z); return m;
+    function furniturePart(geo, color, x, y, z, colorable){
+      var mat = new THREE.MeshStandardMaterial({color:color, roughness:.78});
+      var m = new THREE.Mesh(geo, mat);
+      m.position.set(x,y,z);
+      // 색상 변경이 가능한 파츠인지 식별
+      m.userData.colorable = (colorable !== false);
+      return m;
     }
     function addFurniture(type, x, z){
       if (!furnitureEditor) return;
@@ -1104,20 +1136,20 @@
       } else if (type === 'bed'){
         group.add(furniturePart(new THREE.BoxGeometry(1.5,.26,2.0),c,0,.28,0));
         group.add(furniturePart(new THREE.BoxGeometry(1.5,.55,.14),c,0,.6,.9));
-        group.add(furniturePart(new THREE.BoxGeometry(1.24,.10,.62),0xe9edf0,0,.46,-.35));
+        group.add(furniturePart(new THREE.BoxGeometry(1.24,.10,.62),0xe9edf0,0,.46,-.35, false)); 
       } else {
-        group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0));
+        group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0, false)); 
         group.add(furniturePart(new THREE.SphereGeometry(.34,16,12),c,0,.6,0));
       }
       group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
       group.userData.isFurniture = true; group.userData.type = type;
-      // 기준 실제 치수(m): X=가로, Z=세로, Y=높이. scale은 이 기준값 대비로 적용한다.
       group.userData.baseSize = type === 'sofa' ? {w:1.55,d:.72,h:.94} :
         type === 'table' ? {w:1.04,d:1.04,h:.66} :
         type === 'bed' ? {w:1.5,d:2.0,h:.88} : {w:.68,d:.68,h:.94};
       group.userData.size = {w:group.userData.baseSize.w,d:group.userData.baseSize.d,h:group.userData.baseSize.h};
       scene.add(group); furniture.push(group); selectFurniture(group);
     }
+    
     var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput;
     function syncSizePanel(){
       if (!sizePanel) return;
@@ -1131,7 +1163,6 @@
       if (!selectedFurniture) return;
       var base=selectedFurniture.userData.baseSize, dims=selectedFurniture.userData.size;
       var w=parseFloat(sizeWidthInput.value), d=parseFloat(sizeDepthInput.value), h=parseFloat(sizeHeightInput.value);
-      // 비정상 값/너무 작은 값은 무시하여 오브젝트가 사라지는 것을 방지한다.
       if (isFinite(w) && w>=.1) dims.w=w;
       if (isFinite(d) && d>=.1) dims.d=d;
       if (isFinite(h) && h>=.1) dims.h=h;
@@ -1141,7 +1172,29 @@
     function selectFurniture(obj){
       if (selectedFurniture) selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x000000); });
       selectedFurniture = obj || null;
-      if (selectedFurniture) selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x4a2600); });
+      if (selectedFurniture) {
+          selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x4a2600); });
+          
+          if (furnitureColorPicker) {
+              var foundColor = false;
+              selectedFurniture.traverse(function(child) {
+                  if (!foundColor && child.isMesh && child.userData.colorable !== false) {
+                      furnitureColorPicker.value = '#' + child.material.color.getHexString();
+                      foundColor = true;
+                  }
+              });
+          }
+      }
+      
+      // 가구가 선택 해제되면 회전 모드도 종료
+      if (!selectedFurniture && isRotateMode) {
+          isRotateMode = false;
+          if (rotateBtn) {
+              rotateBtn.style.background = '';
+              rotateBtn.style.borderColor = '';
+              rotateBtn.innerHTML = '↻ 회전';
+          }
+      }
       syncSizePanel();
     }
     function pointerToFloor(e, target){
@@ -1157,13 +1210,46 @@
       pointer.x=((e.clientX-rect.left)/rect.width)*2-1; pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;
       raycaster.setFromCamera(pointer,camera);
       var hit=raycaster.intersectObjects(furniture,true)[0];
-      if(!hit) { selectFurniture(null); return false; }
-      var obj=findFurniture(hit); if(!obj) return false;
+
+      if (!hit) {
+          selectFurniture(null);
+          return false; // 빈 공간 클릭 시 선택 해제 후 카메라 회전 허용
+      }
+      
+      var obj = findFurniture(hit);
+      if (!obj) return false;
+      
+      selectFurniture(obj);
+
+      // 회전 모드가 활성화되어 있다면 위치 이동 대신 회전을 시작
+      if (isRotateMode) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+              var angle = Math.atan2(point.x - obj.position.x, point.z - obj.position.z);
+              dragAngleOffset = obj.rotation.y - angle;
+              isRotating = true;
+              canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+              return true;
+          }
+      }
+
+      // 회전 모드가 아니라면 기본 위치 이동 시작
       var point=new THREE.Vector3(); pointerToFloor(e,point);
-      dragOffset.copy(obj.position).sub(point); selectFurniture(obj); furnitureDragging=true;
-      canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId); return true;
+      dragOffset.copy(obj.position).sub(point); 
+      furnitureDragging=true;
+      canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId); 
+      return true;
     }
     function dragFurniture(e){
+      // 회전 중일 때 드래그 방향에 맞춰 회전
+      if (isRotating && selectedFurniture) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+              var angle = Math.atan2(point.x - selectedFurniture.position.x, point.z - selectedFurniture.position.z);
+              selectedFurniture.rotation.y = angle + dragAngleOffset;
+          }
+          return true;
+      }
       if(!furnitureDragging || !selectedFurniture) return false;
       var point=new THREE.Vector3(); if(pointerToFloor(e,point)){
         selectedFurniture.position.x=Math.max(0.3,Math.min(b.w-.3,point.x+dragOffset.x));
@@ -1171,46 +1257,150 @@
       } return true;
     }
     function endFurnitureDrag(e){
+      if (isRotating) {
+          isRotating = false;
+          if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+          return true;
+      }
       if(!furnitureDragging) return false; furnitureDragging=false;
       if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
       return true;
     }
-    if (furnitureEditor){
-      var toolbar=document.createElement('div'); toolbar.className='furniture-toolbar';
-      [['sofa','+ 소파'],['table','+ 테이블'],['bed','+ 침대'],['plant','+ 식물']].forEach(function(item){
-        var btn=document.createElement('button'); btn.type='button'; btn.className='furniture-tool'; btn.textContent=item[1];
-        btn.addEventListener('click',function(){ addFurniture(item[0]); }); toolbar.appendChild(btn);
+
+    if (furnitureEditor) {
+      // 1. 바닥에 심즈 스타일 그리드(격자) 추가
+      var gridHelper = new THREE.GridHelper(size * 1.5, Math.floor(size * 3), 0xffffff, 0xffffff);
+      gridHelper.material.opacity = 0.35;
+      gridHelper.material.transparent = true;
+      gridHelper.position.set(center.x, 0.01, center.z); 
+      scene.add(gridHelper);
+
+      // 2. 하단 UI 패널 컨테이너 생성
+      var bottomPanel = document.createElement('div');
+      bottomPanel.className = 'sims-bottom-panel';
+
+      // 2-1. 좌측 색상 팔레트 영역 (OS 네이티브 컬러 피커)
+      var palette = document.createElement('div');
+      palette.className = 'sims-color-picker-panel';
+      
+      var paletteLabel = document.createElement('div');
+      paletteLabel.style.cssText = 'font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-bottom: 8px;';
+      paletteLabel.textContent = '🎨 가구 색상 변경';
+      palette.appendChild(paletteLabel);
+
+      furnitureColorPicker = document.createElement('input');
+      furnitureColorPicker.type = 'color';
+      furnitureColorPicker.value = '#c98f72';
+      
+      furnitureColorPicker.addEventListener('input', function(e) {
+          if (selectedFurniture) {
+              var hex = parseInt(e.target.value.replace('#', ''), 16);
+              selectedFurniture.traverse(function(child) {
+                  if (child.isMesh && child.userData.colorable !== false) {
+                      child.material.color.setHex(hex);
+                  }
+              });
+          }
       });
-      var rotateBtn=document.createElement('button'); rotateBtn.type='button'; rotateBtn.className='furniture-tool'; rotateBtn.textContent='↻ 회전';
-      rotateBtn.addEventListener('click',function(){ if(selectedFurniture) selectedFurniture.rotation.y+=Math.PI/4; }); toolbar.appendChild(rotateBtn);
-      var removeBtn=document.createElement('button'); removeBtn.type='button'; removeBtn.className='furniture-tool danger'; removeBtn.textContent='삭제';
-      removeBtn.addEventListener('click',function(){ if(!selectedFurniture) return; scene.remove(selectedFurniture); furniture=furniture.filter(function(f){return f!==selectedFurniture;}); selectFurniture(null); }); toolbar.appendChild(removeBtn);
-      container.appendChild(toolbar);
-      sizePanel=document.createElement('div'); sizePanel.className='furniture-size-panel'; sizePanel.hidden=true;
-      sizePanel.innerHTML='<strong>선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><label class="furniture-dimension">높이 <input type="number" min="0.1" step="0.05" aria-label="높이"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
-      var sizeInputs=sizePanel.querySelectorAll('input'); sizeWidthInput=sizeInputs[0]; sizeDepthInput=sizeInputs[1]; sizeHeightInput=sizeInputs[2];
-      // 숫자를 여러 자리/소수점까지 자연스럽게 직접 입력할 수 있도록 입력 중에는 값을 덮어쓰지 않고,
-      // Enter를 누르거나 입력칸 밖으로 나갈 때만 3D 크기에 적용한다.
+      palette.appendChild(furnitureColorPicker);
+
+      var paletteHint = document.createElement('div');
+      paletteHint.style.cssText = 'font-size: 0.72rem; color: var(--ink-soft); margin-top: 8px; line-height: 1.4;';
+      paletteHint.innerHTML = '클릭하면 무한한 스펙트럼 및<br>RGB 색상 지정이 가능합니다.';
+      palette.appendChild(paletteHint);
+
+      bottomPanel.appendChild(palette);
+
+      // 2-2. 중앙 가구 아이템 목록
+      var itemsPanel = document.createElement('div');
+      itemsPanel.className = 'sims-items';
+      
+      var furnitureList = [
+        { id: 'sofa', label: '소파', icon: '🛋️' },
+        { id: 'table', label: '테이블', icon: '🪑' },
+        { id: 'bed', label: '침대', icon: '🛏️' },
+        { id: 'plant', label: '식물', icon: '🪴' }
+      ];
+      
+      furnitureList.forEach(function(item) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sims-btn';
+        btn.innerHTML = `<span style="font-size:1.4rem; margin-bottom:4px;">${item.icon}</span>${item.label}`;
+        btn.addEventListener('click', function() { addFurniture(item.id); });
+        itemsPanel.appendChild(btn);
+      });
+      bottomPanel.appendChild(itemsPanel);
+
+      // 2-3. 우측 액션(회전 모드 토글, 삭제) 영역
+      var actionsPanel = document.createElement('div');
+      actionsPanel.className = 'sims-actions';
+      
+      rotateBtn = document.createElement('button');
+      rotateBtn.type = 'button';
+      rotateBtn.className = 'sims-btn';
+      rotateBtn.innerHTML = '↻ 회전';
+      rotateBtn.addEventListener('click', function() { 
+          if (!selectedFurniture) {
+              alert("회전할 가구를 먼저 선택해주세요.");
+              return;
+          }
+          isRotateMode = !isRotateMode;
+          if (isRotateMode) {
+              rotateBtn.style.background = 'var(--blueprint-soft)';
+              rotateBtn.style.borderColor = 'var(--blueprint)';
+              rotateBtn.innerHTML = '↻ 회전 중...';
+          } else {
+              rotateBtn.style.background = '';
+              rotateBtn.style.borderColor = '';
+              rotateBtn.innerHTML = '↻ 회전';
+          }
+      });
+      actionsPanel.appendChild(rotateBtn);
+
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'sims-btn danger';
+      removeBtn.innerHTML = '🗑️ 삭제';
+      removeBtn.addEventListener('click', function() { 
+        if(!selectedFurniture) return; 
+        scene.remove(selectedFurniture); 
+        furniture = furniture.filter(function(f){ return f !== selectedFurniture; }); 
+        selectFurniture(null); 
+      });
+      actionsPanel.appendChild(removeBtn);
+      bottomPanel.appendChild(actionsPanel);
+
+      container.appendChild(bottomPanel);
+
+      // 3. 기존 우측 상단 사이즈 조절 패널
+      sizePanel = document.createElement('div'); 
+      sizePanel.className = 'furniture-size-panel'; 
+      sizePanel.hidden = true;
+      sizePanel.innerHTML = '<strong>선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><label class="furniture-dimension">높이 <input type="number" min="0.1" step="0.05" aria-label="높이"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
+      var sizeInputs = sizePanel.querySelectorAll('input'); 
+      sizeWidthInput = sizeInputs[0]; sizeDepthInput = sizeInputs[1]; sizeHeightInput = sizeInputs[2];
+      
       sizeInputs.forEach(function(input){
-        input.addEventListener('change',applyFurnitureSize);
-        input.addEventListener('blur',applyFurnitureSize);
-        input.addEventListener('keydown',function(e){ if(e.key === 'Enter'){ e.preventDefault(); applyFurnitureSize(); input.blur(); } });
+        input.addEventListener('change', applyFurnitureSize);
+        input.addEventListener('blur', applyFurnitureSize);
+        input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); applyFurnitureSize(); input.blur(); } });
       });
       container.appendChild(sizePanel);
-      var editorHint=document.createElement('span'); editorHint.className='furniture-editor-hint'; editorHint.textContent='가구를 추가한 뒤 3D 화면에서 드래그해 배치하세요 · 빈 곳을 드래그하면 시점을 회전합니다'; container.appendChild(editorHint);
-      addFurniture('sofa', center.x-size*.18, center.z); addFurniture('table', center.x+size*.13, center.z-size*.12); selectFurniture(null);
+
+      // 초기 기본 가구 배치
+      addFurniture('sofa', center.x - size*.18, center.z); 
+      addFurniture('table', center.x + size*.13, center.z - size*.12); 
+      selectFurniture(null);
     }
 
-    // orbit state — start from a slightly top-down "dollhouse" angle so the
-    // room layout reads clearly before anyone drags
     var radius = size * 1.85;
-    var theta = Math.PI/4;    // azimuth
-    var phi = Math.PI/4.3;    // polar (from top)
-    var TOP_PHI = 0.25;       // 마우스로 드래그해서 올라갈 수 있는 최소각(0에 가까울수록 정탑뷰지만,
-                               // 드래그 중 phi가 0에 너무 가까워지면 회전축이 흔들려서 여유를 둠)
-    var trueTopView = false;  // 탑뷰 버튼으로 "진짜" 바로 위(phi≈0)에서 보는 중인지
-    var spinning = opts.autoRotate !== false; // 지금 실제로 빙글빙글 도는 중인지
-    var userPaused = false;   // 일시정지 버튼을 눌러서 멈춘 상태면 true — 드래그 끝나도 자동으로 안 돌아감
+    var theta = Math.PI/4;    
+    var phi = Math.PI/4.3;    
+    var TOP_PHI = 0.25;       
+    var trueTopView = false;  
+    var spinning = opts.autoRotate !== false; 
+    var userPaused = false;   
     var dragging = false, lastX = 0, lastY = 0, idleTimer = null;
 
     function updateCamera(){
@@ -1218,8 +1408,6 @@
       var y = radius * Math.cos(phi);
       var z = center.z + radius * Math.sin(phi) * Math.sin(theta);
       camera.position.set(x, y, z);
-      // 카메라가 거의 바로 위에 있을 땐 up 벡터가 시선 방향과 겹쳐서(짐벌락) lookAt이 불안정해지므로,
-      // 그때만 up을 옆으로 돌려서 화면이 안정적으로 보이게 함(일반 각도에서는 원래대로 y축 위).
       camera.up.set(0, trueTopView ? 0 : 1, trueTopView ? -1 : 0);
       camera.lookAt(center);
     }
@@ -1264,7 +1452,6 @@
       updateCamera();
     }, { passive:false });
 
-    // ---- 탑뷰 / 일시정지-재생 컨트롤 버튼 ----
     var TOP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>';
     var PAUSE_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg>';
     var PLAY_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5-13-7.5z"/></svg>';
@@ -1290,7 +1477,7 @@
       userPaused = true;
       spinning = false;
       trueTopView = true;
-      phi = 0.0001; // 거의 정확히 바로 위(0이면 계산이 불안정해질 수 있어 아주 살짝만 여유)
+      phi = 0.0001; 
       updateCamera();
       refreshPlayPauseBtn();
       topViewBtn.classList.add("active");
@@ -1308,7 +1495,6 @@
       }
       refreshPlayPauseBtn();
     });
-    // 드래그로 직접 각도를 바꾸면 "탑뷰 고정" 표시는 해제(다른 각도로 봤으니까) + 정탑뷰용 up벡터도 원복
     canvas.addEventListener("pointerdown", function(){
       topViewBtn.classList.remove("active");
       if (trueTopView){
@@ -1351,8 +1537,7 @@
         renderer.dispose();
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
         if (viewControls.parentNode) viewControls.parentNode.removeChild(viewControls);
-        if (toolbar && toolbar.parentNode) toolbar.parentNode.removeChild(toolbar);
-        if (editorHint && editorHint.parentNode) editorHint.parentNode.removeChild(editorHint);
+        if (typeof bottomPanel !== 'undefined' && bottomPanel.parentNode) bottomPanel.parentNode.removeChild(bottomPanel);
         if (sizePanel && sizePanel.parentNode) sizePanel.parentNode.removeChild(sizePanel);
       }
     };
@@ -1419,9 +1604,7 @@
   document.querySelectorAll(".js-open-modal").forEach(function(b){ b.addEventListener("click", openModal); });
   document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
   document.getElementById("modalCloseBtn2").addEventListener("click", closeModal);
-  // 오버레이를 눌러서 닫는 기능은 "누르기 시작한 자리"도 오버레이여야만 동작하게 함.
-  // (모달 안에서 3D 뷰를 드래그하다 마우스가 모달 밖으로 나간 채 손을 떼면 click 이벤트의
-  //  target이 overlay로 잡혀서 의도치 않게 창이 닫히는 문제가 있었음 — X 버튼으로만 닫히길 원함)
+  
   var overlayMouseDownOnSelf = false;
   overlay.addEventListener("mousedown", function(e){ overlayMouseDownOnSelf = (e.target === overlay); });
   overlay.addEventListener("click", function(e){
@@ -1477,8 +1660,6 @@
     openModal();
   });
 
-  // "편집" — 방금 그린 벽을 그대로 유지한 채 트레이싱 화면으로 돌아가서 이어서 고칠 수 있게 함
-  // (startTracing()과 달리 traceChains/traceCurrent를 비우지 않음)
   document.getElementById("nextStepBtn").addEventListener("click", function(){
     if (!furniturePlan){
       alert("먼저 3D 변환이 완료된 도면을 준비해 주세요.");
@@ -1488,10 +1669,10 @@
       furnitureMode = true;
       modalResultBox.classList.add("furniture-fullscreen");
       document.getElementById("resultStageTitle").innerHTML = '가구 배치 작업 화면 <small style="font-weight:400;color:var(--ink-soft);">· 드래그 앤 드롭</small>';
-      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 드래그해 배치하세요. 빈 공간을 드래그하면 시점이 회전합니다.";
+      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. '회전' 버튼을 누른 뒤 마우스를 돌리면 회전도 가능합니다.";
       this.textContent = "가구 배치 완료";
       if (resultScene){ resultScene.dispose(); resultScene = null; }
-      resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동</span>';
+      resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동 및 회전</span>';
       resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true });
     } else {
       alert("가구 배치가 완료되었습니다. 필요하면 이 화면에서 계속 수정할 수 있어요.");
@@ -1505,15 +1686,11 @@
     traceRedraw();
   });
 
-  // AI한테 벽 좌표를 뽑아달라고 시켜봤는데(NVIDIA NIM의 무료 Gemma 4 비전 모델), 아무리 프롬프트를
-  // 고치고 영상처리로 보정해도 실제 도면과 비율·개수가 계속 안 맞았음. 그래서 방향을 바꿔서, 사용자가
-  // 도면 사진 위에 직접 클릭으로 벽 선을 그리면 그걸 그대로 3D로 세우는 방식으로 교체함 — AI 호출도
-  // 서버 API도 필요 없이 브라우저에서 바로 끝남. (SVG_NS는 위쪽 "2. 2D SVG 도면 렌더링" 섹션에서 정의됨)
   var SVG_TRACE_NS = "http://www.w3.org/2000/svg";
   var traceComplex = null;
   var tracePlan = null;
-  var traceChains = [];     // 완성된 벽 체인들: [[{u,v},{u,v},...], ...]
-  var traceCurrent = [];    // 지금 그리고 있는 체인: [{u,v},...]
+  var traceChains = [];     
+  var traceCurrent = [];    
 
   function traceEl(name, attrs){
     var n = document.createElementNS(SVG_TRACE_NS, name);
@@ -1528,10 +1705,6 @@
     return n;
   }
 
-  // 벽 보정: 기본은 끔(그린 그대로) — 체크하면 각 벽 선분을 가로/세로 중 더 가까운 쪽으로 딱 맞추고
-  // (첫 점은 그대로 두고, 그다음 점부터 이전 보정점 기준으로 가로/세로 이동만 적용),
-  // 서로 가까운 벽 끝점들(모서리)을 하나로 붙여서 틈을 메움. 원본 좌표(traceChains/traceCurrent)는
-  // 건드리지 않고, 화면에 그리거나 3D로 변환할 때만 보정된 사본을 사용함(체크 해제하면 바로 원상복구).
   function snapChainAxis(chain){
     if (chain.length === 0) return [];
     var out = [{ u: chain[0].u, v: chain[0].v }];
@@ -1648,7 +1821,7 @@
     tracePlan = plan;
     traceChains = [];
     traceCurrent = [];
-    traceCorrectToggle.checked = false; // 기본값: 보정 끔(그린 그대로)
+    traceCorrectToggle.checked = false; 
     showOnly(panelTrace);
     traceImg.src = imageUrl;
     traceRedraw();
@@ -1657,7 +1830,7 @@
   traceDoneBtn.addEventListener("click", function(){
     if (traceCurrent.length >= 2){ traceChains.push(traceCurrent); traceCurrent = []; }
 
-    var geo = traceDisplayGeometry(); // 보정 체크돼 있으면 보정된 좌표로, 아니면 원본 그대로
+    var geo = traceDisplayGeometry(); 
     var allPoints = [];
     var segs = [];
     geo.chains.forEach(function(chain){
@@ -1690,8 +1863,6 @@
 
     tracePlan.wallData = {
       outer: walls, inner: [], rooms: [], width: widthM, depth: depthM,
-      // 3D 바닥에 원본 도면 사진을 그대로 깔기 위한 정보 — 그린 벽들의 바운딩박스(이미지 비율 0~1)를
-      // 그대로 텍스처 크롭 영역으로 씀(벽 좌표를 미터로 바꿀 때 쓴 것과 동일한 박스라 딱 맞아떨어짐).
       floorplanImageUrl: tracePlan.floorplanImageUrl,
       imageBBox: { minU: minU, minV: minV, maxU: maxU, maxV: maxV }
     };
