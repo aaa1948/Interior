@@ -1635,10 +1635,26 @@
       if (furnitureEditor && endFurnitureDrag(e)) return;
       onUp();
     });
+    // Alt를 누른 채 스크롤(휠/트랙패드)하면 3D 모델링 툴처럼 화면 기준 상하좌우로 카메라(+중심점)를 이동(팬).
+    // Alt 없이 스크롤하면 기존처럼 확대/축소.
+    var panRight = new THREE.Vector3(), panUp = new THREE.Vector3(), panForward = new THREE.Vector3();
+    function panCamera(dx, dy){
+      camera.getWorldDirection(panForward);
+      panRight.crossVectors(panForward, camera.up).normalize();
+      panUp.crossVectors(panRight, panForward).normalize();
+      var panScale = size * 0.0018;
+      center.addScaledVector(panRight, dx * panScale);
+      center.addScaledVector(panUp, -dy * panScale);
+      updateCamera();
+    }
     canvas.addEventListener("wheel", function(e){
       e.preventDefault();
-      radius = Math.min(Math.max(radius + e.deltaY * 0.01 * (size*0.05), size*0.8), size*3.2);
-      updateCamera();
+      if (e.altKey) {
+        panCamera(e.deltaX, e.deltaY);
+      } else {
+        radius = Math.min(Math.max(radius + e.deltaY * 0.01 * (size*0.05), size*0.8), size*3.2);
+        updateCamera();
+      }
     }, { passive:false });
 
     // ---- 탑뷰 / 일시정지-재생 컨트롤 버튼 ----
