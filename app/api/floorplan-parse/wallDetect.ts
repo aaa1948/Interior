@@ -208,3 +208,4 @@ export function detectWalls(gray: Uint8Array | Buffer, width: number, height: nu
     wallBBoxFrac: { x0: minX / width, y0: minY / height, x1: maxX / width, y1: maxY / height },
   };
 }
+

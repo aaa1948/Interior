@@ -28,3 +28,4 @@ export async function GET(request: Request) {
     return new Response("fetch failed: " + (err instanceof Error ? err.message : String(err)), { status: 502 });
   }
 }
+

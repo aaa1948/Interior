@@ -248,3 +248,4 @@ export async function POST(request: Request) {
     rooms: roomsMeters,
   });
 }
+
