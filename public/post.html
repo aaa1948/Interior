@@ -37,6 +37,7 @@
     --line:#DAD3C3;
     --shadow:rgba(35,38,43,.10);
     --focus:#2F5D8A;
+    --wall-floor:#EFE9DA;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -52,6 +53,7 @@
       --line:#2B3138;
       --shadow:rgba(0,0,0,.45);
       --focus:#75ACDB;
+      --wall-floor:#262C33;
     }
   }
   :root[data-theme="dark"]{
@@ -67,6 +69,7 @@
     --line:#2B3138;
     --shadow:rgba(0,0,0,.45);
     --focus:#75ACDB;
+    --wall-floor:#262C33;
   }
 
   *{box-sizing:border-box;}
@@ -174,12 +177,87 @@
   }
 
   /* ---------- 게시물 상세 ---------- */
-  .post-wrap{max-width:760px; margin:0 auto;}
+  /* 처음엔 글처럼 가운데 정렬(760px)로 폭을 좁게 잡았는데, 다른 페이지들처럼 왼쪽 정렬 +
+     화면 폭을 꽉 채우도록 max-width 자체를 없앰(오른쪽에 빈 공간 안 남게). */
+  .post-wrap{max-width:none; margin:0;}
 
   .post-head{display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin-bottom:22px;}
   .post-head h1{font-size:clamp(1.5rem,3vw,2.05rem);}
   .post-meta{font-size:.86rem; color:var(--ink-soft); display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
 
+  /* 실제 배치 데이터(wallData)가 있는 게시물 — 왼쪽은 벽을 하나씩 화살표로 넘겨보는 "벽 뷰",
+     오른쪽은 인터랙티브 3D(드래그 회전 + 휠 줌). 화면 공간을 넉넉하게 쓰도록 aspect-ratio 대신
+     뷰포트 기준 높이를 직접 줌. */
+  .post-view-split{display:flex; gap:16px; margin-bottom:20px;}
+  .post-view-2d, .post-view-3d{
+    flex:1 1 0; min-width:0; height:min(66vh, 660px); position:relative;
+    border-radius:14px; overflow:hidden; border:1px solid var(--line); background:var(--paper-raised);
+  }
+  @media (max-width:760px){ .post-view-split{flex-direction:column;} .post-view-2d, .post-view-3d{height:min(50vh, 420px);} }
+  .post-view-2d canvas, .post-view-3d canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .post-view-3d canvas{cursor:grab;}
+  .post-view-label{
+    position:absolute; top:10px; left:10px; z-index:2; pointer-events:none;
+    font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft);
+    background:color-mix(in srgb, var(--paper-raised) 80%, transparent); padding:3px 9px; border-radius:100px;
+  }
+  .post-view-3d .view-hint{
+    position:absolute; bottom:10px; right:10px; z-index:2; pointer-events:none;
+    font-size:.7rem; color:var(--ink-soft);
+    background:color-mix(in srgb, var(--paper-raised) 80%, transparent); padding:3px 9px; border-radius:100px;
+  }
+  /* 벽 뷰(왼쪽) 패널 맨 위 가운데에 띄우는 조작법 안내 — 드래그/휠 조작이 눈에 잘 안 띄어서 추가함. */
+  .post-view-2d .wall-view-hint{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:2; pointer-events:none;
+    font-size:.7rem; color:var(--ink-soft); white-space:nowrap;
+    background:color-mix(in srgb, var(--paper-raised) 80%, transparent); padding:3px 9px; border-radius:100px;
+  }
+  @media (max-width:600px){ .post-view-2d .wall-view-hint{ font-size:.62rem; padding:3px 7px; } }
+  /* 왼쪽 벽 뷰(post-view-2d) · 오른쪽 인터랙티브 3D(post-view-3d) 패널 둘 다에서 쓰는, 그 패널만
+     브라우저 전체화면으로 띄우는 버튼 — plan3d.html 가구 배치 화면의 전체화면 버튼과 같은
+     자리(우측 상단)·같은 스타일. */
+  .post-view-fullscreen-btn{
+    position:absolute; top:10px; right:10px; z-index:3;
+    padding:7px 12px; border-radius:999px;
+    border:1px solid var(--line); background:color-mix(in srgb, var(--paper-raised) 94%, transparent); color:var(--ink);
+    font:600 .74rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;
+    cursor:pointer; box-shadow:0 2px 10px var(--shadow); white-space:nowrap;
+  }
+  .post-view-fullscreen-btn:hover{ background:var(--blueprint-soft); border-color:var(--blueprint); }
+  @media (max-width:600px){ .post-view-fullscreen-btn{ top:8px; right:8px; padding:6px 10px; font-size:.66rem; } }
+  /* 인터랙티브(오른쪽) 3D 패널 전용 — 전체화면 버튼 바로 밑에 뜨는 탑뷰 토글 버튼. plan3d.html
+     가구 배치 화면의 .view-btn과 같은 스타일(작은 정사각 아이콘 버튼, 켜지면 강조색으로 채움). */
+  .post-view-topview-btn{
+    position:absolute; top:48px; right:10px; z-index:3;
+    width:30px; height:30px; border-radius:8px;
+    border:1px solid var(--line); background:color-mix(in srgb, var(--paper-raised) 88%, transparent);
+    color:var(--ink); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 1px 3px var(--shadow);
+  }
+  .post-view-topview-btn:hover{ border-color:var(--blueprint); color:var(--blueprint); }
+  .post-view-topview-btn.active{ background:var(--blueprint); color:#fff; border-color:var(--blueprint); }
+  .post-view-topview-btn svg{ display:block; }
+  @media (max-width:600px){ .post-view-topview-btn{ top:42px; right:8px; width:26px; height:26px; } }
+  .wall-view-nav{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:2;
+    display:flex; align-items:center; gap:8px;
+    background:color-mix(in srgb, var(--paper-raised) 88%, transparent);
+    border:1px solid var(--line); border-radius:100px; padding:4px 6px;
+  }
+  .wall-nav-btn{
+    appearance:none; border:none; background:transparent; cursor:pointer;
+    width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:1.05rem; line-height:1; color:var(--ink); flex:none;
+    transition:background .15s ease, color .15s ease;
+  }
+  .wall-nav-btn:hover{background:var(--blueprint-soft); color:var(--blueprint);}
+  .wall-nav-btn:focus-visible{outline:2px solid var(--focus); outline-offset:1px;}
+  .wall-nav-count{
+    font-size:.76rem; font-weight:600; color:var(--ink-soft); font-variant-numeric:tabular-nums;
+    min-width:34px; text-align:center;
+  }
+
+  /* 배치 데이터가 없는 옛 샘플 게시물 — 캡처 썸네일/아이콘 하나만 보여주는 이전 방식(대체용) */
   .post-thumb{
     position:relative; border-radius:16px; overflow:hidden; aspect-ratio:16/10;
     background:linear-gradient(155deg, var(--blueprint-soft), var(--paper) 78%);
@@ -302,6 +380,7 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -473,6 +552,494 @@
     }
   })();
 
+  /* ---------- 3D 뷰어 재구성 (왼쪽 벽 뷰 + 오른쪽 인터랙티브) ----------
+     배치 데이터(wallData.outer/inner + furniture)가 저장된 게시물은 이 함수로 벽/가구를 다시
+     그림. plan3d.html의 createWallScene()을 그대로 갖다 쓰지 않은 이유: 그 함수는 편집기 UI
+     (하단 패널·크기 패널·회전 핸들·드래그 배치 등)까지 통째로 붙어있어서, 여기서는 "보기 전용"만
+     필요한 이 페이지엔 안 맞음 — 벽/가구를 다시 그리는 핵심 로직만 가볍게 복제함.
+     opts.interactive:true → 오른쪽 패널(드래그 회전 + 휠 줌).
+     opts.wallView:true → 왼쪽 패널(바깥벽을 하나씩 화살표로 넘겨보는 뷰 — 실내에서 그 벽을
+     정면으로 바라보는 카메라로 전환. 마우스 조작 없이 nextWall()/prevWall()로만 넘김). */
+  function ohGetCssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  var OH_FURN_COLORS_NUM = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
+
+  function ohBoundsFromWallData(wallData){
+    var w = wallData.width || 0, d = wallData.depth || 0;
+    (wallData.outer || []).concat(wallData.inner || []).forEach(function(s){
+      w = Math.max(w, s[0], s[2]);
+      d = Math.max(d, s[1], s[3]);
+    });
+    return { w: w, d: d };
+  }
+
+  function ohMountRoomScene(container, wallData, furnitureList, opts){
+    opts = opts || {};
+    var interactive = opts.interactive === true;
+    if (!window.THREE){
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:16px;text-align:center;font-size:.82rem;color:var(--ink-soft);">3D 라이브러리를 불러오지 못했어요.</div>';
+      return null;
+    }
+    var b = ohBoundsFromWallData(wallData);
+    var width = container.clientWidth || 300, height = container.clientHeight || 250;
+
+    var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height, false);
+    container.appendChild(renderer.domElement);
+
+    var scene = new THREE.Scene();
+    // far를 plan3d.html의 가구 배치 화면과 똑같이 200으로 맞춤(원래 400) — near(0.1)와의 비율이
+    // 클수록 깊이버퍼 정밀도가 나빠져서, 바닥(-0.02)과 벽 밑동(0) 사이 아주 좁은 틈에서 줌인할 때
+    // z-fighting(깜빡임/바닥이 이상한 위치에 있는 것처럼 보이는 현상)이 났었음.
+    var camera = new THREE.PerspectiveCamera(42, width/height, 0.1, 200);
+    var center = new THREE.Vector3(b.w/2, 0, b.d/2);
+    var size = Math.max(b.w, b.d, 4);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a3a, 0.9));
+    var dir = new THREE.DirectionalLight(0xffffff, 0.95);
+    dir.position.set(size*0.9, size*1.6, size*0.4);
+    scene.add(dir);
+    var fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    fillLight.position.set(-size*0.8, size*0.9, -size*0.7);
+    scene.add(fillLight);
+
+    var floorMargin = Math.max(0.8, size * 0.12);
+    var floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(b.w + floorMargin*2, b.d + floorMargin*2),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color(ohGetCssVar("--wall-floor")), roughness:1 })
+    );
+    floor.rotation.x = -Math.PI/2;
+    // 벽 밑동(y=0)과의 틈을 좀 더 넉넉히 벌려서(-0.02 → -0.06) 가까이 줌인해도 깜빡이거나
+    // 이상하게 겹쳐 보이지 않게 함.
+    floor.position.set(center.x, -0.06, center.z);
+    scene.add(floor);
+
+    var floorLine = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(b.w, b.d)),
+      new THREE.LineBasicMaterial({ color: new THREE.Color(ohGetCssVar("--line")) })
+    );
+    floorLine.rotation.x = -Math.PI/2;
+    floorLine.position.set(center.x, -0.01, center.z);
+    scene.add(floorLine);
+
+    var wallColor = new THREE.Color(ohGetCssVar("--blueprint"));
+    var edgeColor = new THREE.Color(ohGetCssVar("--blueprint-deep"));
+    var wallHeight = 2.6;
+    // 벽 뷰(opts.wallView)와 오른쪽 인터랙티브(opts.interactive) 패널 둘 다 씀. 벽 뷰는 그 벽에서
+    // 줌아웃(카메라가 벽에서 점점 멀어짐)하면 그 벽 하나만(=targetMesh) 점점 투명해지고, 인터랙티브
+    // 패널은 가구 배치 화면처럼 줌인(카메라가 가까워짐)할수록 벽 전체가 한꺼번에 투명해짐 — 서로
+    // 반대 방향/다른 대상이라 fade 함수를 따로 둠(updateWallViewFade / updateOrbitWallFade).
+    var wallMeshes = [];       // 이 씬의 벽 전체 목록(투명도 리셋용)
+    var outerWallPieces = [];  // {seg, mesh} — 벽 뷰에서 지금 뚫고 나가는 중인 "그 벽"을 geometry로 찾기 위해 바깥벽만 따로 기억
+    // 가구 배치 화면에서 게시할 때 저장해둔 벽별 색(outer 먼저, 그다음 inner 순서 —
+    // plan3d.html의 getWallColors와 정확히 같은 순서로 addWall이 벽을 만들기 때문에 인덱스가
+    // 그대로 대응됨). 옛날 게시물처럼 wallColors가 없으면 null로 두고 기본색(wallColor)을 씀.
+    var wallColorsData = (wallData.wallColors && wallData.wallColors.length) ? wallData.wallColors : null;
+    var wallColorIdx = 0;
+    var WALL_VIEW_FADE_MIN_OPACITY = 0.12;
+    // 벽 뷰 전용 — 전체 벽이 아니라 지금 실제로 카메라가 통과하고 있는 그 벽(targetMesh)만
+    // 투명해지게 함(나머지 벽은 항상 불투명(1) 유지).
+    function updateWallViewFade(dist, minDist, maxDist, targetMesh){
+      if (!wallMeshes.length) return;
+      var span = Math.max(maxDist - minDist, 0.001);
+      var t = Math.min(1, Math.max(0, (dist - minDist) / span));
+      var op = 1 - (1 - WALL_VIEW_FADE_MIN_OPACITY) * t;
+      wallMeshes.forEach(function(m){ m.material.opacity = (m === targetMesh) ? op : 1; });
+    }
+    // 인터랙티브(오른쪽 orbit) 패널 전용 — 벽 뷰(updateWallViewFade)처럼 벽 전체가 아니라, 지금
+    // 카메라가 바라보는 방향에서 가장 정면으로 가로막고 있는 벽 "하나만" 점점 투명해짐(나머지
+    // 벽은 항상 불투명). 카메라~중심 방향과 각 바깥벽의 바깥쪽 법선(nx,nz)을 내적해서 가장 카메라
+    // 쪽을 향한(=가장 카메라를 정면으로 가로막는) 벽을 매번 골라 그 벽만 fade 대상으로 삼음.
+    var ORBIT_ZOOM_MIN, ORBIT_WALL_FADE_START_RADIUS;
+    var ORBIT_WALL_FADE_MIN_OPACITY = 0.12;
+    function updateOrbitWallFade(){
+      if (!wallMeshes.length) return;
+      var t = (radius - ORBIT_ZOOM_MIN) / (ORBIT_WALL_FADE_START_RADIUS - ORBIT_ZOOM_MIN);
+      t = Math.min(1, Math.max(0, t));
+      var op = ORBIT_WALL_FADE_MIN_OPACITY + (1 - ORBIT_WALL_FADE_MIN_OPACITY) * t;
+      var targetMesh = null;
+      if (outerWallPieces.length){
+        var camDx = camera.position.x - center.x, camDz = camera.position.z - center.z;
+        var camLen = Math.hypot(camDx, camDz) || 1;
+        camDx /= camLen; camDz /= camLen;
+        var bestDot = -Infinity;
+        outerWallPieces.forEach(function(p){
+          var d = p.nx*camDx + p.nz*camDz;
+          if (d > bestDot){ bestDot = d; targetMesh = p.mesh; }
+        });
+      }
+      wallMeshes.forEach(function(m){ m.material.opacity = (m === targetMesh) ? op : 1; });
+    }
+
+    function buildWallPiece(sx, sy, ex, ey, thickness, colorHex){
+      var segLen = Math.hypot(ex-sx, ey-sy);
+      if (segLen < 0.03) return null;
+      var geo = new THREE.BoxGeometry(segLen, wallHeight, thickness);
+      var needsFade = opts.wallView === true || opts.interactive === true;
+      var pieceColor = colorHex ? new THREE.Color(colorHex) : wallColor;
+      var mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pieceColor, roughness:0.85, metalness:0.05, transparent: needsFade }));
+      mesh.position.set((sx+ex)/2, wallHeight/2, (sy+ey)/2);
+      mesh.rotation.y = -Math.atan2(ey-sy, ex-sx);
+      scene.add(mesh);
+      if (needsFade) wallMeshes.push(mesh);
+      var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: edgeColor }));
+      edges.position.copy(mesh.position);
+      edges.rotation.copy(mesh.rotation);
+      scene.add(edges);
+      return mesh;
+    }
+    function addWall(seg, thickness, isOuter){
+      var x1=seg[0], y1=seg[1], x2=seg[2], y2=seg[3];
+      var dx=x2-x1, dy=y2-y1, length=Math.hypot(dx,dy);
+      if (length < 0.001) return;
+      var ux=dx/length, uy=dy/length, ext=thickness/2;
+      var colorHex = wallColorsData ? wallColorsData[wallColorIdx] : null;
+      var mesh = buildWallPiece(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext, thickness, colorHex);
+      if (mesh) wallColorIdx++; // buildWallPiece가 실제로 메쉬를 만들었을 때만 다음 색 인덱스로 넘어감(plan3d.html의 wallMeshes.push 시점과 동일)
+      if (isOuter && (opts.wallView === true || opts.interactive === true) && mesh){
+        // 바깥쪽(중심에서 먼 쪽)을 향하는 법선 — 두 수직 후보 중 벽 중점→중심 방향과 반대(=바깥쪽)인 쪽을 고름.
+        var nx = -uy, nz = ux;
+        var toMidX = (x1+x2)/2 - center.x, toMidZ = (y1+y2)/2 - center.z;
+        if (nx*toMidX + nz*toMidZ < 0){ nx = -nx; nz = -nz; }
+        outerWallPieces.push({ seg: seg, mesh: mesh, nx: nx, nz: nz });
+      }
+    }
+    (wallData.outer || []).forEach(function(s){ addWall(s, 0.22, true); });
+    (wallData.inner || []).forEach(function(s){ addWall(s, 0.12, false); });
+
+    function buildPart(geo, color, x, y, z){
+      var m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: color, roughness:.78 }));
+      m.position.set(x, y, z);
+      return m;
+    }
+    (furnitureList || []).forEach(function(f){
+      var type = f.type || "sofa";
+      var c = f.color ? parseInt(f.color.replace("#",""), 16) : (OH_FURN_COLORS_NUM[type] || OH_FURN_COLORS_NUM.sofa);
+      var group = new THREE.Group();
+      var baseSize;
+      if (type === "sofa"){
+        group.add(buildPart(new THREE.BoxGeometry(1.55,.38,.72), c, 0,.28,0));
+        group.add(buildPart(new THREE.BoxGeometry(1.55,.52,.16), c, 0,.68,.28));
+        group.add(buildPart(new THREE.BoxGeometry(.16,.52,.72), c, -.7,.58,0));
+        group.add(buildPart(new THREE.BoxGeometry(.16,.52,.72), c, .7,.58,0));
+        baseSize = { w:1.55, d:.72, h:.94 };
+      } else if (type === "table"){
+        group.add(buildPart(new THREE.CylinderGeometry(.52,.52,.08,24), c, 0,.62,0));
+        group.add(buildPart(new THREE.CylinderGeometry(.08,.11,.6,16), c, 0,.3,0));
+        baseSize = { w:1.04, d:1.04, h:.66 };
+      } else if (type === "bed"){
+        group.add(buildPart(new THREE.BoxGeometry(1.5,.26,2.0), c, 0,.28,0));
+        group.add(buildPart(new THREE.BoxGeometry(1.5,.55,.14), c, 0,.6,.9));
+        group.add(buildPart(new THREE.BoxGeometry(1.24,.10,.62), 0xe9edf0, 0,.46,-.35));
+        baseSize = { w:1.5, d:2.0, h:.88 };
+      } else {
+        group.add(buildPart(new THREE.CylinderGeometry(.20,.25,.35,16), 0xb78962, 0,.18,0));
+        group.add(buildPart(new THREE.SphereGeometry(.34,16,12), c, 0,.6,0));
+        baseSize = { w:.68, d:.68, h:.94 };
+      }
+      var dims = { w: f.w || baseSize.w, d: f.d || baseSize.d, h: f.h || baseSize.h };
+      group.scale.set(dims.w/baseSize.w, dims.h/baseSize.h, dims.d/baseSize.d);
+      group.position.set(f.x || 0, 0, f.z || 0);
+      group.rotation.y = f.rotY || 0;
+      scene.add(group);
+    });
+
+    var canvas = renderer.domElement;
+    var mode = opts.wallView ? "wall" : (interactive ? "orbit" : "top");
+    var radius, theta, phi, spinning, dragging = false, lastX = 0, lastY = 0, idleTimer = null;
+
+    // 인터랙티브(오른쪽 orbit) 패널 전용 — 바닥(y=0)을 그대로 시선 중심으로 삼으면 화면 정중앙에
+    // 바닥이 오고 그 위로 벽 전체가 올라가는 모양이 되어, 방이 화면 위쪽에 붕 뜨고 바닥이 이상하게
+    // 높이 있는 것처럼 보임. 벽 중간 높이 즈음을 바라보게 살짝 들어올려서 바닥이 화면 아래쪽으로
+    // 내려오게 함.
+    var ORBIT_LOOK_Y = wallHeight * 0.42;
+
+    // phi가 0에 아주 가까우면(거의 바로 위) up벡터와 시선 방향이 겹쳐서 lookAt이 불안정해지는
+    // 짐벌락이 생기므로, 그때만 up을 옆으로 돌려서 피함(createWallScene의 "탑뷰" 버튼과 동일한 방식).
+    function updateCamera(){
+      var x = center.x + radius * Math.sin(phi) * Math.cos(theta);
+      var y = radius * Math.cos(phi);
+      var z = center.z + radius * Math.sin(phi) * Math.sin(theta);
+      camera.position.set(x, y, z);
+      var trueTop = phi < 0.06;
+      camera.up.set(0, trueTop ? 0 : 1, trueTop ? -1 : 0);
+      var lookY = (mode === "orbit" && !trueTop) ? ORBIT_LOOK_Y : 0;
+      camera.lookAt(center.x, lookY, center.z);
+    }
+
+    // 벽 뷰 — 바깥벽(outer)을 하나씩, 방 안쪽에서 그 벽을 정면으로 바라보는 카메라 자리를 계산함.
+    // 벽을 따라 좌우로(꾹 눌러서 드래그) · 벽에서 앞뒤로(스크롤) 움직일 수 있게, 벽마다 기준이
+    // 되는 좌표계(중앙점 mx,mz · 벽을 따라가는 방향 ux,uz · 벽에 수직인 방향 nx,nz · 벽 길이 ·
+    // 이 방향으로 방이 얼마나 깊은지 perpDim)를 저장해두고, wallSide(좌우 오프셋)/wallDist(벽과의
+    // 거리)를 매 프레임 그 위에 얹어서 최종 카메라 위치를 계산함.
+    var wallSegs = (wallData.outer || []).filter(function(s){
+      return Math.hypot(s[2]-s[0], s[3]-s[1]) > 0.05;
+    });
+    var wallIdx = 0, wallSide = 0, wallDist = 1;
+    var currentWall = null;
+
+    // 지금 왼쪽 벽 뷰가 어느 벽을 보고 있는지 오른쪽(인터랙티브) 패널에서도 알 수 있게, 그 벽
+    // 중앙 위쪽에 아래를 향한 빨간 화살표 마커를 띄워줌. setActiveWall(idx)는 오른쪽 패널의
+    // 씬에서 호출되고, 왼쪽 패널 자신은 화살표가 필요 없으니 만들 일이 없음.
+    var activeWallMarker = null;
+    function ensureWallMarker(){
+      if (activeWallMarker) return activeWallMarker;
+      var cone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.34, 0.9, 24),
+        new THREE.MeshStandardMaterial({ color: 0xE0393B, roughness:.35, metalness:.15, emissive: 0x4a1012, emissiveIntensity:.35 })
+      );
+      cone.rotation.x = Math.PI; // 꼭짓점이 아래(벽 쪽)를 향하게 뒤집음
+      cone.visible = false;
+      scene.add(cone);
+      activeWallMarker = cone;
+      return cone;
+    }
+    function setActiveWall(idx){
+      var marker = ensureWallMarker();
+      if (idx == null || idx < 0 || idx >= wallSegs.length){ marker.visible = false; return; }
+      var s = wallSegs[idx];
+      marker.position.set((s[0]+s[2])/2, wallHeight + 0.75, (s[1]+s[3])/2);
+      marker.visible = true;
+    }
+
+    function applyWallCamera(){
+      if (!currentWall) return;
+      var w = currentWall;
+      var maxSide = Math.max(w.length/2 - 0.25, 0);
+      // 예전엔 반대편 벽 바로 앞(perpDim - 0.3)에서 줌아웃이 멈춰버렸는데, "줌아웃하면 벽을
+      // 뚫고 나가야 한다"는 요청대로 그 한계를 훨씬 더 바깥(건물 밖)까지 늘림 — 카메라가 실제로
+      // 반대편 벽을 뚫고 지나가 건물 밖에서 돌아보는 것까지 가능해짐. 대신 벽은 그 벽에 닿기
+      // 전에(fadeEndDist) 이미 다 투명해지게 해서, 실제로 뚫고 지나가는 순간 안 걸리적거리고
+      // 매끄럽게 통과함.
+      var maxDist = w.perpDim + Math.max(w.perpDim, 4);
+      var fadeEndDist = Math.max(w.perpDim - 0.5, w.defaultDist + 0.5);
+      wallSide = Math.min(Math.max(wallSide, -maxSide), maxSide);
+      wallDist = Math.min(Math.max(wallDist, 0.6), maxDist);
+      var lookX = w.mx + w.ux*wallSide, lookZ = w.mz + w.uz*wallSide;
+      var camX = lookX + w.nx*wallDist, camZ = lookZ + w.nz*wallDist;
+      camera.position.set(camX, 1.5, camZ);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(lookX, wallHeight*0.48, lookZ);
+      // 처음 이 벽을 봤을 때 거리(defaultDist)까지는 완전 불투명, 그보다 더 줌아웃(멀어질)수록
+      // 투명해져서 fadeEndDist(반대편 벽에 닿기 살짝 전)에서 완전히 다 빠짐 — 반대로 그 거리보다
+      // 더 가까이 당겨도(줌인) 투명해지진 않고 그냥 불투명 유지.
+      updateWallViewFade(wallDist, w.defaultDist, fadeEndDist, w.targetMesh);
+    }
+
+    function setWallView(idx){
+      if (!wallSegs.length) return;
+      wallIdx = ((idx % wallSegs.length) + wallSegs.length) % wallSegs.length;
+      var s = wallSegs[wallIdx];
+      var x1=s[0], z1=s[1], x2=s[2], z2=s[3];
+      var mx = (x1+x2)/2, mz = (z1+z2)/2;
+      var length = Math.max(Math.hypot(x2-x1, z2-z1), 0.4);
+      var ux = (x2-x1)/length, uz = (z2-z1)/length; // 벽을 따라가는(좌우 이동) 방향
+      var nx = -uz, nz = ux; // 이 벽에 수직인 방향(둘 중 하나)
+      var toCenterX = center.x - mx, toCenterZ = center.z - mz;
+      if (nx*toCenterX + nz*toCenterZ < 0){ nx = -nx; nz = -nz; } // 방 중심(안쪽) 쪽으로 뒤집음
+      var perpDim = Math.abs(nx) > Math.abs(nz) ? b.w : b.d; // 이 방향으로 방이 얼마나 깊은지
+      var defaultDist = Math.max(Math.min(Math.max(length, wallHeight*1.8) * 0.85, Math.max(perpDim - 0.6, 1.0)), 0.9);
+      // 지금 보는 벽에서 안쪽(nx,nz) 방향으로 가장 멀리 있는 바깥벽 = 계속 줌아웃하면 결국
+      // 뚫고 나가게 될 "그 벽" — 이 벽 하나만 targetMesh로 찜해두고, updateWallViewFade는
+      // 그 메쉬만 투명하게 만듦(나머지 벽은 안 건드림).
+      var targetMesh = null, bestProj = -Infinity;
+      outerWallPieces.forEach(function(p){
+        if (p.seg === s) return; // 지금 보고 있는 벽 자신은 후보에서 제외
+        var smx = (p.seg[0]+p.seg[2])/2, smz = (p.seg[1]+p.seg[3])/2;
+        var proj = (smx-mx)*nx + (smz-mz)*nz; // 안쪽(진행 방향)으로 얼마나 멀리 있는지
+        if (proj > bestProj){ bestProj = proj; targetMesh = p.mesh; }
+      });
+      // defaultDist(벽을 처음 볼 때의 거리, "이미 줌인된" 기준점)를 벽 데이터에 같이 저장해둠 —
+      // updateWallViewFade가 이 지점까진 완전 불투명으로 두고, 그보다 더 줌아웃(멀어짐)할 때만
+      // 점점 투명해지게 쓸 기준값.
+      currentWall = { mx:mx, mz:mz, ux:ux, uz:uz, nx:nx, nz:nz, length:length, perpDim:perpDim, defaultDist:defaultDist, targetMesh:targetMesh };
+      wallSide = 0;
+      wallDist = defaultDist;
+      applyWallCamera();
+      if (typeof opts.onWallChange === "function") opts.onWallChange(wallIdx, wallSegs.length);
+    }
+
+    // 이 패널(캔버스 + 힌트 텍스트)만 브라우저 전체화면으로 띄우는 버튼 — plan3d.html 가구 배치
+    // 화면의 전체화면 버튼과 같은 방식(container 자체를 Fullscreen API로 띄움). 오르빗/벽 뷰 패널
+    // 둘 다에서 씀.
+    function addViewFullscreenButton(){
+      var fullscreenBtn = document.createElement("button");
+      fullscreenBtn.type = "button";
+      fullscreenBtn.className = "post-view-fullscreen-btn";
+      function isContainerFullscreen(){
+        return document.fullscreenElement === container || document.webkitFullscreenElement === container;
+      }
+      function refreshFullscreenBtn(){
+        fullscreenBtn.innerHTML = isContainerFullscreen() ? "⛶ 전체화면 종료" : "⛶ 전체화면으로 보기";
+      }
+      refreshFullscreenBtn();
+      fullscreenBtn.addEventListener("click", function(){
+        if (!isContainerFullscreen()){
+          if (container.requestFullscreen) container.requestFullscreen();
+          else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      });
+      container.addEventListener("fullscreenchange", refreshFullscreenBtn);
+      container.addEventListener("webkitfullscreenchange", refreshFullscreenBtn);
+      container.appendChild(fullscreenBtn);
+    }
+
+    if (mode === "orbit"){
+      radius = size * 1.85; theta = Math.PI/4; phi = Math.PI/4.3;
+      // 가구 배치 화면처럼 사진같이 가만히 있다가 사람이 직접 드래그할 때만 움직이게 함 — 예전엔
+      // 항상 빙글빙글 자동 회전하다가 드래그 멈추면 2.2초 뒤 다시 자동으로 돌기 시작했는데, 그
+      // 자동 재생 타이머를 없애서 한 번 멈추면 계속 멈춰 있음(자동 회전 자체가 필요하면 나중에
+      // 별도 재생 버튼을 추가하면 됨 — 지금은 안 만듦).
+      spinning = false;
+      ORBIT_ZOOM_MIN = size * 0.35;
+      // 벽이 투명해지기 시작하는 거리를 조금 늘림(size*0.8 → size*1.1) — 더 먼 거리부터
+      // 서서히 투명해지기 시작해서 전환이 좀 더 여유 있게 보임.
+      ORBIT_WALL_FADE_START_RADIUS = size * 1.1;
+      // TOP_PHI(드래그로 올려다볼 수 있는 각도 한계) · trueTopView(탑뷰 버튼으로 "진짜" 바로
+      // 위(phi≈0)에서 보는 중인지) — 가구 배치 화면(plan3d.html)의 탑뷰 버튼과 완전히 동일한 방식.
+      var TOP_PHI = 0.25;
+      var trueTopView = false;
+      canvas.style.cursor = "grab";
+      function onDown(x, y){
+        dragging = true; lastX = x; lastY = y; spinning = false; clearTimeout(idleTimer); canvas.style.cursor = "grabbing";
+        // 탑뷰로 고정된 상태에서 직접 드래그를 시작하면 고정을 풀어줌(버튼 아이콘도 원래대로).
+        if (trueTopView){
+          trueTopView = false;
+          if (phi < TOP_PHI) phi = TOP_PHI;
+          updateCamera();
+          updateOrbitWallFade();
+          if (topViewBtn){
+            topViewBtn.classList.remove("active");
+            topViewBtn.innerHTML = TOP_ICON;
+            topViewBtn.title = "탑뷰 (바로 위에서 보기)";
+          }
+        }
+      }
+      function onMove(x, y){
+        if (!dragging) return;
+        var dx = x - lastX, dy = y - lastY;
+        theta -= dx * 0.006;
+        // 가구 배치 화면의 회전 한계와 동일하게 맞춤.
+        phi = Math.min(Math.max(phi - dy * 0.006, TOP_PHI), Math.PI/2 - 0.05);
+        lastX = x; lastY = y;
+        updateCamera();
+        // 회전하면 카메라가 정면으로 가로막는 벽이 바뀔 수 있어서, 드래그 중에도 매번 다시 계산함.
+        updateOrbitWallFade();
+      }
+      function onUp(){ dragging = false; canvas.style.cursor = "grab"; }
+      canvas.addEventListener("pointerdown", function(e){ onDown(e.clientX, e.clientY); });
+      window.addEventListener("pointermove", function(e){ onMove(e.clientX, e.clientY); });
+      window.addEventListener("pointerup", onUp);
+      canvas.addEventListener("wheel", function(e){
+        e.preventDefault();
+        // 원래 줌인 한계(size*0.5)보다 더 가까이 들어갈 수 있게 하고, 그만큼 가까워질수록
+        // 벽이 시야를 가리지 않도록 점점 투명해지게 함 — 최대 줌아웃 한계(size*3.2)까지
+        // 포함해서 가구 배치 화면 줌 로직과 완전히 동일하게 맞춤.
+        radius = Math.min(Math.max(radius + e.deltaY * 0.01 * (size*0.05), ORBIT_ZOOM_MIN), size*3.2);
+        updateCamera();
+        updateOrbitWallFade();
+      }, { passive:false });
+      updateCamera();
+      updateOrbitWallFade();
+      addViewFullscreenButton();
+
+      // 전체화면 버튼 바로 밑에 뜨는 탑뷰 토글 버튼 — 가구 배치 화면의 탑뷰 버튼과 같은 아이콘/동작.
+      // 한 번 누르면 바로 위 각도로 고정되고(회전 드래그를 시작하면 자동으로 풀림, 위 onDown 참고),
+      // 다시 누르면 아이콘이 바뀌면서 원래처럼 자유롭게 드래그할 수 있는 상태로 돌아감.
+      var TOP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>';
+      var FREE_VIEW_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="9" ry="4.2" stroke="currentColor" stroke-width="1.8" transform="rotate(-18 12 12)"/><circle cx="12" cy="12" r="2.3" fill="currentColor"/></svg>';
+      var topViewBtn = document.createElement("button");
+      topViewBtn.type = "button";
+      topViewBtn.className = "post-view-topview-btn";
+      topViewBtn.title = "탑뷰 (바로 위에서 보기)";
+      topViewBtn.innerHTML = TOP_ICON;
+      topViewBtn.addEventListener("click", function(){
+        if (trueTopView){
+          trueTopView = false;
+          if (phi < TOP_PHI) phi = TOP_PHI;
+          updateCamera();
+          updateOrbitWallFade();
+          topViewBtn.classList.remove("active");
+          topViewBtn.innerHTML = TOP_ICON;
+          topViewBtn.title = "탑뷰 (바로 위에서 보기)";
+        } else {
+          trueTopView = true;
+          phi = 0.0001; // 거의 정확히 바로 위(0이면 계산이 불안정해질 수 있어 아주 살짝만 여유)
+          updateCamera();
+          updateOrbitWallFade();
+          topViewBtn.classList.add("active");
+          topViewBtn.innerHTML = FREE_VIEW_ICON;
+          topViewBtn.title = "탑뷰 해제 (자유롭게 보기)";
+        }
+      });
+      container.appendChild(topViewBtn);
+    } else if (mode === "wall" && wallSegs.length){
+      setWallView(0);
+      canvas.style.cursor = "grab";
+      // 좌우: 마우스(터치)를 꾹 누른 채로 끌면 벽을 따라 좌우로 이동. 앞뒤: 마우스 휠로 벽에서
+      // 가까워지거나 멀어짐(줌과 비슷하지만 실제로 카메라가 앞뒤로 움직임).
+      function onWallDown(x, y){ dragging = true; lastX = x; lastY = y; canvas.style.cursor = "grabbing"; }
+      function onWallMove(x, y){
+        if (!dragging || !currentWall) return;
+        var dx = x - lastX;
+        lastX = x; lastY = y;
+        var moveScale = (currentWall.length / Math.max(width, 1)) * 1.5;
+        wallSide -= dx * moveScale;
+        applyWallCamera();
+      }
+      function onWallUp(){ dragging = false; canvas.style.cursor = "grab"; }
+      canvas.addEventListener("pointerdown", function(e){ onWallDown(e.clientX, e.clientY); });
+      window.addEventListener("pointermove", function(e){ onWallMove(e.clientX, e.clientY); });
+      window.addEventListener("pointerup", onWallUp);
+      canvas.addEventListener("wheel", function(e){
+        e.preventDefault();
+        wallDist += e.deltaY * 0.01 * Math.max(size*0.05, 0.4);
+        applyWallCamera();
+      }, { passive:false });
+      addViewFullscreenButton();
+    } else {
+      // 벽 데이터가 없는 예외 상황 등 — 고정 탑뷰로 대체.
+      radius = size * 1.7; theta = Math.PI/4; phi = 0.001; spinning = false;
+      updateCamera();
+    }
+
+    var rafId;
+    function tick(){
+      rafId = requestAnimationFrame(tick);
+      if (spinning){ theta += 0.0022; updateCamera(); }
+      renderer.render(scene, camera);
+    }
+    tick();
+
+    var ro = new ResizeObserver(function(){
+      var w2 = container.clientWidth || width, h2 = container.clientHeight || height;
+      if (!w2 || !h2) return;
+      camera.aspect = w2 / h2;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w2, h2, false);
+    });
+    ro.observe(container);
+
+    return {
+      dispose: function(){
+        cancelAnimationFrame(rafId);
+        ro.disconnect();
+        renderer.dispose();
+        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      },
+      wallCount: mode === "wall" ? wallSegs.length : 0,
+      getWallIndex: function(){ return wallIdx; },
+      nextWall: function(){ if (mode === "wall") setWallView(wallIdx + 1); },
+      prevWall: function(){ if (mode === "wall") setWallView(wallIdx - 1); },
+      setActiveWall: setActiveWall
+    };
+  }
+
   /* ---------- 게시물 상세 렌더링 ---------- */
   function renderNotFound(){
     document.getElementById("postContent").innerHTML =
@@ -491,6 +1058,7 @@
 
     document.title = post.title + " · 오늘의 하우징";
 
+    var hasWallData = !!(post.wallData && post.wallData.outer && post.wallData.outer.length);
     var hasImg = !!(post.thumb && post.thumb.dataUrl);
     var variant = (post.thumb && post.thumb.variant) || 1;
     var thumbInner = hasImg
@@ -508,13 +1076,30 @@
     }
     var roomLine = roomBits.length ? roomBits.join(" · ") : "방 정보가 없어요";
 
+    // 실제 배치 데이터(wallData)가 있으면 왼쪽 2D 탑뷰 + 오른쪽 인터랙티브 3D로 보여주고,
+    // 옛 샘플 게시물처럼 데이터가 없으면 캡처 썸네일/아이콘 하나만 보여주는 예전 방식으로 대체함.
+    var viewHtml = hasWallData
+      ? '<div class="post-view-split">' +
+          '<div class="post-view-2d">' +
+            '<span class="post-view-label">벽 뷰</span>' +
+            '<span class="wall-view-hint">드래그로 좌우 이동 · 휠로 줌인/줌아웃</span>' +
+            '<div class="wall-view-nav">' +
+              '<button type="button" class="wall-nav-btn" id="wallPrevBtn" aria-label="이전 벽">‹</button>' +
+              '<span class="wall-nav-count" id="wallNavCount">1 / 1</span>' +
+              '<button type="button" class="wall-nav-btn" id="wallNextBtn" aria-label="다음 벽">›</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="post-view-3d" id="postView3d"><span class="post-view-label">3D</span><span class="view-hint">드래그로 회전 · 휠로 줌</span></div>' +
+        '</div>'
+      : '<div class="post-thumb' + (hasImg ? ' has-image' : '') + '" data-variant="' + variant + '">' + thumbInner + '</div>';
+
     document.getElementById("postContent").innerHTML =
       '<div class="post-head">' +
         badge +
         '<h1>' + ohEscapeHtml(post.title) + '</h1>' +
         '<div class="post-meta"><span>' + ohEscapeHtml(post.author) + '</span><span>·</span><span>' + ohTimeAgo(post.createdAt) + '</span></div>' +
       '</div>' +
-      '<div class="post-thumb' + (hasImg ? ' has-image' : '') + '" data-variant="' + variant + '">' + thumbInner + '</div>' +
+      viewHtml +
       '<div class="post-stats-row">' +
         '<div class="post-room-info">' + ohEscapeHtml(roomLine) + '</div>' +
         '<button type="button" class="like-btn" id="likeBtn"></button>' +
@@ -530,6 +1115,28 @@
           '<button type="submit" class="btn btn-primary">의견 남기기</button>' +
         '</form>' +
       '</div>';
+
+    if (hasWallData){
+      var wallNavCount = document.getElementById("wallNavCount");
+      // 오른쪽(인터랙티브) 패널을 먼저 만들어야, 왼쪽 벽 뷰가 만들어지자마자(첫 벽으로) 쏘는
+      // onWallChange 콜백에서 바로 rightScene.setActiveWall을 호출할 수 있음.
+      var rightScene = ohMountRoomScene(document.getElementById("postView3d"), post.wallData, post.furniture, { interactive: true });
+      var leftScene = ohMountRoomScene(document.querySelector(".post-view-2d"), post.wallData, post.furniture, {
+        wallView: true,
+        onWallChange: function(idx, total){
+          wallNavCount.textContent = (idx + 1) + " / " + total;
+          if (rightScene && rightScene.setActiveWall) rightScene.setActiveWall(idx);
+        }
+      });
+
+      var wallNavEl = document.querySelector(".post-view-2d .wall-view-nav");
+      if (leftScene && leftScene.wallCount > 1){
+        document.getElementById("wallPrevBtn").addEventListener("click", function(){ leftScene.prevWall(); });
+        document.getElementById("wallNextBtn").addEventListener("click", function(){ leftScene.nextWall(); });
+      } else if (wallNavEl){
+        wallNavEl.style.display = "none"; // 벽이 하나뿐이면 넘길 게 없으니 화살표를 숨김
+      }
+    }
 
     var authorField = document.getElementById("commentAuthor");
     authorField.value = ohGetName();
