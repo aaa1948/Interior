@@ -84,9 +84,6 @@
     font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
-    /* 한글은 스페이스가 없으면 브라우저가 음절 아무 데서나 줄을 바꿔버려서(단어 중간 잘림) 줄바꿈이
-       들쭉날쭉해 보임 — keep-all로 스페이스 기준으로만 줄바꿈되게 하고, 정말 긴 글자가 박스를 넘칠
-       때만 break-word로 강제로 잘리게 안전장치를 둠. */
     word-break:keep-all;
     overflow-wrap:break-word;
   }
@@ -101,8 +98,6 @@
   p{margin:0;}
   a{color:inherit;}
   button{font-family:inherit;}
-  /* 최대 폭 제한을 없애서 창 크기에 딱 맞춰 늘어나게 함 — 넓은 PC 화면에서 오른쪽에 빈 공간이
-     남지 않고 히어로/카드/그리드가 화면을 거의 다 채움. 왼쪽부터 채워지고(margin auto 아님) */
   .wrap{max-width:none; margin:0; padding:0 clamp(20px,4vw,64px);}
   section{padding:clamp(56px,8vw,104px) 0;}
 
@@ -179,19 +174,10 @@
 
   /* ---------- hero ---------- */
   .hero{padding-top:clamp(48px,7vw,88px);}
-  /* 헤드라인(아이캐치+제목)은 히어로 폭 전체를 쓰는 한 줄로 따로 빼두고, 그 아래에 글/카드
-     두 칸짜리 줄을 둠 — "글 시작~핵심 기능 링크 끝"과 카드가 정확히 같은 구간에 오도록 함 */
   .hero-head{margin-bottom:clamp(28px,4vw,40px);}
   .hero-grid{
-    /* 예전엔 1.05fr/.95fr 그리드로 나눴는데, 화면이 넓어지면 글 칸이 실제 글자 폭보다 훨씬
-       넓게 배정돼서 글과 카드 사이에 텅 빈 공간이 생겼음(글은 줄바꿈 때문에 짧게 끝나는데
-       칸 자체는 넓으니까). flex로 바꿔서 글·카드가 실제 크기만큼만 차지하고 서로 바로
-       붙게 하고, 남는 공간은 전체 줄 맨 끝에만 남도록 함 */
     display:flex; flex-wrap:wrap; gap:clamp(32px,5vw,64px);
   }
-  /* max-width가 너무 좁으면(예전 640px) 문장 하나가 그 폭 안에 안 들어가서 브라우저가
-     중간 단어에서 강제로 줄바꿈을 넣어버림(예: "배치" / "해보세요."로 쪼개짐) — 직접 넣은
-     <br> 지점에서만 줄이 바뀌도록 가장 긴 문장이 한 줄에 들어갈 만큼 넉넉하게 잡음 */
   .hero-text{flex:1 1 420px; max-width:960px;}
   @media (max-width:860px){ .hero-text{flex-basis:100%; max-width:none;} }
 
@@ -214,9 +200,6 @@
   .preview-card{
     background:var(--paper-raised); border:1px solid var(--line); border-radius:16px;
     padding:18px 18px 16px; box-shadow:0 10px 32px -12px var(--shadow);
-    /* 카드는 늘어나지 않고 항상 고정 크기(760px) — margin-left:auto로 남는 공간을
-       카드 앞쪽 여백으로 흡수시켜서 카드 자체는 오른쪽 끝에 붙어 있게 함(내비 우측 버튼들과 정렬).
-       도면 사진+3D를 좌우로 같이 보여주면서 600px는 좁아 보여서 키움. */
     flex:0 0 760px; max-width:760px; margin-left:auto;
     display:flex; flex-direction:column;
   }
@@ -225,9 +208,6 @@
   }
   .preview-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
   .preview-label{font-size:.78rem; color:var(--ink-soft); border-bottom:1px dashed var(--line); padding-bottom:3px;}
-  /* 히어로 미리보기를 가운데 기준 좌/우 2분할: 왼쪽=도면 사진, 오른쪽=기존 3D 캔버스(.canvas-stage,
-     변경 없음). .canvas-stage가 이미 flex:1로 짜여 있어서 이 안에 넣기만 해도 오른쪽 칸을 꽉 채움 —
-     결과 모달의 #resultStage(.canvas-stage 재사용)는 이 래퍼 밖에 있어 영향 없음. */
   .preview-split{
     display:flex; flex:1; min-height:320px; border-radius:10px; overflow:hidden;
   }
@@ -256,16 +236,6 @@
   }
   @media (max-width:860px){ .canvas-stage{flex:none; aspect-ratio:6/5; min-height:0;} }
   .canvas-stage:active{cursor:grabbing;}
-  /* canvas를 absolute로 빼서 정상 흐름 높이 계산에서 완전히 제외함 — three.js가
-     renderer.setSize()로 캔버스 width/height 속성(렌더 버퍼, 고DPI에서 CSS 크기의 2배)을
-     바꿀 때마다 이 값이 flex 높이 계산(auto 높이 부모 안에서 percentage-height 자식의
-     "hypothetical size")에 섞여 들어가면, 창을 줄였다 늘릴 때마다 버퍼 크기 → 레이아웃
-     높이 → 버퍼 크기 순으로 서로를 부풀리는 피드백 루프가 생겨 화면이 계속 커짐.
-     absolute + inset:0이면 canvas는 항상 부모(canvas-stage)의 이미 정해진 크기를 그대로
-     따라가기만 하고, 부모 크기를 계산하는 데는 전혀 관여하지 않음. */
-  /* canvas가 span/버튼들보다 DOM상 나중에 붙지만(three.js가 JS로 appendChild), position:absolute라서
-     z-index 없이는 나중에 붙는 쪽이 위로 그려짐 — 힌트 글자·컨트롤 버튼이 캔버스에 가려지지 않도록
-     canvas를 가장 아래(z-index:0)에 명시적으로 깔아둠 */
   .canvas-stage canvas{position:absolute; inset:0; z-index:0; display:block; width:100%; height:100%;}
   .canvas-hint{
     position:absolute; left:10px; bottom:10px; z-index:1; font-size:.7rem; color:var(--ink-soft);
@@ -291,9 +261,6 @@
 
   /* ---------- steps ---------- */
   .section-head{max-width:56ch; margin-bottom:clamp(32px,5vw,48px);}
-  /* #features의 설명 문단 두 번째 문장이 꽤 길어서(약 60자) 56ch 폭 안에서는 화면이 넓어도
-     자동으로 중간에 줄바꿈됨 — 직접 넣은 <br> 지점(문장 사이)에서만 끊기고 문장 자체는 안 끊기게
-     이 섹션만 폭을 넉넉하게 넓힘. */
   #features .section-head{max-width:min(100%, 1000px);}
   .section-head .eyebrow{margin-bottom:12px;}
   .section-head h2{font-size:clamp(1.6rem,3vw,2.15rem); margin-bottom:10px;}
@@ -362,9 +329,6 @@
     background:var(--paper-raised); border-radius:18px; padding:clamp(22px,4vw,34px);
     box-shadow:0 24px 60px -20px var(--shadow); position:relative;
   }
-  /* 도면 그리기 패널(panelTrace)일 때 붙는 wide 모달 — 도면 이미지(아래 .trace-stage에서
-     높이 상한을 둬서 조절)+툴바+버튼까지 스크롤 없이 한 번에 보이도록 기존 820px보다 크게,
-     화면 안에 항상 들어오도록 vw/vh 기준 상한도 둠 */
   .modal.wide{max-width:min(94vw, 1000px); max-height:min(92vh, 880px);}
   .modal-close{
     position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
@@ -407,11 +371,6 @@
   .settings-hint{font-size:.74rem; color:var(--ink-soft); margin:-8px 0 16px;}
 
   /* ---------- 도면 위에 직접 벽 그리기 ---------- */
-  /* 예전엔 width:100%로 항상 팝업 가로폭에 꽉 채웠는데, 가로로 긴 도면일 때 이미지가 너무
-     커져서(높이도 같이 늘어남) 세로 공간을 다 잡아먹고 아래 버튼이 스크롤해야만 보이는
-     문제가 있었음. 이제 이미지 높이에도 상한(max-height)을 두고, .trace-stage는
-     width:fit-content로 이미지가 실제로 그려지는 크기에 딱 맞게 줄어들게 함 — 컨테이너가
-     항상 이미지 영역과 정확히 같은 크기여야 클릭 좌표(u,v) 계산이 어긋나지 않음. */
   .trace-stage{
     position:relative; width:fit-content; max-width:100%; margin:0 auto 14px;
     border-radius:10px; overflow:hidden;
@@ -474,7 +433,7 @@
   [hidden]{display:none !important;}
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
 
-  /* ---------- 3D 가구 배치 편집기 (팀원 구현 이식) ---------- */
+  /* ---------- 3D 가구 배치 편집기 ---------- */
   .furniture-selected{outline:2px solid #ff9f43;outline-offset:2px}
   .furniture-size-panel{position:absolute;right:10px;top:54px;z-index:3;width:176px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
   .furniture-size-panel[hidden]{display:none!important}
@@ -483,8 +442,7 @@
   .furniture-dimension input{width:100%;min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit}
   .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
   @media (max-width:600px){.furniture-size-panel{right:8px;top:92px;width:150px}}
-  /* 가구 배치 화면(캔버스+오버레이 UI 전체)만 브라우저 전체화면(Fullscreen API)으로 띄우는 버튼.
-     선택 가구 크기 패널 바로 위, 같은 우측 정렬 위치에 둠. */
+  
   .furniture-fullscreen-btn{
     position:absolute; top:10px; right:10px; z-index:5;
     display:flex; align-items:center; gap:6px;
@@ -495,9 +453,7 @@
   }
   .furniture-fullscreen-btn:hover{background:var(--blueprint-soft); border-color:var(--blueprint)}
   @media (max-width:600px){.furniture-fullscreen-btn{top:8px;right:8px;padding:6px 10px;font-size:.66rem}}
-  /* 가구를 선택했을 때만 그 가구 머리 위에 "뿅" 뜨는 투명 핸들 — 평상시엔 완전히 숨겨둠(opacity:0
-     + pointer-events:none)이라 화면을 가리지 않고, 선택되면 3D 좌표를 매 프레임 화면 좌표로 변환해서
-     그 자리를 따라다님(updateRotatePanelPosition 참고). */
+
   .furniture-rotate-panel{
     position:absolute; left:0; top:0; z-index:4;
     display:flex; flex-direction:column; align-items:center; gap:6px;
@@ -520,14 +476,6 @@
   .nudge-btn{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 80%,transparent);color:var(--ink);font-size:.72rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .nudge-btn:hover{background:var(--blueprint-soft);border-color:var(--blueprint)}
 
-  /* 가구 배치 버튼을 누른 뒤에는 2D 비교 대신 큰 3D 작업 화면을 사용.
-     가구 배치는 실제로 작업하는 화면이라 작게 뜨면 불편함 — 화면 거의 꽉 채우는 크기로 키움.
-     예전엔 result-grid/#resultStage 높이를 calc(100% - 126px) 식으로 고정 숫자를 빼는
-     방식으로 잡았는데, #panelResult에 높이가 명시돼 있지 않아서 그 "100%"가 실제로는
-     계산이 안 되고(퍼센트 높이는 부모 높이가 명시돼야 동작함) 내용물 실제 크기만큼 쌓이다가
-     모달 높이를 넘기면 스크롤이 생기는 문제가 있었음. 세로 전체를 flex 컬럼으로 엮어서
-     3D 캔버스 영역(마지막 panel-box)이 "남는 공간을 정확히 채우는" 방식으로 바꿔서
-     스크롤이 아예 생기지 않게 함. */
   .modal.furniture-fullscreen{
     width:calc(100vw - 24px);max-width:calc(100vw - 24px);
     height:calc(100vh - 24px);max-height:calc(100vh - 24px);
@@ -608,7 +556,7 @@
     border-radius: 8px;
     background: var(--paper);
     color: var(--ink);
-    cursor: pointer;
+    cursor: grab; /* 드래그 앤 드롭임을 알려주는 커서 */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -616,6 +564,9 @@
     font-size: 0.75rem;
     font-weight: 600;
     transition: all 0.15s ease;
+  }
+  .sims-btn:active {
+    cursor: grabbing;
   }
   .sims-btn:hover {
     background: var(--blueprint-soft);
@@ -636,6 +587,7 @@
     height: 40px;
     flex-direction: row;
     gap: 6px;
+    cursor: pointer; /* 삭제 버튼은 클릭 이벤트이므로 pointer */
   }
   .sims-actions .danger {
     color: #c94c4c;
@@ -916,14 +868,7 @@
 (function(){
   "use strict";
 
-  /* ============ 0-1. 게시판(갤러리) 공용 데이터 유틸 ============
-     plan3d.html / gallery.html / post.html 세 파일에 동일하게 복제해서 씀(이 프로젝트는
-     페이지마다 독립된 정적 HTML이라 공용 로직도 파일마다 복사해야 함 — 다른 유틸/토글 로직과
-     같은 패턴). localStorage 키 "oh-posts"에 게시물 배열을 JSON으로 저장. 저장된 값이 아예
-     없는 첫 방문이면 아래 6개 샘플 게시물로 시드해서, 실제로 게시하기 전에도 갤러리·상세
-     페이지·댓글·좋아요 기능을 바로 눌러볼 수 있게 함.
-     ※ 지금은 백엔드/DB가 없어서 게시물이 "이 브라우저에만" 저장됨 — 다른 사람 브라우저와는
-     공유되지 않음(진짜 여러 사용자가 같은 글을 보게 하려면 나중에 Supabase 같은 DB 연동 필요). */
+  /* ============ 0-1. 게시판(갤러리) 공용 데이터 유틸 ============ */
   var OH_POSTS_KEY = "oh-posts";
   var OH_LIKED_KEY = "oh-liked-posts";
   var OH_NAME_KEY = "oh-username";
@@ -1048,7 +993,6 @@
       return (mql && mql.matches) ? "dark" : "light";
     }
     function applyIcon(){
-      // 버튼에는 "지금 상태"가 아니라 "눌렀을 때 바뀔 모드"를 아이콘으로 보여줌
       themeToggle.innerHTML = currentTheme() === "dark" ? SUN_ICON : MOON_ICON;
     }
     themeToggle.addEventListener("click", function(){
@@ -1060,7 +1004,7 @@
     applyIcon();
   })();
 
-  /* ============ 0-1. 상단 로그인 드롭다운 (백엔드 미연결 — 폼은 자리만 잡아둠) ============ */
+  /* ============ 0-1. 상단 로그인 드롭다운 ============ */
   (function(){
     var loginBtn = document.getElementById("loginBtn");
     var loginDropdown = document.getElementById("loginDropdown");
@@ -1086,14 +1030,11 @@
     if (loginForm){
       loginForm.addEventListener("submit", function(e){
         e.preventDefault();
-        // TODO: 로그인 API 연결 전까지는 제출해도 아무 동작 안 함
       });
     }
   })();
 
-  /* ============ 0-2. 상단 네비게이션의 홈/사용법 — 갤러리는 별도 페이지(gallery.html)로 이동하지만,
-     홈/사용법은 이 페이지 안에서만 부드럽게 스크롤 이동시키고 주소창에 #steps 같은 해시가
-     안 붙게 함 ============ */
+  /* ============ 0-2. 상단 네비게이션 스크롤 이동 ============ */
   document.querySelectorAll(".nav-links a[data-scroll]").forEach(function(link){
     link.addEventListener("click", function(e){
       e.preventDefault();
@@ -1107,8 +1048,6 @@
     });
   });
 
-  /* ============ 0-3. 갤러리 페이지처럼 다른 곳에서 "/#steps" 해시를 달고 들어온 경우 —
-     사용법 섹션까지 스크롤해준 다음, 주소창의 해시는 지워서 그냥 "/" 상태로 맞춤 ============ */
   if (window.location.hash === "#steps") {
     var stepsFromLink = document.getElementById("steps");
     if (stepsFromLink) {
@@ -1121,14 +1060,9 @@
     }
   }
 
-  /* ============ 1. 샘플 매물 데이터 (백엔드 미연결 시 대체용) ============ */
+  /* ============ 1. 샘플 매물 데이터 ============ */
   var SAMPLE_COMPLEXES = [
     {
-      /* 사용자가 준 네이버 부동산 도면 스샷(9600×4800, 발코니/거실·침실/화장실/침실/주방·식당)을
-         그대로 손으로 트레이싱해서 만든 벽 데이터 — 히어로 3D 미리보기 예시로 사용(SAMPLE_COMPLEXES[0]).
-         복도(우측 1400 구간)는 도면상 색칠 안 된 공용 통로라 실제 세대 내부 벽이 아닌데, 그대로 벽으로
-         넣었더니 3D에서 오른쪽에 안 써야 할 밀폐 공간이 하나 더 생겨버림 — 세대 경계(9600 기준)만
-         남기고 복도 벽은 제거함. */
       id: "buyoung1", name: "익산 영등 부영1차", region: "전북 익산시",
       plans: [
         { id:"buyoung1-163", label:"16.3평형", area:54, pyeong:16.3,
@@ -1205,7 +1139,6 @@
 
     var ink = getCss("--ink"), inkSoft = getCss("--ink-soft"), line = getCss("--line");
 
-    // graph paper background
     var patId = "grid" + Math.random().toString(36).slice(2,8);
     var defs = el("defs", {});
     var pattern = el("pattern", { id: patId, width:1, height:1, patternUnits:"userSpaceOnUse" });
@@ -1214,21 +1147,17 @@
     svg.appendChild(defs);
     svg.appendChild(el("rect", { x:-pad, y:-pad, width:b.w+pad*2, height:b.d+pad*2, fill:"url(#"+patId+")" }));
 
-    // outer walls
     plan.outer.forEach(function(s){
       svg.appendChild(el("line", { x1:s[0], y1:s[1], x2:s[2], y2:s[3], stroke:ink, "stroke-width":0.16, "stroke-linecap":"square" }));
     });
-    // inner walls
     plan.inner.forEach(function(s){
       svg.appendChild(el("line", { x1:s[0], y1:s[1], x2:s[2], y2:s[3], stroke:ink, "stroke-width":0.09, "stroke-linecap":"square", opacity:0.8 }));
     });
-    // room labels
     plan.rooms.forEach(function(r){
       var t = el("text", { x:r.x, y:r.y, "text-anchor":"middle", "font-size":0.42, fill:inkSoft, "font-family":"IBM Plex Sans KR, sans-serif" });
       t.textContent = r.t;
       svg.appendChild(t);
     });
-    // top dimension line
     var dimY = -0.32;
     svg.appendChild(el("line", { x1:0, y1:dimY, x2:b.w, y2:dimY, stroke:inkSoft, "stroke-width":0.02, "stroke-dasharray":"0.08 0.08" }));
     var dimLabel = el("text", { x:b.w/2, y:dimY-0.12, "text-anchor":"middle", "font-size":0.32, fill:inkSoft, "font-family":"IBM Plex Mono, monospace" });
@@ -1259,14 +1188,8 @@
     var width = container.clientWidth || 300;
     var height = container.clientHeight || 250;
 
-    // preserveDrawingBuffer:true — 게시(publish) 시 캔버스를 스크린샷(toDataURL)으로 썸네일을
-    // 만들 때 렌더 버퍼가 곧바로 지워지지 않고 남아있게 보장하기 위해 켜둠(약간의 GPU 메모리
-    // 비용은 있지만 이 규모 씬에서는 무시할 만함).
     var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    // updateStyle=false: 캔버스에 인라인 px 크기를 직접 박지 않음. 인라인 스타일이 붙으면 창을
-    // 줄였다 늘릴 때 예전 크기가 남아있다가 겹쳐 쌓여서 "계속 커지는" 버그가 생김 — 항상 스타일시트의
-    // width:100%/height:100%(컨테이너 크기 그대로 따라감)만 쓰게 하고, 렌더 해상도(내부 버퍼)만 갱신.
     renderer.setSize(width, height, false);
     container.appendChild(renderer.domElement);
 
@@ -1303,18 +1226,9 @@
     floorLine.position.set(center.x, -0.01, center.z);
     scene.add(floorLine);
 
-    // 바닥에 원본 도면 사진을 그대로 깔아줌 — 벽 바운딩박스(imageBBox)에 맞춰 이미지를 크롭해서
-    // 딱 벽 영역 크기(b.w × b.d)에 맞게 얹음. 여백용 큰 바닥판(floor) 위에 살짝 띄워서 겹쳐 그림.
-    // 이미지 서버가 CORS를 막아두면 텍스처 로드가 조용히 실패할 수 있는데, 그럴 땐 그냥 기존 단색
-    // 바닥이 그대로 보임(별도 에러 처리 불필요).
     if (plan.floorplanImageUrl && plan.imageBBox){
       var texLoader = new THREE.TextureLoader();
       texLoader.crossOrigin = "anonymous";
-      // WebGL 텍스처로 쓰려면 CORS가 허용된 곳에서 와야 하는데(2D <img>로 그냥 "보여주기"랑은 다른
-      // 규칙임), 네이버 이미지 서버는 CORS 헤더를 안 붙여줘서 우리 서버가 대신 받아와 넘겨주는
-      // 프록시(/api/image-proxy)를 거쳐서 불러옴. 단, PC에서 직접 불러온 이미지(data: URL)는
-      // 이미 브라우저 안에 있는 로컬 데이터라 CORS 문제 자체가 없으므로 프록시를 거치지 않고
-      // 바로 읽음(오히려 프록시로 보내면 매우 긴 data: URL이 쿼리스트링에 안 맞을 수 있음).
       var isLocalDataUrl = /^data:/i.test(plan.floorplanImageUrl);
       var textureSrc = isLocalDataUrl
         ? plan.floorplanImageUrl
@@ -1326,8 +1240,6 @@
         tex.repeat.set(Math.max(0.001, bb.maxU - bb.minU), Math.max(0.001, bb.maxV - bb.minV));
         tex.offset.set(bb.minU, 1 - bb.maxV);
         tex.needsUpdate = true;
-        // MeshStandardMaterial을 쓰면 씬 조명(헤미스피어+directional 2개)이 겹쳐 사진이 하얗게
-        // 뜨는 문제가 있어서, 조명 영향을 안 받고 원본 색 그대로 보여주는 MeshBasicMaterial로 둠.
         var photoFloor = new THREE.Mesh(
           new THREE.PlaneGeometry(b.w, b.d),
           new THREE.MeshBasicMaterial({ map: tex })
@@ -1335,18 +1247,17 @@
         photoFloor.rotation.x = -Math.PI/2;
         photoFloor.position.set(center.x, -0.015, center.z);
         scene.add(photoFloor);
-      }, undefined, function(){ /* 로드 실패 시 무시 — 기존 단색 바닥만 보임 */ });
+      }, undefined, function(){ });
     }
 
     var wallColor = new THREE.Color(getCss("--blueprint"));
     var edgeColor = new THREE.Color(getCss("--blueprint-deep"));
     var wallHeight = 2.6;
-    // 가구가 벽을 뚫지 않도록, 실제로 세워진 벽 조각들의 위치를 여기 모아둠(가구 배치 편집기 충돌 판정용)
     var collisionWalls = [];
 
     function buildWallPiece(sx, sy, ex, ey, thickness){
       var segLen = Math.hypot(ex-sx, ey-sy);
-      if (segLen < 0.03) return; // skip slivers left by a door right at a corner
+      if (segLen < 0.03) return;
       collisionWalls.push({ x1:sx, y1:sy, x2:ex, y2:ey, thickness:thickness });
       var geo = new THREE.BoxGeometry(segLen, wallHeight, thickness);
       var mat = new THREE.MeshStandardMaterial({ color: wallColor, roughness:0.85, metalness:0.05 });
@@ -1360,15 +1271,13 @@
       scene.add(edges);
     }
 
-    // seg: [x1,y1,x2,y2]. doors: [{pos:0-1 대략 위치, width:문 폭(m)}, ...] on this segment.
-    // 문이 있으면 그 구간만 벽을 비워(뚫어) 통로를 만든다.
     function addWall(seg, thickness, doors){
       var x1=seg[0], y1=seg[1], x2=seg[2], y2=seg[3];
       var dx = x2-x1, dy = y2-y1;
       var length = Math.hypot(dx, dy);
       if (length < 0.001) return;
       var ux = dx/length, uy = dy/length;
-      var ext = thickness/2; // 벽 진짜 끝(코너)만 살짝 늘려서 이웃 벽과 자연스럽게 맞물리게 함
+      var ext = thickness/2;
 
       if (!doors || doors.length === 0){
         buildWallPiece(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext, thickness);
@@ -1395,21 +1304,18 @@
       if (!plan.doors) return null;
       return plan.doors.filter(function(d){ return d.wall === wallType && d.index === index; });
     }
-    // 문 뚫기는 AI가 잡아준 문 위치가 아직 부정확할 때가 있어서 당분간 꺼둠 — 지금은 벽만 그대로 세움.
-    // (다시 켜려면 아래 두 줄을 addWall(s, 0.22, doorsOnWall("outer", i)) 형태로 되돌리면 됨)
+    
     plan.outer.forEach(function(s){ addWall(s, 0.22); });
     plan.inner.forEach(function(s){ addWall(s, 0.12); });
 
-    /* ============ 가구 배치 편집기 (팀원 구현 이식) — opts.furnitureEditor===true일 때만 활성화.
-       히어로/결과 미리보기에서 쓰는 이 함수는 그대로 두고, "가구 배치 시작하기"를 눌렀을 때만
-       이 플래그를 켜서 씀. ============ */
+    /* ============ 가구 배치 편집기 ============ */
     var furnitureEditor = opts.furnitureEditor === true;
     var furniture = [], selectedFurniture = null, furnitureDragging = false;
     var raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
     var dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     var dragOffset = new THREE.Vector3();
     var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
-    var ROTATE_STEP_DEG = 15, NUDGE_STEP = 0.08; // 핸들 클릭 시 회전 각도(도) / 미세 이동 거리(m)
+    var ROTATE_STEP_DEG = 15, NUDGE_STEP = 0.08;
 
     var furnitureColorPicker;
 
@@ -1417,10 +1323,10 @@
       var mat = new THREE.MeshStandardMaterial({color:color, roughness:.78});
       var m = new THREE.Mesh(geo, mat);
       m.position.set(x,y,z);
-      // 색상 변경이 가능한 파츠인지 식별
       m.userData.colorable = (colorable !== false);
       return m;
     }
+    
     function addFurniture(type, x, z){
       if (!furnitureEditor) return;
       type = type || 'sofa';
@@ -1441,12 +1347,28 @@
         group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0, false));
         group.add(furniturePart(new THREE.SphereGeometry(.34,16,12),c,0,.6,0));
       }
+      
+      // 도면 전체 크기에 비례하여 가구 스케일 보정 (기본 9m 기준)
+      // 방이 커질 때 1:1로 정비례해서 너무 거대해지는 현상을 막기 위해, 실제 크기 증가분의 35% 정도만 반영하도록 완화합니다.
+      var rawScale = Math.max(b.w, b.d) / 9.0;
+      var roomScale = 1 + (rawScale - 1) * 0.35; 
+      if (roomScale <= 0.2) roomScale = 0.2;
+
       group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
-      group.userData.isFurniture = true; group.userData.type = type;
+      group.userData.isFurniture = true; 
+      group.userData.type = type;
+      
       group.userData.baseSize = type === 'sofa' ? {w:1.55,d:.72,h:.94} :
         type === 'table' ? {w:1.04,d:1.04,h:.66} :
         type === 'bed' ? {w:1.5,d:2.0,h:.88} : {w:.68,d:.68,h:.94};
-      group.userData.size = {w:group.userData.baseSize.w,d:group.userData.baseSize.d,h:group.userData.baseSize.h};
+      
+      group.userData.size = {
+        w: group.userData.baseSize.w * roomScale,
+        d: group.userData.baseSize.d * roomScale,
+        h: group.userData.baseSize.h * roomScale
+      };
+      group.scale.set(roomScale, roomScale, roomScale);
+
       clampFurniturePosition(group);
       resolveWallCollision(group);
       scene.add(group); furniture.push(group); selectFurniture(group);
@@ -1472,12 +1394,10 @@
       selectedFurniture.scale.set(dims.w/base.w,dims.h/base.h,dims.d/base.d);
       syncSizePanel();
     }
-    // 가구가 방 바깥으로 못 나가게 전체 경계 안으로 눌러줌 (드래그/미세 이동 공통으로 씀)
     function clampFurniturePosition(obj){
       obj.position.x = Math.max(0.3, Math.min(b.w-.3, obj.position.x));
       obj.position.z = Math.max(0.3, Math.min(b.d-.3, obj.position.z));
     }
-    // 가구의 실제 네 모서리(회전 반영) 좌표를 world 공간으로 계산
     function getFurnitureCorners(obj){
       var dims = obj.userData.size || {w:.6,d:.6};
       var hw = dims.w/2, hd = dims.d/2;
@@ -1490,9 +1410,6 @@
         };
       });
     }
-    // 가구가 벽을 뚫고 들어가면 밀어냄 — 원으로 뭉뚱그리지 않고 회전이 반영된 실제 네 모서리
-    // 각각이 벽 중심선에서 벽 두께 절반보다 가까워지는지 검사해서, 가장 깊이 박힌 모서리 기준으로
-    // 그 벽 밖으로 밀어냄(대각선으로 배치했을 때 모서리만 벽을 뚫는 문제를 없애기 위함)
     function resolveWallCollision(obj){
       if (!obj || !collisionWalls.length) return;
       for (var i=0;i<collisionWalls.length;i++){
@@ -1524,13 +1441,11 @@
       }
       clampFurniturePosition(obj);
     }
-    // 가구가 선택/해제될 때 머리 위 회전·이동 핸들을 보이거나 숨김
     function syncRotatePanel(){
       if (!rotatePanel) return;
       if (selectedFurniture) rotatePanel.classList.add('visible');
       else rotatePanel.classList.remove('visible');
     }
-    // 좌우 핸들을 눌렀을 때 15도씩 회전
     function rotateBy(deltaDeg){
       if (!selectedFurniture) return;
       var deg = (selectedFurniture.rotation.y * 180 / Math.PI) + deltaDeg;
@@ -1538,7 +1453,6 @@
       selectedFurniture.rotation.y = deg * Math.PI / 180;
       resolveWallCollision(selectedFurniture);
     }
-    // 화살표 핸들로 미세하게 위치 조정
     function nudgeFurniture(dir){
       if (!selectedFurniture) return;
       if (dir === 'up') selectedFurniture.position.z -= NUDGE_STEP;
@@ -1582,7 +1496,7 @@
 
       if (!hit) {
           selectFurniture(null);
-          return false; // 빈 공간 클릭 시 선택 해제 후 카메라 회전 허용
+          return false; 
       }
 
       var obj = findFurniture(hit);
@@ -1611,17 +1525,12 @@
     }
 
     if (furnitureEditor) {
-      // 1. 바닥에 심즈 스타일 그리드(격자) 추가
-      // 도면 사진을 안 깔기로 했으니 격자가 바닥의 유일한 기준선이 됨 — 이전(0.35)보다 진하게 키워서
-      // 잘 보이게 하고, 0.5m 간격 보조선 위에 1m 간격 중심선을 더 굵게 얹어 두 단계로 나눠줌.
       var gridHelper = new THREE.GridHelper(size * 1.5, Math.floor(size * 3), 0x8fb3d9, 0xffffff);
       gridHelper.material.opacity = 0.55;
       gridHelper.material.transparent = true;
       gridHelper.position.set(center.x, 0.01, center.z);
       scene.add(gridHelper);
 
-      // 1-1. 가구 배치 화면(캔버스 + 위의 모든 오버레이 UI)만 브라우저 전체화면으로 띄우는 버튼.
-      //      container 자체를 전체화면으로 넣으면 하단 패널/사이즈 패널/핸들까지 전부 같이 뜸.
       var fullscreenBtn = document.createElement('button');
       fullscreenBtn.type = 'button';
       fullscreenBtn.className = 'furniture-fullscreen-btn';
@@ -1645,11 +1554,9 @@
       container.addEventListener('webkitfullscreenchange', refreshFullscreenBtn);
       container.appendChild(fullscreenBtn);
 
-      // 2. 하단 UI 패널 컨테이너 생성
       var bottomPanel = document.createElement('div');
       bottomPanel.className = 'sims-bottom-panel';
 
-      // 2-1. 좌측 색상 팔레트 영역 (OS 네이티브 컬러 피커)
       var palette = document.createElement('div');
       palette.className = 'sims-color-picker-panel';
 
@@ -1681,7 +1588,6 @@
 
       bottomPanel.appendChild(palette);
 
-      // 2-2. 중앙 가구 아이템 목록
       var itemsPanel = document.createElement('div');
       itemsPanel.className = 'sims-items';
 
@@ -1696,13 +1602,19 @@
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'sims-btn';
-        btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px;">' + item.icon + '</span>' + item.label;
-        btn.addEventListener('click', function() { addFurniture(item.id); });
+        btn.draggable = true; 
+        
+        btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px; pointer-events:none;">' + item.icon + '</span><span style="pointer-events:none;">' + item.label + '</span>';
+        
+        btn.addEventListener('dragstart', function(e) {
+          e.dataTransfer.setData('text/plain', item.id);
+          e.dataTransfer.effectAllowed = 'copy';
+        });
+
         itemsPanel.appendChild(btn);
       });
       bottomPanel.appendChild(itemsPanel);
 
-      // 2-3. 우측 액션(삭제) 영역
       var actionsPanel = document.createElement('div');
       actionsPanel.className = 'sims-actions';
 
@@ -1721,7 +1633,6 @@
 
       container.appendChild(bottomPanel);
 
-      // 3. 우측 상단 사이즈 조절 패널
       sizePanel = document.createElement('div');
       sizePanel.className = 'furniture-size-panel';
       sizePanel.hidden = true;
@@ -1736,9 +1647,6 @@
       });
       container.appendChild(sizePanel);
 
-      // 4. 선택한 가구 머리 위에 뜨는 투명 핸들 (회전 15도씩 + 미세 위치 조정) — 심즈 스타일.
-      //    평소엔 완전히 안 보이다가 가구를 선택하면 그 가구 위치에 맞춰 나타남(위치 갱신은
-      //    updateRotatePanelPosition()이 매 프레임 처리).
       rotatePanel = document.createElement('div');
       rotatePanel.className = 'furniture-rotate-panel';
       rotatePanel.innerHTML = '<div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div>';
@@ -1750,22 +1658,16 @@
       });
       container.appendChild(rotatePanel);
 
-      // 초기 기본 가구 배치
-      addFurniture('sofa', center.x - size*.18, center.z);
-      addFurniture('table', center.x + size*.13, center.z - size*.12);
       selectFurniture(null);
     }
 
-    // orbit state — start from a slightly top-down "dollhouse" angle so the
-    // room layout reads clearly before anyone drags
     var radius = size * 1.85;
-    var theta = Math.PI/4;    // azimuth
-    var phi = Math.PI/4.3;    // polar (from top)
-    var TOP_PHI = 0.25;       // 마우스로 드래그해서 올라갈 수 있는 최소각(0에 가까울수록 정탑뷰지만,
-                               // 드래그 중 phi가 0에 너무 가까워지면 회전축이 흔들려서 여유를 둠)
-    var trueTopView = false;  // 탑뷰 버튼으로 "진짜" 바로 위(phi≈0)에서 보는 중인지
-    var spinning = opts.autoRotate !== false; // 지금 실제로 빙글빙글 도는 중인지
-    var userPaused = false;   // 일시정지 버튼을 눌러서 멈춘 상태면 true — 드래그 끝나도 자동으로 안 돌아감
+    var theta = Math.PI/4;    
+    var phi = Math.PI/4.3;    
+    var TOP_PHI = 0.25;       
+    var trueTopView = false;  
+    var spinning = opts.autoRotate !== false; 
+    var userPaused = false;   
     var dragging = false, lastX = 0, lastY = 0, idleTimer = null;
 
     function updateCamera(){
@@ -1773,8 +1675,6 @@
       var y = radius * Math.cos(phi);
       var z = center.z + radius * Math.sin(phi) * Math.sin(theta);
       camera.position.set(x, y, z);
-      // 카메라가 거의 바로 위에 있을 땐 up 벡터가 시선 방향과 겹쳐서(짐벌락) lookAt이 불안정해지므로,
-      // 그때만 up을 옆으로 돌려서 화면이 안정적으로 보이게 함(일반 각도에서는 원래대로 y축 위).
       camera.up.set(0, trueTopView ? 0 : 1, trueTopView ? -1 : 0);
       camera.lookAt(center);
     }
@@ -1799,6 +1699,7 @@
         idleTimer = setTimeout(function(){ spinning = true; }, 2200);
       }
     }
+
     var canvas = renderer.domElement;
     canvas.addEventListener("pointerdown", function(e){
       spinning=false;
@@ -1819,7 +1720,26 @@
       updateCamera();
     }, { passive:false });
 
-    // ---- 탑뷰 / 일시정지-재생 컨트롤 버튼 ----
+    if (furnitureEditor) {
+      canvas.addEventListener("dragover", function(e){
+        e.preventDefault(); 
+        e.dataTransfer.dropEffect = 'copy';
+      });
+
+      canvas.addEventListener("drop", function(e){
+        e.preventDefault();
+        var type = e.dataTransfer.getData("text/plain");
+        if (['sofa', 'table', 'bed', 'plant'].indexOf(type) !== -1) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+            addFurniture(type, point.x, point.z);
+          } else {
+            addFurniture(type, center.x, center.z);
+          }
+        }
+      });
+    }
+
     var TOP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>';
     var PAUSE_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg>';
     var PLAY_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5-13-7.5z"/></svg>';
@@ -1845,7 +1765,7 @@
       userPaused = true;
       spinning = false;
       trueTopView = true;
-      phi = 0.0001; // 거의 정확히 바로 위(0이면 계산이 불안정해질 수 있어 아주 살짝만 여유)
+      phi = 0.0001; 
       updateCamera();
       refreshPlayPauseBtn();
       topViewBtn.classList.add("active");
@@ -1863,7 +1783,6 @@
       }
       refreshPlayPauseBtn();
     });
-    // 드래그로 직접 각도를 바꾸면 "탑뷰 고정" 표시는 해제(다른 각도로 봤으니까) + 정탑뷰용 up벡터도 원복
     canvas.addEventListener("pointerdown", function(){
       topViewBtn.classList.remove("active");
       if (trueTopView){
@@ -1888,15 +1807,13 @@
     });
     ro.observe(container);
 
-    // 선택된 가구 머리 위(회전/이동 핸들)를 그 가구의 현재 3D 위치에 맞춰 화면 좌표로 옮김.
-    // 카메라가 궤도로 계속 움직이므로(또는 드래그로 회전) 매 프레임 다시 계산해야 함.
     var rotatePanelAnchor = furnitureEditor ? new THREE.Vector3() : null;
     function updateRotatePanelPosition(){
       if (!rotatePanel || !selectedFurniture) return;
       var dims = selectedFurniture.userData.size || {w:.6,d:.6,h:.9};
       rotatePanelAnchor.set(selectedFurniture.position.x, dims.h + 0.3, selectedFurniture.position.z);
       rotatePanelAnchor.project(camera);
-      if (rotatePanelAnchor.z > 1) return; // 카메라 뒤쪽이면 갱신하지 않음(직전 위치 유지)
+      if (rotatePanelAnchor.z > 1) return; 
       var w = container.clientWidth, h = container.clientHeight;
       if (!w || !h) return;
       var sx = (rotatePanelAnchor.x * 0.5 + 0.5) * w;
@@ -1930,8 +1847,6 @@
         if (typeof fullscreenBtn !== 'undefined' && fullscreenBtn.parentNode) fullscreenBtn.parentNode.removeChild(fullscreenBtn);
         if ((document.fullscreenElement === container || document.webkitFullscreenElement === container) && document.exitFullscreen) document.exitFullscreen();
       },
-      // ===== 게시(publish) 기능용 헬퍼 — 가구 배치 완료 시 갤러리에 올릴 데이터/썸네일을 뽑아냄 =====
-      // 배치된 가구 각각을 {종류, 위치, 회전, 크기, 색상}만 남는 순수 데이터로 직렬화.
       getFurnitureData: function(){
         return furniture.map(function(f){
           var colorHex = null;
@@ -1944,10 +1859,7 @@
           return { type: f.userData.type, x: f.position.x, z: f.position.z, rotY: f.rotation.y, w: dims.w, d: dims.d, h: dims.h, color: colorHex };
         });
       },
-      // 벽 기준 방 크기(가로/세로, 미터) — planBounds()로 이미 계산해둔 b를 그대로 반환.
       getBounds: function(){ return { w: b.w, d: b.d }; },
-      // 지금 보이는 3D 화면을 작은 썸네일 이미지(JPEG data URL)로 캡처. 원본 캔버스가 크더라도
-      // maxW 기준으로 축소해서 localStorage에 여러 게시물을 저장해도 용량 부담이 적게 함.
       screenshot: function(maxW){
         maxW = maxW || 480;
         renderer.render(scene, camera);
@@ -1998,7 +1910,7 @@
   var resultScene = null;
   var furniturePlan = null;
   var furnitureMode = false;
-  var furniturePublished = false; // 이번 배치를 이미 게시했는지 — 중복 게시 방지용
+  var furniturePublished = false; 
 
   function showOnly(panel){
     [panelSearch, panelLoading, panelTrace].forEach(function(p){ p.hidden = (p !== panel); });
@@ -2020,16 +1932,11 @@
     overlay.hidden = true;
     if (resultScene){ resultScene.dispose(); resultScene = null; }
   }
-  // Esc 키로는 팝업이 닫히지 않게 함 — 작업하다 실수로 Esc를 연타하면
-  // (특히 전체화면 종료하려고 누르다가) 도면/가구 작업 중이던 팝업이 통째로
-  // 닫혀서 처음 화면으로 튕겨나가는 문제가 있었음. 닫기는 X 버튼으로만.
 
   document.querySelectorAll(".js-open-modal").forEach(function(b){ b.addEventListener("click", openModal); });
   document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
   document.getElementById("modalCloseBtn2").addEventListener("click", closeModal);
-  // 오버레이를 눌러서 닫는 기능은 "누르기 시작한 자리"도 오버레이여야만 동작하게 함.
-  // (모달 안에서 3D 뷰를 드래그하다 마우스가 모달 밖으로 나간 채 손을 떼면 click 이벤트의
-  //  target이 overlay로 잡혀서 의도치 않게 창이 닫히는 문제가 있었음 — X 버튼으로만 닫히길 원함)
+
   var overlayMouseDownOnSelf = false;
   overlay.addEventListener("mousedown", function(e){ overlayMouseDownOnSelf = (e.target === overlay); });
   overlay.addEventListener("click", function(e){
@@ -2068,10 +1975,6 @@
     startTracing(complexLike, plan, url);
   }
 
-  // PC에 저장된 도면 이미지 파일을 직접 불러오는 기능. 네이버 이미지 서버처럼 CORS를 막아둔
-  // 곳이 없어서(내 컴퓨터 파일이니까) /api/image-proxy를 거칠 필요가 없음 — FileReader로
-  // data: URL로 바꿔서 바로 씀(3D 바닥 텍스처 로딩 쪽도 이 data: URL은 프록시 없이 바로 읽게
-  // 되어 있음, createWallScene 안 텍스처 로드 부분 참고).
   var localFileInput = document.getElementById("localFileInput");
   var localFileBtn = document.getElementById("localFileBtn");
   localFileBtn.addEventListener("click", function(){ localFileInput.click(); });
@@ -2086,7 +1989,7 @@
     var reader = new FileReader();
     reader.onload = function(){
       selectLocalImage(reader.result, file.name);
-      localFileInput.value = ""; // 같은 파일을 다시 선택해도 change 이벤트가 또 뜨도록 초기화
+      localFileInput.value = ""; 
     };
     reader.onerror = function(){
       alert("이미지를 불러오지 못했어요. 다른 파일로 다시 시도해주세요.");
@@ -2124,8 +2027,6 @@
     openModal();
   });
 
-  /* "다음: 가구 배치 시작하기" — 3D 변환 결과 화면을 가구 배치 전용 풀스크린으로 전환하고,
-     동일한 createWallScene을 furnitureEditor:true로 다시 띄움 (팀원 구현 이식) */
   document.getElementById("nextStepBtn").addEventListener("click", function(){
     if (!furniturePlan){
       alert("먼저 3D 변환이 완료된 도면을 준비해 주세요.");
@@ -2135,25 +2036,25 @@
       furnitureMode = true;
       modalResultBox.classList.add("furniture-fullscreen");
       document.getElementById("resultStageTitle").innerHTML = '가구 배치 작업 화면 <small style="font-weight:400;color:var(--ink-soft);">· 드래그 앤 드롭</small>';
-      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. 가구를 선택하면 위에 뜨는 핸들로 회전(↺↻)과 미세 위치 조정도 가능합니다.";
+      document.getElementById("furnitureNote").textContent = "* 하단 패널에서 가구를 드래그 앤 드롭하여 3D 화면에 배치하세요. 가구를 선택하면 위에 뜨는 핸들로 회전(↺↻)과 미세 위치 조정도 가능합니다.";
+      
       this.textContent = "가구 배치 완료";
       if (resultScene){ resultScene.dispose(); resultScene = null; }
-      resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동 및 회전</span>';
+      resultStage.innerHTML = '<span class="canvas-hint">가구를 하단에서 드래그해서 배치 및 회전</span>';
       resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true });
     } else if (furniturePublished){
-      // 이미 게시했으면 다시 게시하지 않고 그냥 갤러리로 보내줌(중복 게시 방지)
       location.href = "/gallery";
     } else {
       if (!resultScene){ return; }
       var defaultTitle = "내 배치 · " + new Date().toLocaleDateString("ko-KR", { month:"long", day:"numeric" });
       var title = prompt("게시물 제목을 입력해주세요.", defaultTitle);
-      if (title === null) return; // 취소하면 아무 것도 안 하고 계속 편집 가능
+      if (title === null) return; 
       title = title.trim() || defaultTitle;
 
       var author = ohGetName();
       if (!author){
         var typed = prompt("갤러리에 표시될 닉네임을 입력해주세요. (한 번만 입력하면 이 브라우저에 기억해둬요)", "익명");
-        if (typed === null) return; // 취소
+        if (typed === null) return; 
         author = typed.trim() || "익명";
         ohSetName(author);
       }
@@ -2187,8 +2088,6 @@
     }
   });
 
-  // "편집" — 방금 그린 벽을 그대로 유지한 채 트레이싱 화면으로 돌아가서 이어서 고칠 수 있게 함
-  // (startTracing()과 달리 traceChains/traceCurrent를 비우지 않음)
   document.getElementById("editWallsBtn").addEventListener("click", function(){
     if (resultScene){ resultScene.dispose(); resultScene = null; }
     if (tracePlan && tracePlan.floorplanImageUrl) traceImg.src = tracePlan.floorplanImageUrl;
@@ -2196,15 +2095,11 @@
     traceRedraw();
   });
 
-  // AI한테 벽 좌표를 뽑아달라고 시켜봤는데(NVIDIA NIM의 무료 Gemma 4 비전 모델), 아무리 프롬프트를
-  // 고치고 영상처리로 보정해도 실제 도면과 비율·개수가 계속 안 맞았음. 그래서 방향을 바꿔서, 사용자가
-  // 도면 사진 위에 직접 클릭으로 벽 선을 그리면 그걸 그대로 3D로 세우는 방식으로 교체함 — AI 호출도
-  // 서버 API도 필요 없이 브라우저에서 바로 끝남. (SVG_NS는 위쪽 "2. 2D SVG 도면 렌더링" 섹션에서 정의됨)
   var SVG_TRACE_NS = "http://www.w3.org/2000/svg";
   var traceComplex = null;
   var tracePlan = null;
-  var traceChains = [];     // 완성된 벽 체인들: [[{u,v},{u,v},...], ...]
-  var traceCurrent = [];    // 지금 그리고 있는 체인: [{u,v},...]
+  var traceChains = [];     
+  var traceCurrent = [];    
 
   function traceEl(name, attrs){
     var n = document.createElementNS(SVG_TRACE_NS, name);
@@ -2219,10 +2114,6 @@
     return n;
   }
 
-  // 벽 보정: 기본은 끔(그린 그대로) — 체크하면 각 벽 선분을 가로/세로 중 더 가까운 쪽으로 딱 맞추고
-  // (첫 점은 그대로 두고, 그다음 점부터 이전 보정점 기준으로 가로/세로 이동만 적용),
-  // 서로 가까운 벽 끝점들(모서리)을 하나로 붙여서 틈을 메움. 원본 좌표(traceChains/traceCurrent)는
-  // 건드리지 않고, 화면에 그리거나 3D로 변환할 때만 보정된 사본을 사용함(체크 해제하면 바로 원상복구).
   function snapChainAxis(chain){
     if (chain.length === 0) return [];
     var out = [{ u: chain[0].u, v: chain[0].v }];
@@ -2339,7 +2230,7 @@
     tracePlan = plan;
     traceChains = [];
     traceCurrent = [];
-    traceCorrectToggle.checked = false; // 기본값: 보정 끔(그린 그대로)
+    traceCorrectToggle.checked = false; 
     showOnly(panelTrace);
     traceImg.src = imageUrl;
     traceRedraw();
@@ -2348,7 +2239,7 @@
   traceDoneBtn.addEventListener("click", function(){
     if (traceCurrent.length >= 2){ traceChains.push(traceCurrent); traceCurrent = []; }
 
-    var geo = traceDisplayGeometry(); // 보정 체크돼 있으면 보정된 좌표로, 아니면 원본 그대로
+    var geo = traceDisplayGeometry(); 
     var allPoints = [];
     var segs = [];
     geo.chains.forEach(function(chain){
@@ -2371,11 +2262,6 @@
     var widthM = parseFloat(traceWidthInput.value) || 9;
     var depthM = parseFloat(traceDepthInput.value) || 7;
 
-    // "실제 가로/세로" 입력값은 방금 그린 벽 범위(bboxW×bboxH)를 그 크기로 강제로 늘려/줄여
-    // 맞추는 값이라, 예를 들어 발코니처럼 좁고 긴 방만 그렸는데 입력창엔 이전에 아파트 전체를
-    // 그릴 때 쓰던 9×7 같은 값이 그대로 남아있으면 좁고 긴 모양이 억지로 넓적하게 찌그러져
-    // 버림. 그려진 범위의 가로세로 비율과 입력한 실제 가로/세로 비율 차이가 너무 크면 진행
-    // 전에 한 번 확인시켜서, 방을 새로 그릴 때 실제 가로/세로 갱신을 깜빡하는 실수를 막음.
     var drawnAspect = bboxW / bboxH;
     var enteredAspect = widthM / depthM;
     var aspectMismatch = drawnAspect / enteredAspect;
@@ -2398,8 +2284,6 @@
 
     tracePlan.wallData = {
       outer: walls, inner: [], rooms: [], width: widthM, depth: depthM,
-      // 3D 바닥에 원본 도면 사진을 그대로 깔기 위한 정보 — 그린 벽들의 바운딩박스(이미지 비율 0~1)를
-      // 그대로 텍스처 크롭 영역으로 씀(벽 좌표를 미터로 바꿀 때 쓴 것과 동일한 박스라 딱 맞아떨어짐).
       floorplanImageUrl: tracePlan.floorplanImageUrl,
       imageBBox: { minU: minU, minV: minV, maxU: maxU, maxV: maxV }
     };
@@ -2423,8 +2307,6 @@
 
     resultTitle.textContent = complex.name;
     resultSubtitle.textContent = planLabelText(plan) + " · " + planAreaText(plan);
-    // "실시간 데이터"라고 하면 마치 네이버 부동산과 실시간으로 연동된 것처럼 오해할 수 있어서
-    // (실제로는 사용자가 붙여넣거나 불러온 이미지 한 장을 그 시점에 처리하는 것뿐) 표현을 바꿈.
     resultBadge.textContent = plan.isReal ? "불러온 도면 데이터" : "샘플 데이터";
 
     resultStage.querySelectorAll("canvas").forEach(function(c){ c.remove(); });
