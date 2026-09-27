@@ -1,15 +1,14 @@
-<title>갤러리 · 오늘의 하우징</title>
+<title>게시물 · 오늘의 하우징</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="오늘의 하우징">
-<meta property="og:title" content="갤러리 · 오늘의 하우징">
-<meta property="og:description" content="도면으로 세운 3D 벽에 가구까지 배치한 사용자들의 결과물을 구경하고 의견을 남겨보세요.">
+<meta property="og:title" content="게시물 · 오늘의 하우징">
+<meta property="og:description" content="도면으로 세운 3D 벽에 가구까지 배치한 결과물이에요. 댓글로 의견을 남겨보세요.">
 <meta property="og:image" content="https://today-housing.vercel.app/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://today-housing.vercel.app/gallery">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="갤러리 · 오늘의 하우징">
-<meta name="twitter:description" content="도면으로 세운 3D 벽에 가구까지 배치한 사용자들의 결과물을 구경하고 의견을 남겨보세요.">
+<meta name="twitter:title" content="게시물 · 오늘의 하우징">
+<meta name="twitter:description" content="도면으로 세운 3D 벽에 가구까지 배치한 결과물이에요. 댓글로 의견을 남겨보세요.">
 <meta name="twitter:image" content="https://today-housing.vercel.app/og-image.png">
 <script>
 // 다크/라이트 모드를 새로고침해도 기억하도록, 화면이 그려지기 전에 최대한 빨리 적용
@@ -78,8 +77,6 @@
     font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
-    /* plan3d.html과 동일한 이유로 추가 — 한글 줄바꿈이 음절 아무데서나 일어나지 않고 스페이스
-       기준으로만 자연스럽게 되도록 함. */
     word-break:keep-all;
     overflow-wrap:break-word;
   }
@@ -165,75 +162,82 @@
   .btn-primary:hover{background:var(--blueprint-deep); transform:translateY(-1px);}
   .btn-sm{padding:9px 14px; font-size:.85rem; border-radius:8px;}
 
-  .eyebrow{
-    display:inline-flex; align-items:center; gap:8px;
-    font-size:.8rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--blueprint); border-bottom:1px dashed var(--blueprint);
-    padding-bottom:4px; margin-bottom:18px;
-  }
-
   .back-link{
     display:inline-flex; align-items:center; gap:6px; font-size:.86rem; color:var(--ink-soft);
     text-decoration:none; margin-bottom:22px;
   }
   .back-link:hover{color:var(--ink);}
 
-  /* ---------- gallery(게시판) ---------- */
-  .gallery-page-head{
-    display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
-  }
-  .gallery-page-head h1{font-size:clamp(1.8rem,3.4vw,2.4rem); margin-bottom:10px;}
-  .gallery-page-head p{color:var(--ink-soft); font-size:1.02rem; max-width:56ch;}
-  .gallery-page-head .btn{flex:none;}
-
-  .filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin:28px 0 24px;}
-  .filter-chip{
-    appearance:none; cursor:pointer; border:1px solid var(--line); background:var(--paper-raised);
-    color:var(--ink-soft); border-radius:100px; padding:7px 16px; font-size:.85rem; font-weight:600;
-  }
-  .filter-chip:hover{color:var(--ink); border-color:var(--ink-soft);}
-  .filter-chip.is-active{background:var(--blueprint); color:#fff; border-color:var(--blueprint);}
-  .filter-chip:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
-
   .badge{
     font-size:.72rem; font-weight:600; background:var(--terra-soft); color:var(--terra);
     padding:3px 9px; border-radius:100px; white-space:nowrap;
   }
 
-  .gallery-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
-  @media (max-width:960px){ .gallery-grid{grid-template-columns:1fr 1fr;} }
-  @media (max-width:620px){ .gallery-grid{grid-template-columns:1fr;} }
+  /* ---------- 게시물 상세 ---------- */
+  .post-wrap{max-width:760px; margin:0 auto;}
 
-  .gallery-card{
-    background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; overflow:hidden;
-    display:flex; flex-direction:column; transition:border-color .15s ease, transform .15s ease;
-  }
-  .gallery-card:hover{border-color:var(--blueprint); transform:translateY(-2px);}
+  .post-head{display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin-bottom:22px;}
+  .post-head h1{font-size:clamp(1.5rem,3vw,2.05rem);}
+  .post-meta{font-size:.86rem; color:var(--ink-soft); display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
 
-  .gallery-thumb{
-    position:relative; aspect-ratio:4/3;
+  .post-thumb{
+    position:relative; border-radius:16px; overflow:hidden; aspect-ratio:16/10;
     background:linear-gradient(155deg, var(--blueprint-soft), var(--paper) 78%);
     display:flex; align-items:center; justify-content:center; color:var(--blueprint);
+    margin-bottom:20px; border:1px solid var(--line);
   }
-  .gallery-thumb[data-variant="2"]{background:linear-gradient(155deg, var(--terra-soft), var(--paper) 78%); color:var(--terra);}
-  .gallery-thumb[data-variant="3"]{background:linear-gradient(155deg, var(--blueprint-soft) 0%, var(--terra-soft) 130%); color:var(--blueprint-deep);}
-  .gallery-badge{position:absolute; top:10px; right:10px;}
-  /* 실제 게시물은 3D 화면을 캡처한 썸네일(<img>)을 가짐 — 그래디언트 placeholder 대신 사진을 꽉 채움 */
-  .gallery-thumb.has-image{background:var(--paper-raised);}
-  .gallery-thumb.has-image img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
-  .gallery-thumb-link{display:block; color:inherit;}
+  .post-thumb[data-variant="2"]{background:linear-gradient(155deg, var(--terra-soft), var(--paper) 78%); color:var(--terra);}
+  .post-thumb[data-variant="3"]{background:linear-gradient(155deg, var(--blueprint-soft) 0%, var(--terra-soft) 130%); color:var(--blueprint-deep);}
+  .post-thumb svg{width:64px; height:64px;}
+  .post-thumb.has-image{background:var(--paper-raised);}
+  .post-thumb.has-image img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
 
-  .gallery-body{padding:16px 18px 18px; display:flex; flex-direction:column; gap:6px; flex:1;}
-  .gallery-body h3{font-size:.96rem; font-family:'IBM Plex Sans KR'; font-weight:700; line-height:1.4;}
-  .gallery-body h3 a{color:inherit; text-decoration:none;}
-  .gallery-body h3 a:hover{text-decoration:underline;}
-  .gallery-user{font-size:.8rem; color:var(--ink-soft);}
-  .gallery-stats{display:flex; gap:14px; margin-top:auto; padding-top:10px; font-size:.82rem; color:var(--ink-soft);}
-  .gallery-stats span{display:inline-flex; align-items:center; gap:5px;}
-  .gallery-stats svg{flex:none;}
+  .post-stats-row{
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:16px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .post-room-info{font-size:.88rem; color:var(--ink-soft);}
 
-  .empty-msg{color:var(--ink-soft); font-size:.9rem; padding:32px 0; text-align:center;}
-  .gallery-note{margin-top:22px; font-size:.82rem; color:var(--ink-soft);}
+  .like-btn{
+    appearance:none; cursor:pointer; border:1.5px solid var(--line); background:var(--paper-raised);
+    color:var(--ink-soft); border-radius:100px; padding:9px 18px; font-size:.9rem; font-weight:600;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .like-btn:hover{border-color:var(--terra); color:var(--terra);}
+  .like-btn.is-liked{background:var(--terra-soft); border-color:var(--terra); color:var(--terra);}
+  .like-btn:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  .like-btn svg{flex:none;}
+
+  .comments-section h2{font-size:1.1rem; margin-bottom:16px; display:flex; align-items:baseline; gap:6px;}
+  .comments-section h2 span{font-family:'IBM Plex Sans KR'; font-size:.9rem; color:var(--ink-soft); font-weight:600;}
+
+  .comment-list{display:flex; flex-direction:column; gap:14px; margin-bottom:26px;}
+  .comment-item{border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--paper-raised);}
+  .comment-head{display:flex; justify-content:space-between; gap:10px; font-size:.8rem; color:var(--ink-soft); margin-bottom:6px;}
+  .comment-author{font-weight:700; color:var(--ink);}
+  .comment-item p{font-size:.92rem; line-height:1.55;}
+  .comment-empty{color:var(--ink-soft); font-size:.88rem; padding:6px 0 20px;}
+
+  .comment-form{display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--line); padding-top:22px;}
+  .comment-form .comment-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .comment-form input[type="text"]{
+    flex:0 0 160px; padding:11px 13px; border-radius:9px; border:1.5px solid var(--line);
+    background:var(--paper); color:var(--ink); font-size:.92rem;
+  }
+  .comment-form textarea{
+    flex:1 1 260px; min-height:44px; max-height:160px; padding:11px 13px; border-radius:9px;
+    border:1.5px solid var(--line); background:var(--paper); color:var(--ink); font-size:.92rem;
+    font-family:inherit; resize:vertical;
+  }
+  .comment-form input:focus-visible, .comment-form textarea:focus-visible{
+    outline:2px solid var(--focus); outline-offset:1px; border-color:var(--focus);
+  }
+  .comment-form .btn{align-self:flex-end;}
+
+  .post-not-found{padding:60px 0; text-align:center; color:var(--ink-soft);}
+  .post-not-found h1{margin-bottom:10px; color:var(--ink);}
 
   /* ---------- footer ---------- */
   footer{border-top:1px solid var(--line); padding:32px 0;}
@@ -283,27 +287,10 @@
 <main>
   <section>
     <div class="wrap">
-      <a class="back-link" href="/">← 홈으로</a>
-
-      <div class="gallery-page-head">
-        <div>
-          <span class="eyebrow">커뮤니티</span>
-          <h1>갤러리</h1>
-          <p>도면으로 세운 3D 벽에 가구까지 배치한 사용자들의 결과물이에요.<br>전문가와 다른 사용자들이 직접 보고 배치 조언을 남겨줘요.</p>
-        </div>
-        <a class="btn btn-primary" href="/">내 배치 올리기</a>
+      <div class="post-wrap">
+        <a class="back-link" href="/gallery">← 갤러리로</a>
+        <div id="postContent"><!-- JS가 채움 --></div>
       </div>
-
-      <div class="filter-bar" role="tablist" aria-label="갤러리 정렬">
-        <button type="button" class="filter-chip is-active">전체</button>
-        <button type="button" class="filter-chip">전문가 답변</button>
-        <button type="button" class="filter-chip">최신순</button>
-        <button type="button" class="filter-chip">인기순</button>
-      </div>
-
-      <div class="gallery-grid" id="galleryGrid"></div>
-
-      <p class="gallery-note">* 게시물은 지금 이 브라우저에만 저장돼요 — 다른 기기·브라우저와는 아직 공유되지 않아요.</p>
     </div>
   </section>
 </main>
@@ -319,7 +306,7 @@
 (function(){
   "use strict";
 
-  /* ============ 게시판(갤러리) 공용 데이터 유틸 — plan3d.html/post.html과 동일한 블록을
+  /* ============ 게시판(갤러리) 공용 데이터 유틸 — plan3d.html/gallery.html과 동일한 블록을
      그대로 복제 (이 프로젝트는 페이지마다 독립된 정적 HTML이라 공용 로직도 파일마다 복사해야
      함). 자세한 설명은 plan3d.html 쪽 주석 참고. ============ */
   var OH_POSTS_KEY = "oh-posts";
@@ -335,9 +322,8 @@
     hash: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1.5"/></svg>',
     chat: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
   };
-  var OH_COMMENT_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
-  var OH_LIKE_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
-  var OH_LIKE_ICON_FILLED = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z"/></svg>';
+  var OH_LIKE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  var OH_LIKE_ICON_FILLED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z"/></svg>';
 
   function ohNowMinus(ms){ return new Date(Date.now() - ms).toISOString(); }
 
@@ -433,55 +419,8 @@
     try{ localStorage.setItem(OH_NAME_KEY, name); } catch(e){}
   }
 
-  /* ---------- 갤러리 카드 렌더링 + 정렬/필터 ---------- */
-  var CURRENT_FILTER = "all";
-  var FILTER_ORDER = ["all", "expert", "recent", "popular"]; // .filter-bar 안의 칩 순서와 동일
-
-  function ohMatchesFilter(post, filter){
-    if (filter === "expert") return /전문가/.test(post.badge || "");
-    return true;
-  }
-  function ohSortPosts(posts, filter){
-    var arr = posts.slice();
-    if (filter === "popular") arr.sort(function(a,b){ return (b.likes||0) - (a.likes||0); });
-    else arr.sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
-    return arr;
-  }
-  function ohRenderCard(post){
-    var hasImg = !!(post.thumb && post.thumb.dataUrl);
-    var thumbInner = hasImg
-      ? '<img src="' + post.thumb.dataUrl + '" alt="">'
-      : (OH_ICONS[(post.thumb && post.thumb.icon) || "house"] || OH_ICONS.house);
-    var variant = (post.thumb && post.thumb.variant) || 1;
-    var badge = post.badge ? '<span class="badge gallery-badge">' + ohEscapeHtml(post.badge) + '</span>' : "";
-    var href = "/post?id=" + encodeURIComponent(post.id);
-    return '' +
-      '<article class="gallery-card">' +
-        '<a class="gallery-thumb-link" href="' + href + '" aria-label="' + ohEscapeHtml(post.title) + ' 상세보기">' +
-          '<div class="gallery-thumb' + (hasImg ? ' has-image' : '') + '" data-variant="' + variant + '">' + thumbInner + badge + '</div>' +
-        '</a>' +
-        '<div class="gallery-body">' +
-          '<h3><a href="' + href + '">' + ohEscapeHtml(post.title) + '</a></h3>' +
-          '<p class="gallery-user">' + ohEscapeHtml(post.author) + ' · ' + ohTimeAgo(post.createdAt) + '</p>' +
-          '<div class="gallery-stats">' +
-            '<span>' + OH_COMMENT_ICON + ' ' + ((post.comments && post.comments.length) || 0) + '</span>' +
-            '<span>' + OH_LIKE_ICON + ' ' + (post.likes || 0) + '</span>' +
-          '</div>' +
-        '</div>' +
-      '</article>';
-  }
-  function ohRenderGrid(){
-    var grid = document.getElementById("galleryGrid");
-    if (!grid) return;
-    var posts = ohLoadPosts().filter(function(p){ return ohMatchesFilter(p, CURRENT_FILTER); });
-    posts = ohSortPosts(posts, CURRENT_FILTER);
-    grid.innerHTML = posts.length
-      ? posts.map(ohRenderCard).join("")
-      : '<p class="empty-msg" style="grid-column:1/-1;">해당하는 게시물이 아직 없어요.</p>';
-  }
-
-  /* 다크/라이트 모드 토글 — plan3d.html과 동일한 localStorage 키("oh-theme")를 공유해서
-     두 페이지를 오가도 모드가 유지됨 */
+  /* 다크/라이트 모드 토글 — 다른 페이지들과 동일한 localStorage 키("oh-theme")를 공유해서
+     페이지를 오가도 모드가 유지됨 */
   var SUN_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
   var MOON_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1110.2 4a6.8 6.8 0 009.8 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
   var themeToggle = document.getElementById("themeToggle");
@@ -534,18 +473,112 @@
     }
   })();
 
-  /* 정렬 칩 — 전체/전문가 답변/최신순/인기순 실제로 갤러리 목록을 필터·정렬함 */
-  var filterChips = document.querySelectorAll(".filter-bar .filter-chip");
-  filterChips.forEach(function(chip, idx){
-    chip.addEventListener("click", function(){
-      filterChips.forEach(function(c){ c.classList.remove("is-active"); });
-      chip.classList.add("is-active");
-      CURRENT_FILTER = FILTER_ORDER[idx] || "all";
-      ohRenderGrid();
-    });
-  });
+  /* ---------- 게시물 상세 렌더링 ---------- */
+  function renderNotFound(){
+    document.getElementById("postContent").innerHTML =
+      '<div class="post-not-found">' +
+        '<h1>게시물을 찾을 수 없어요</h1>' +
+        '<p>삭제되었거나 잘못된 링크예요. 이 브라우저에 저장된 게시물이 아닐 수도 있어요.</p>' +
+        '<a class="btn btn-primary" href="/gallery" style="margin-top:18px;">갤러리로 돌아가기</a>' +
+      '</div>';
+  }
 
-  ohRenderGrid();
+  function renderPost(){
+    var params = new URLSearchParams(location.search);
+    var postId = params.get("id");
+    var post = postId ? ohGetPost(postId) : null;
+    if (!post){ renderNotFound(); return; }
+
+    document.title = post.title + " · 오늘의 하우징";
+
+    var hasImg = !!(post.thumb && post.thumb.dataUrl);
+    var variant = (post.thumb && post.thumb.variant) || 1;
+    var thumbInner = hasImg
+      ? '<img src="' + post.thumb.dataUrl + '" alt="' + ohEscapeHtml(post.title) + ' 3D 배치 미리보기">'
+      : (OH_ICONS[(post.thumb && post.thumb.icon) || "house"] || OH_ICONS.house);
+    var badge = post.badge ? '<span class="badge">' + ohEscapeHtml(post.badge) + '</span>' : "";
+
+    var roomBits = [];
+    if (post.roomSize && post.roomSize.w && post.roomSize.d){
+      roomBits.push("가로 " + post.roomSize.w.toFixed(1) + "m");
+      roomBits.push("세로 " + post.roomSize.d.toFixed(1) + "m");
+    }
+    if (post.furniture && post.furniture.length){
+      roomBits.push("가구 " + post.furniture.length + "개");
+    }
+    var roomLine = roomBits.length ? roomBits.join(" · ") : "방 정보가 없어요";
+
+    document.getElementById("postContent").innerHTML =
+      '<div class="post-head">' +
+        badge +
+        '<h1>' + ohEscapeHtml(post.title) + '</h1>' +
+        '<div class="post-meta"><span>' + ohEscapeHtml(post.author) + '</span><span>·</span><span>' + ohTimeAgo(post.createdAt) + '</span></div>' +
+      '</div>' +
+      '<div class="post-thumb' + (hasImg ? ' has-image' : '') + '" data-variant="' + variant + '">' + thumbInner + '</div>' +
+      '<div class="post-stats-row">' +
+        '<div class="post-room-info">' + ohEscapeHtml(roomLine) + '</div>' +
+        '<button type="button" class="like-btn" id="likeBtn"></button>' +
+      '</div>' +
+      '<div class="comments-section">' +
+        '<h2>의견 <span id="commentCount"></span></h2>' +
+        '<div class="comment-list" id="commentList"></div>' +
+        '<form class="comment-form" id="commentForm">' +
+          '<div class="comment-row">' +
+            '<input type="text" id="commentAuthor" placeholder="닉네임" maxlength="20">' +
+            '<textarea id="commentText" placeholder="이 배치에 대한 의견을 남겨주세요" maxlength="500" required></textarea>' +
+          '</div>' +
+          '<button type="submit" class="btn btn-primary">의견 남기기</button>' +
+        '</form>' +
+      '</div>';
+
+    var authorField = document.getElementById("commentAuthor");
+    authorField.value = ohGetName();
+
+    function refreshLikeBtn(){
+      var liked = ohIsLiked(post.id);
+      var btn = document.getElementById("likeBtn");
+      btn.className = "like-btn" + (liked ? " is-liked" : "");
+      btn.innerHTML = (liked ? OH_LIKE_ICON_FILLED : OH_LIKE_ICON) + " <span>" + (post.likes || 0) + "</span>";
+    }
+    refreshLikeBtn();
+    document.getElementById("likeBtn").addEventListener("click", function(){
+      var nowLiked = ohToggleLiked(post.id);
+      post.likes = Math.max(0, (post.likes || 0) + (nowLiked ? 1 : -1));
+      ohUpdatePost(post.id, function(p){ p.likes = post.likes; });
+      refreshLikeBtn();
+    });
+
+    function renderComments(){
+      var list = document.getElementById("commentList");
+      var comments = post.comments || [];
+      document.getElementById("commentCount").textContent = comments.length ? "(" + comments.length + ")" : "";
+      list.innerHTML = comments.length
+        ? comments.map(function(c){
+            return '<div class="comment-item">' +
+              '<div class="comment-head"><span class="comment-author">' + ohEscapeHtml(c.author) + '</span><span>' + ohTimeAgo(c.createdAt) + '</span></div>' +
+              '<p>' + ohEscapeHtml(c.text) + '</p>' +
+            '</div>';
+          }).join("")
+        : '<p class="comment-empty">아직 의견이 없어요. 첫 의견을 남겨보세요!</p>';
+    }
+    renderComments();
+
+    document.getElementById("commentForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var textInput = document.getElementById("commentText");
+      var text = textInput.value.trim();
+      if (!text) return;
+      var author = authorField.value.trim() || "익명";
+      ohSetName(author);
+      var comment = { id: "c_" + Date.now() + "_" + Math.random().toString(36).slice(2,6), author: author, text: text, createdAt: new Date().toISOString() };
+      post.comments = post.comments || [];
+      post.comments.push(comment);
+      ohUpdatePost(post.id, function(p){ p.comments = p.comments || []; p.comments.push(comment); });
+      textInput.value = "";
+      renderComments();
+    });
+  }
+
+  renderPost();
 })();
 </script>
-

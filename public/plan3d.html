@@ -916,6 +916,125 @@
 (function(){
   "use strict";
 
+  /* ============ 0-1. 게시판(갤러리) 공용 데이터 유틸 ============
+     plan3d.html / gallery.html / post.html 세 파일에 동일하게 복제해서 씀(이 프로젝트는
+     페이지마다 독립된 정적 HTML이라 공용 로직도 파일마다 복사해야 함 — 다른 유틸/토글 로직과
+     같은 패턴). localStorage 키 "oh-posts"에 게시물 배열을 JSON으로 저장. 저장된 값이 아예
+     없는 첫 방문이면 아래 6개 샘플 게시물로 시드해서, 실제로 게시하기 전에도 갤러리·상세
+     페이지·댓글·좋아요 기능을 바로 눌러볼 수 있게 함.
+     ※ 지금은 백엔드/DB가 없어서 게시물이 "이 브라우저에만" 저장됨 — 다른 사람 브라우저와는
+     공유되지 않음(진짜 여러 사용자가 같은 글을 보게 하려면 나중에 Supabase 같은 DB 연동 필요). */
+  var OH_POSTS_KEY = "oh-posts";
+  var OH_LIKED_KEY = "oh-liked-posts";
+  var OH_NAME_KEY = "oh-username";
+  var OH_HOUR = 3600000, OH_DAY = 86400000;
+
+  var OH_ICONS = {
+    house: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21V9.5L12 3l9 6.5V21" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21v-7h6v7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+    grid4: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="14" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="14" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>',
+    hexagon: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 7l9 5 9-5M12 12v10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+    check: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l6 6L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    hash: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1.5"/></svg>',
+    chat: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+  };
+  var OH_COMMENT_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.5 8.5 0 0112.5 3 8.5 8.5 0 0121 11.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  var OH_LIKE_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  var OH_LIKE_ICON_FILLED = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20s-7-4.35-9.5-8.5C.8 8 2.2 4.5 5.8 4.5c2 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.2-2.4 3.6 0 5 3.5 3.3 7-2.5 4.15-9.5 8.5-9.5 8.5z"/></svg>';
+
+  function ohNowMinus(ms){ return new Date(Date.now() - ms).toISOString(); }
+
+  function ohSeedPosts(){
+    return [
+      { id:"sample-1", title:"래미안 강남 포레스트 · 24평형 거실", author:"jumal2", createdAt:ohNowMinus(3*OH_DAY), badge:"전문가 답변 2", roomSize:{w:9.6,d:7.2}, furniture:[], thumb:{variant:1, icon:"house"}, likes:34,
+        comments:[
+          { id:"c1", author:"디자이너_은서", text:"소파를 창가 쪽으로 붙이면 채광이 더 살 것 같아요!", createdAt:ohNowMinus(2*OH_DAY) },
+          { id:"c2", author:"jumal2", text:"오 좋은 생각이네요, 한번 옮겨볼게요", createdAt:ohNowMinus(2*OH_DAY - 3*OH_HOUR) }
+        ] },
+      { id:"sample-2", title:"힐스테이트 데시앙 · 17평 원룸 배치", author:"wooin_92", createdAt:ohNowMinus(8*OH_HOUR), badge:"새 글", roomSize:{w:6.4,d:5.2}, furniture:[], thumb:{variant:2, icon:"grid4"}, likes:5,
+        comments:[
+          { id:"c1", author:"minji_h", text:"원룸인데도 동선이 넓어 보이네요", createdAt:ohNowMinus(3*OH_HOUR) }
+        ] },
+      { id:"sample-3", title:"부송동 신축 오피스텔 · 침실 배치 고민이에요", author:"sooyeon.k", createdAt:ohNowMinus(1*OH_DAY), badge:"전문가 답변 1", roomSize:{w:5.8,d:4.6}, furniture:[], thumb:{variant:3, icon:"hexagon"}, likes:19,
+        comments:[
+          { id:"c1", author:"디자이너_은서", text:"침대 헤드를 벽 쪽으로 붙이고 협탁을 양쪽에 두면 더 안정적일 것 같아요.", createdAt:ohNowMinus(20*OH_HOUR) }
+        ] },
+      { id:"sample-4", title:"동탄 파크자이 · 33평 안방 침실", author:"minji_h", createdAt:ohNowMinus(4*OH_DAY), badge:"전문가 답변 4", roomSize:{w:5.2,d:4.8}, furniture:[], thumb:{variant:1, icon:"check"}, likes:40, comments:[] },
+      { id:"sample-5", title:"다방에서 본 투룸 · 벽만 세워봤어요", author:"kimjoon", createdAt:ohNowMinus(6*OH_HOUR), badge:"새 글", roomSize:{w:8.1,d:6.0}, furniture:[], thumb:{variant:2, icon:"hash"}, likes:2, comments:[] },
+      { id:"sample-6", title:"마포 오피스텔 12평 · 소파 방향 고민", author:"seulki.p", createdAt:ohNowMinus(5*OH_DAY), badge:"전문가 답변 6", roomSize:{w:5.0,d:4.2}, furniture:[], thumb:{variant:3, icon:"chat"}, likes:58,
+        comments:[
+          { id:"c1", author:"디자이너_은서", text:"소파는 창을 등지지 않는 방향으로 두는 걸 추천해요.", createdAt:ohNowMinus(4*OH_DAY) },
+          { id:"c2", author:"seulki.p", text:"감사합니다! 반영해서 다시 올려볼게요", createdAt:ohNowMinus(4*OH_DAY + 2*OH_HOUR) }
+        ] }
+    ];
+  }
+
+  function ohLoadPosts(){
+    try{
+      var raw = localStorage.getItem(OH_POSTS_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e){}
+    var seeded = ohSeedPosts();
+    ohSavePosts(seeded);
+    return seeded;
+  }
+  function ohSavePosts(posts){
+    try{ localStorage.setItem(OH_POSTS_KEY, JSON.stringify(posts)); } catch(e){}
+  }
+  function ohGetPost(id){
+    var posts = ohLoadPosts();
+    for (var i=0;i<posts.length;i++){ if (posts[i].id === id) return posts[i]; }
+    return null;
+  }
+  function ohUpdatePost(id, mutator){
+    var posts = ohLoadPosts();
+    for (var i=0;i<posts.length;i++){
+      if (posts[i].id === id){ mutator(posts[i]); break; }
+    }
+    ohSavePosts(posts);
+    return posts;
+  }
+  function ohLikedSet(){
+    try{
+      var raw = JSON.parse(localStorage.getItem(OH_LIKED_KEY) || "[]");
+      return Array.isArray(raw) ? raw : [];
+    } catch(e){ return []; }
+  }
+  function ohIsLiked(id){ return ohLikedSet().indexOf(id) !== -1; }
+  function ohToggleLiked(id){
+    var liked = ohLikedSet();
+    var idx = liked.indexOf(id);
+    var nowLiked;
+    if (idx === -1){ liked.push(id); nowLiked = true; }
+    else { liked.splice(idx,1); nowLiked = false; }
+    try{ localStorage.setItem(OH_LIKED_KEY, JSON.stringify(liked)); } catch(e){}
+    return nowLiked;
+  }
+  function ohTimeAgo(iso){
+    var diff = Date.now() - new Date(iso).getTime();
+    var min = Math.floor(diff/60000);
+    if (min < 1) return "방금 전";
+    if (min < 60) return min + "분 전";
+    var hr = Math.floor(min/60);
+    if (hr < 24) return hr + "시간 전";
+    var day = Math.floor(hr/24);
+    if (day < 7) return day + "일 전";
+    return new Date(iso).toLocaleDateString("ko-KR");
+  }
+  function ohEscapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+  function ohGetName(){
+    try{ return (localStorage.getItem(OH_NAME_KEY) || "").trim(); } catch(e){ return ""; }
+  }
+  function ohSetName(name){
+    try{ localStorage.setItem(OH_NAME_KEY, name); } catch(e){}
+  }
+
   /* ============ 0. 다크/라이트 모드 토글 ============ */
   (function(){
     var SUN_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
@@ -1140,7 +1259,10 @@
     var width = container.clientWidth || 300;
     var height = container.clientHeight || 250;
 
-    var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    // preserveDrawingBuffer:true — 게시(publish) 시 캔버스를 스크린샷(toDataURL)으로 썸네일을
+    // 만들 때 렌더 버퍼가 곧바로 지워지지 않고 남아있게 보장하기 위해 켜둠(약간의 GPU 메모리
+    // 비용은 있지만 이 규모 씬에서는 무시할 만함).
+    var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     // updateStyle=false: 캔버스에 인라인 px 크기를 직접 박지 않음. 인라인 스타일이 붙으면 창을
     // 줄였다 늘릴 때 예전 크기가 남아있다가 겹쳐 쌓여서 "계속 커지는" 버그가 생김 — 항상 스타일시트의
@@ -1807,6 +1929,38 @@
         if (rotatePanel && rotatePanel.parentNode) rotatePanel.parentNode.removeChild(rotatePanel);
         if (typeof fullscreenBtn !== 'undefined' && fullscreenBtn.parentNode) fullscreenBtn.parentNode.removeChild(fullscreenBtn);
         if ((document.fullscreenElement === container || document.webkitFullscreenElement === container) && document.exitFullscreen) document.exitFullscreen();
+      },
+      // ===== 게시(publish) 기능용 헬퍼 — 가구 배치 완료 시 갤러리에 올릴 데이터/썸네일을 뽑아냄 =====
+      // 배치된 가구 각각을 {종류, 위치, 회전, 크기, 색상}만 남는 순수 데이터로 직렬화.
+      getFurnitureData: function(){
+        return furniture.map(function(f){
+          var colorHex = null;
+          f.traverse(function(child){
+            if (!colorHex && child.isMesh && child.userData.colorable !== false && child.material && child.material.color){
+              colorHex = "#" + child.material.color.getHexString();
+            }
+          });
+          var dims = f.userData.size || { w:.6, d:.6, h:.6 };
+          return { type: f.userData.type, x: f.position.x, z: f.position.z, rotY: f.rotation.y, w: dims.w, d: dims.d, h: dims.h, color: colorHex };
+        });
+      },
+      // 벽 기준 방 크기(가로/세로, 미터) — planBounds()로 이미 계산해둔 b를 그대로 반환.
+      getBounds: function(){ return { w: b.w, d: b.d }; },
+      // 지금 보이는 3D 화면을 작은 썸네일 이미지(JPEG data URL)로 캡처. 원본 캔버스가 크더라도
+      // maxW 기준으로 축소해서 localStorage에 여러 게시물을 저장해도 용량 부담이 적게 함.
+      screenshot: function(maxW){
+        maxW = maxW || 480;
+        renderer.render(scene, camera);
+        var src = renderer.domElement;
+        var srcW = src.width || maxW, srcH = src.height || maxW;
+        var scale = Math.min(1, maxW / srcW);
+        var outW = Math.max(1, Math.round(srcW * scale));
+        var outH = Math.max(1, Math.round(srcH * scale));
+        var c = document.createElement("canvas");
+        c.width = outW; c.height = outH;
+        var ctx = c.getContext("2d");
+        ctx.drawImage(src, 0, 0, outW, outH);
+        return c.toDataURL("image/jpeg", 0.82);
       }
     };
   }
@@ -1844,6 +1998,7 @@
   var resultScene = null;
   var furniturePlan = null;
   var furnitureMode = false;
+  var furniturePublished = false; // 이번 배치를 이미 게시했는지 — 중복 게시 방지용
 
   function showOnly(panel){
     [panelSearch, panelLoading, panelTrace].forEach(function(p){ p.hidden = (p !== panel); });
@@ -1985,8 +2140,50 @@
       if (resultScene){ resultScene.dispose(); resultScene = null; }
       resultStage.innerHTML = '<span class="canvas-hint">가구를 드래그해서 이동 및 회전</span>';
       resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true });
+    } else if (furniturePublished){
+      // 이미 게시했으면 다시 게시하지 않고 그냥 갤러리로 보내줌(중복 게시 방지)
+      location.href = "/gallery";
     } else {
-      alert("가구 배치가 완료되었습니다. 필요하면 이 화면에서 계속 수정할 수 있어요.");
+      if (!resultScene){ return; }
+      var defaultTitle = "내 배치 · " + new Date().toLocaleDateString("ko-KR", { month:"long", day:"numeric" });
+      var title = prompt("게시물 제목을 입력해주세요.", defaultTitle);
+      if (title === null) return; // 취소하면 아무 것도 안 하고 계속 편집 가능
+      title = title.trim() || defaultTitle;
+
+      var author = ohGetName();
+      if (!author){
+        var typed = prompt("갤러리에 표시될 닉네임을 입력해주세요. (한 번만 입력하면 이 브라우저에 기억해둬요)", "익명");
+        if (typed === null) return; // 취소
+        author = typed.trim() || "익명";
+        ohSetName(author);
+      }
+
+      var bounds = resultScene.getBounds ? resultScene.getBounds() : { w:0, d:0 };
+      var furnitureData = resultScene.getFurnitureData ? resultScene.getFurnitureData() : [];
+      var thumbDataUrl = resultScene.screenshot ? resultScene.screenshot(640) : null;
+
+      var post = {
+        id: "post_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+        title: title,
+        author: author,
+        createdAt: new Date().toISOString(),
+        badge: "새 글",
+        roomSize: { w: bounds.w, d: bounds.d },
+        furniture: furnitureData,
+        thumb: thumbDataUrl ? { dataUrl: thumbDataUrl } : { variant: 1, icon: "house" },
+        likes: 0,
+        comments: []
+      };
+
+      var posts = ohLoadPosts();
+      posts.unshift(post);
+      ohSavePosts(posts);
+      furniturePublished = true;
+      this.textContent = "게시 완료 ✓ · 갤러리로 이동";
+
+      if (confirm("게시가 완료됐어요! 갤러리로 이동해서 확인해볼까요?")){
+        location.href = "/gallery";
+      }
     }
   });
 
@@ -2217,6 +2414,7 @@
     modalBox.hidden = true;
     modalResultBox.hidden = false;
     furnitureMode = false;
+    furniturePublished = false;
     furniturePlan = plan.wallData || (!plan.isReal ? plan : null);
     modalResultBox.classList.remove("furniture-fullscreen");
     document.getElementById("nextStepBtn").textContent = "다음: 가구 배치 시작하기";
@@ -2292,4 +2490,3 @@
   });
 })();
 </script>
-
