@@ -1690,12 +1690,24 @@
         group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0, false));
         group.add(furniturePart(new THREE.SphereGeometry(.34,16,12),c,0,.6,0));
       }
+      // 도면 전체 크기에 비례하여 가구 스케일 보정 (기본 9m 기준)
+      // 방이 커질 때 1:1로 정비례해서 너무 거대해지는 현상을 막기 위해, 실제 크기 증가분의
+      // 35% 정도만 반영하도록 완화합니다.
+      var rawScale = Math.max(b.w, b.d) / 9.0;
+      var roomScale = 1 + (rawScale - 1) * 0.35;
+      if (roomScale <= 0.2) roomScale = 0.2;
+
       group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
       group.userData.isFurniture = true; group.userData.type = type;
       group.userData.baseSize = type === 'sofa' ? {w:1.55,d:.72,h:.94} :
         type === 'table' ? {w:1.04,d:1.04,h:.66} :
         type === 'bed' ? {w:1.5,d:2.0,h:.88} : {w:.68,d:.68,h:.94};
-      group.userData.size = {w:group.userData.baseSize.w,d:group.userData.baseSize.d,h:group.userData.baseSize.h};
+      group.userData.size = {
+        w: group.userData.baseSize.w * roomScale,
+        d: group.userData.baseSize.d * roomScale,
+        h: group.userData.baseSize.h * roomScale
+      };
+      group.scale.set(roomScale, roomScale, roomScale);
       clampFurniturePosition(group);
       resolveWallCollision(group);
       scene.add(group); furniture.push(group); selectFurniture(group);
@@ -2158,8 +2170,15 @@
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'sims-btn';
-        btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px;">' + item.icon + '</span>' + item.label;
+        btn.draggable = true;
+        btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px; pointer-events:none;">' + item.icon + '</span><span style="pointer-events:none;">' + item.label + '</span>';
         btn.addEventListener('click', function() { addFurniture(item.id); });
+        // 버튼을 캔버스로 드래그해서 원하는 위치에 바로 놓을 수 있게 함(클릭은 기존처럼
+        // 방 가운데 근처에 추가, 드래그는 놓은 자리에 정확히 추가).
+        btn.addEventListener('dragstart', function(e) {
+          e.dataTransfer.setData('text/plain', item.id);
+          e.dataTransfer.effectAllowed = 'copy';
+        });
         itemsPanel.appendChild(btn);
       });
       bottomPanel.appendChild(itemsPanel);
@@ -2383,6 +2402,26 @@
       updateCamera();
       updateWallFade();
     }, { passive:false });
+
+    // 가구 팔레트 버튼을 캔버스로 드래그해서 놓으면 그 지점에 바로 배치.
+    if (furnitureEditor) {
+      canvas.addEventListener("dragover", function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      canvas.addEventListener("drop", function(e){
+        e.preventDefault();
+        var type = e.dataTransfer.getData("text/plain");
+        if (['sofa', 'table', 'bed', 'plant'].indexOf(type) !== -1) {
+          var point = new THREE.Vector3();
+          if (pointerToFloor(e, point)) {
+            addFurniture(type, point.x, point.z);
+          } else {
+            addFurniture(type, center.x, center.z);
+          }
+        }
+      });
+    }
 
     // 벽 색상 변경은 더블클릭으로만 — 단일 클릭/드래그는 전부 시점 회전용으로 남겨둠(가구 배치
     // 화면에서만 동작, 히어로/결과 비교 화면에서는 wallColorPanel이 없어서 selectWall이 그냥 무시됨).
