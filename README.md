@@ -35,13 +35,14 @@
 ```
 today housing/
 ├── app/
-│   ├── page.tsx        ← 첫 화면
 │   ├── layout.tsx
-│   └── globals.css
+│   ├── globals.css
+│   └── api/             ← 도면 파싱 등 서버 API
 ├── public/
-│   ├── plan3d.html     ← 메인 페이지 (도면 → 3D 변환, 가구 배치)
-│   ├── post.html        ← 게시판 (글쓰기/상세/댓글/좋아요)
-│   └── gallery.html    ← 갤러리 페이지
+│   ├── plan3d.html     ← 메인 페이지 (도면 → 3D 변환, 가구 배치, "/" 로 rewrite됨)
+│   ├── post.html        ← 게시판 (글쓰기/상세/댓글/좋아요, "/post" 로 rewrite됨)
+│   └── gallery.html    ← 갤러리 페이지 ("/gallery" 로 rewrite됨)
+├── next.config.mjs      ← 위 rewrite 설정 (주소창에 .html 안 보이게 함)
 ├── package.json
 └── README.md
 ```

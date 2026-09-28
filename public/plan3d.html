@@ -2051,10 +2051,11 @@
     // 다른 가구 바로 위(발밑 지점 기준)에 놓였는지 찾아줌 — 나중에 놓인 가구가 화면상 위에
     // 그려질 가능성이 높으므로 배열을 뒤에서부터 검사함. 이미 뭔가 위에 올라가 있는 가구
     // 위에는 또 올리지 않음(2단 쌓기 방지 — position.y가 거의 0(바닥)인 가구만 대상으로 함).
-    function furnitureUnderPoint(px, pz, excludeObj){
+    function furnitureUnderPoint(px, pz, excludeObj, allowedTargetType){
       for (var i = furniture.length - 1; i >= 0; i--){
         var f = furniture[i];
         if (f === excludeObj || f.position.y > 0.02 || f.userData.isWallItem) continue;
+        if (allowedTargetType && f.userData.type !== allowedTargetType) continue;
         var dims = f.userData.size || {w:.6,d:.6,h:.6};
         var cosR = Math.cos(f.rotation.y), sinR = Math.sin(f.rotation.y);
         var dx = px - f.position.x, dz = pz - f.position.z;
@@ -2067,8 +2068,10 @@
     // 가구를 다른 가구 발판(footprint) 안으로 옮겼으면 그 가구 높이만큼 위로 올려서 얹고,
     // 벗어나면 다시 바닥(y=0)으로 내림 — 예: 화분을 테이블 위로 끌어다 놓으면 테이블 높이만큼
     // 붕 뜬 채로 테이블 위에 앉고, 테이블 밖으로 다시 빼면 바닥으로 내려옴.
+    // 쌓기는 화분→테이블 조합만 허용(다른 가구끼리는 서로 위에 올라가지 않음).
     function applyFurnitureStacking(obj){
-      var target = furnitureUnderPoint(obj.position.x, obj.position.z, obj);
+      if (obj.userData.type !== 'plant'){ obj.position.y = 0; return; }
+      var target = furnitureUnderPoint(obj.position.x, obj.position.z, obj, 'table');
       obj.position.y = target ? target.position.y + target.userData.size.h : 0;
     }
     function syncRotatePanel(){
