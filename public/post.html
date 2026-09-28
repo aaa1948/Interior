@@ -563,7 +563,7 @@
   function ohGetCssVar(name){
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
-  var OH_FURN_COLORS_NUM = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
+  var OH_FURN_COLORS_NUM = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61, door:0x8a5a34, window:0xdfeff5, outlet:0xf1efe9 };
 
   function ohBoundsFromWallData(wallData){
     var w = wallData.width || 0, d = wallData.depth || 0;
@@ -673,41 +673,113 @@
       wallMeshes.forEach(function(m){ m.material.opacity = (m === targetMesh) ? op : 1; });
     }
 
-    function buildWallPiece(sx, sy, ex, ey, thickness, colorHex){
+    function buildWallPiece(sx, sy, ex, ey, thickness, colorHex, heightExtent, skipEdges){
       var segLen = Math.hypot(ex-sx, ey-sy);
       if (segLen < 0.03) return null;
-      var geo = new THREE.BoxGeometry(segLen, wallHeight, thickness);
+      var vBottom = heightExtent && heightExtent.bottom != null ? heightExtent.bottom : 0;
+      var vTop = heightExtent && heightExtent.top != null ? heightExtent.top : wallHeight;
+      var vHeight = vTop - vBottom;
+      if (vHeight < 0.03) return null;
+      var geo = new THREE.BoxGeometry(segLen, vHeight, thickness);
       var needsFade = opts.wallView === true || opts.interactive === true;
       var pieceColor = colorHex ? new THREE.Color(colorHex) : wallColor;
       var mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pieceColor, roughness:0.85, metalness:0.05, transparent: needsFade }));
-      mesh.position.set((sx+ex)/2, wallHeight/2, (sy+ey)/2);
+      mesh.position.set((sx+ex)/2, vBottom + vHeight/2, (sy+ey)/2);
       mesh.rotation.y = -Math.atan2(ey-sy, ex-sx);
       scene.add(mesh);
       if (needsFade) wallMeshes.push(mesh);
-      var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: edgeColor }));
-      edges.position.copy(mesh.position);
-      edges.rotation.copy(mesh.rotation);
-      scene.add(edges);
+      // 문/창문 때문에 벽 하나가 여러 조각으로 잘렸을 때(skipEdges), 잘린 경계마다 까만 외곽선이
+      // 생기면 문/창문 자리를 가로지르는 선이 보여서 이상함 — 그런 조각은 외곽선을 생략함
+      // (plan3d.html 에디터와 동일).
+      if (!skipEdges){
+        var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: edgeColor }));
+        edges.position.copy(mesh.position);
+        edges.rotation.copy(mesh.rotation);
+        scene.add(edges);
+      }
       return mesh;
     }
-    function addWall(seg, thickness, isOuter){
+    // 논리적 벽 인덱스(plan3d.html의 wallSegments 순서와 정확히 같음: outer 먼저, 그 다음 inner)
+    // 기준으로, 그 벽 위에 놓인 문/창문(furnitureList에 wallIndex/wallAlong/y/h로 저장돼 있음)을
+    // 찾아서 벽에 뚫을 구멍 목록(가로 위치 + 세로 범위)을 만듦 — plan3d.html의
+    // computeWallOpenings와 동일한 계산.
+    function computeWallOpeningsForPost(logicalIndex){
+      return (furnitureList || []).filter(function(f){
+        return (f.type === 'door' || f.type === 'window') && f.wallIndex === logicalIndex;
+      }).map(function(f){
+        var h = f.h || 2.0;
+        var bottom, top;
+        if (f.type === 'door'){
+          bottom = 0; top = h;
+        } else {
+          bottom = Math.max(0, (f.y || 0) - h/2);
+          top = Math.min(wallHeight, (f.y || 0) + h/2);
+        }
+        return { pos: f.wallAlong, width: f.w || 0.9, bottom: bottom, top: top };
+      });
+    }
+    function addWall(seg, thickness, isOuter, doors){
       var x1=seg[0], y1=seg[1], x2=seg[2], y2=seg[3];
       var dx=x2-x1, dy=y2-y1, length=Math.hypot(dx,dy);
       if (length < 0.001) return;
       var ux=dx/length, uy=dy/length, ext=thickness/2;
       var colorHex = wallColorsData ? wallColorsData[wallColorIdx] : null;
-      var mesh = buildWallPiece(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext, thickness, colorHex);
-      if (mesh) wallColorIdx++; // buildWallPiece가 실제로 메쉬를 만들었을 때만 다음 색 인덱스로 넘어감(plan3d.html의 wallMeshes.push 시점과 동일)
-      if (isOuter && (opts.wallView === true || opts.interactive === true) && mesh){
+      var builtAny = false, lastMesh = null;
+      function place(sx, sy, ex, ey, heightExtent, skipEdges){
+        var m = buildWallPiece(sx, sy, ex, ey, thickness, colorHex, heightExtent, skipEdges);
+        if (m){ builtAny = true; lastMesh = m; }
+      }
+      if (!doors || doors.length === 0){
+        place(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext);
+      } else {
+        // plan3d.html의 addWall과 똑같은 방식으로 문/창문 위치에 빈틈(gap)을 내고 그 사이사이만
+        // 벽 조각으로 채움 — 실제로 벽에 구멍이 뚫린 것처럼 보이게 함.
+        var gaps = doors.map(function(d){
+          var halfW = (d.width || 0.9) / 2;
+          var centerDist = Math.min(Math.max(d.pos, 0), 1) * length;
+          return {
+            from: Math.max(0, centerDist - halfW),
+            to: Math.min(length, centerDist + halfW),
+            bottom: d.bottom != null ? d.bottom : 0,
+            top: d.top != null ? d.top : wallHeight
+          };
+        }).sort(function(a,b){ return a.from - b.from; });
+        var cursor = 0;
+        gaps.forEach(function(g, i){
+          var sx = x1 + ux*cursor - (i===0 ? ux*ext : 0);
+          var sy = y1 + uy*cursor - (i===0 ? uy*ext : 0);
+          // 문/창문이 있는 벽은 조각으로 잘려 있어도 경계선이 안 보이게 외곽선을 생략함.
+          place(sx, sy, x1 + ux*g.from, y1 + uy*g.from, null, true);
+          cursor = Math.max(cursor, g.to);
+        });
+        place(x1 + ux*cursor, y1 + uy*cursor, x2+ux*ext, y2+uy*ext, null, true);
+        // 구멍의 위쪽(헤더)과 — 창문이면 — 아래쪽(턱)에 짧은 조각을 채워서, 문/창문 높이보다
+        // 높거나 낮은 부분은 여전히 벽으로 남게 함(plan3d.html과 동일한 로직, 외곽선도 생략).
+        gaps.forEach(function(g){
+          var gsx = x1 + ux*g.from, gsy = y1 + uy*g.from;
+          var gex = x1 + ux*g.to, gey = y1 + uy*g.to;
+          if (g.top < wallHeight - 0.01){
+            place(gsx, gsy, gex, gey, { bottom: g.top, top: wallHeight }, true);
+          }
+          if (g.bottom > 0.01){
+            place(gsx, gsy, gex, gey, { bottom: 0, top: g.bottom }, true);
+          }
+        });
+      }
+      // 한 논리적 벽이 문/창문 때문에 여러 조각으로 나뉘어도 색 인덱스는 벽 하나당 한 번만
+      // 넘어가야 plan3d.html의 getWallColors(논리적 벽 기준)와 순서가 어긋나지 않음.
+      if (builtAny) wallColorIdx++;
+      if (isOuter && (opts.wallView === true || opts.interactive === true) && lastMesh){
         // 바깥쪽(중심에서 먼 쪽)을 향하는 법선 — 두 수직 후보 중 벽 중점→중심 방향과 반대(=바깥쪽)인 쪽을 고름.
         var nx = -uy, nz = ux;
         var toMidX = (x1+x2)/2 - center.x, toMidZ = (y1+y2)/2 - center.z;
         if (nx*toMidX + nz*toMidZ < 0){ nx = -nx; nz = -nz; }
-        outerWallPieces.push({ seg: seg, mesh: mesh, nx: nx, nz: nz });
+        outerWallPieces.push({ seg: seg, mesh: lastMesh, nx: nx, nz: nz });
       }
     }
-    (wallData.outer || []).forEach(function(s){ addWall(s, 0.22, true); });
-    (wallData.inner || []).forEach(function(s){ addWall(s, 0.12, false); });
+    var __wallLogicalIndex = 0;
+    (wallData.outer || []).forEach(function(s){ addWall(s, 0.22, true, computeWallOpeningsForPost(__wallLogicalIndex)); __wallLogicalIndex++; });
+    (wallData.inner || []).forEach(function(s){ addWall(s, 0.12, false, computeWallOpeningsForPost(__wallLogicalIndex)); __wallLogicalIndex++; });
 
     function buildPart(geo, color, x, y, z){
       var m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: color, roughness:.78 }));
@@ -734,6 +806,32 @@
         group.add(buildPart(new THREE.BoxGeometry(1.5,.55,.14), c, 0,.6,.9));
         group.add(buildPart(new THREE.BoxGeometry(1.24,.10,.62), 0xe9edf0, 0,.46,-.35));
         baseSize = { w:1.5, d:2.0, h:.88 };
+      } else if (type === "door"){
+        // 문틀 — 원래의 얇은 크기로 되돌림(틈새처럼 보이던 건 벽 조각 경계 외곽선 때문이었고,
+        // 그건 skipEdges로 고쳤으니 문틀을 억지로 두껍게 키울 필요가 없었음).
+        group.add(buildPart(new THREE.BoxGeometry(.06,2.05,.14), 0x5c4530, -.42,1.025,0));
+        group.add(buildPart(new THREE.BoxGeometry(.06,2.05,.14), 0x5c4530, .42,1.025,0));
+        var doorHinge = new THREE.Group();
+        doorHinge.position.set(-.39, 0, 0);
+        doorHinge.add(buildPart(new THREE.BoxGeometry(.78,2.0,.045), c, .39,1.0,0));
+        doorHinge.add(buildPart(new THREE.SphereGeometry(.03,8,8), 0x2b2b2b, .72,1.0,.05));
+        if (f.doorOpen) doorHinge.rotation.y = -(Math.PI/2) * 0.82;
+        group.add(doorHinge);
+        baseSize = { w:.9, d:.16, h:2.05 };
+      } else if (type === "window"){
+        // 유리 없이 테두리(위/아래/좌/우 얇은 띠) + 가운데 창살만 — plan3d.html 에디터와 동일.
+        var winW = 1.2, winH = 1.1, ft = 0.07, fd = 0.09;
+        group.add(buildPart(new THREE.BoxGeometry(winW, ft, fd), c, 0, winH/2 - ft/2, 0));
+        group.add(buildPart(new THREE.BoxGeometry(winW, ft, fd), c, 0, -winH/2 + ft/2, 0));
+        group.add(buildPart(new THREE.BoxGeometry(ft, winH, fd), c, -winW/2 + ft/2, 0, 0));
+        group.add(buildPart(new THREE.BoxGeometry(ft, winH, fd), c, winW/2 - ft/2, 0, 0));
+        group.add(buildPart(new THREE.BoxGeometry(ft*0.85, winH, fd), c, 0, 0, 0));
+        baseSize = { w:1.2, d:.11, h:1.1 };
+      } else if (type === "outlet"){
+        group.add(buildPart(new THREE.BoxGeometry(.11,.075,.02), c, 0,0,0));
+        group.add(buildPart(new THREE.BoxGeometry(.016,.016,.012), 0x2b2b2b, -.022,.014,.014));
+        group.add(buildPart(new THREE.BoxGeometry(.016,.016,.012), 0x2b2b2b, .022,.014,.014));
+        baseSize = { w:.11, d:.02, h:.075 };
       } else {
         group.add(buildPart(new THREE.CylinderGeometry(.20,.25,.35,16), 0xb78962, 0,.18,0));
         group.add(buildPart(new THREE.SphereGeometry(.34,16,12), c, 0,.6,0));
@@ -741,7 +839,7 @@
       }
       var dims = { w: f.w || baseSize.w, d: f.d || baseSize.d, h: f.h || baseSize.h };
       group.scale.set(dims.w/baseSize.w, dims.h/baseSize.h, dims.d/baseSize.d);
-      group.position.set(f.x || 0, 0, f.z || 0);
+      group.position.set(f.x || 0, f.y || 0, f.z || 0);
       group.rotation.y = f.rotY || 0;
       scene.add(group);
     });

@@ -512,6 +512,19 @@
   @media (max-width:600px){
     .furniture-wall-hint{ font-size:.62rem; white-space:normal; max-width:78%; padding:5px 10px; }
   }
+  /* 문/창문/콘센트끼리 겹치는 위치로 배치·이동하려 할 때 잠깐 떴다가 스스로 사라지는 경고 토스트 —
+     확인 버튼을 눌러야 하는 ohAlert 모달과 달리, 드래그 도중에도 흐름이 안 끊기게 자동으로 없어짐. */
+  .furniture-collision-toast{
+    position:absolute; top:44px; left:50%; transform:translateX(-50%) translateY(-4px); z-index:4;
+    font-size:.72rem; color:#fff; text-align:center; white-space:nowrap;
+    background:color-mix(in srgb, #c0392b 90%, transparent);
+    padding:6px 14px; border-radius:999px; box-shadow:0 2px 8px var(--shadow);
+    pointer-events:none; opacity:0; transition:opacity .18s ease, transform .18s ease;
+  }
+  .furniture-collision-toast.visible{ opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (max-width:600px){
+    .furniture-collision-toast{ font-size:.64rem; white-space:normal; max-width:78%; padding:5px 10px; }
+  }
   /* 가구를 선택했을 때만 그 가구 머리 위에 "뿅" 뜨는 투명 핸들 — 평상시엔 완전히 숨겨둠(opacity:0
      + pointer-events:none)이라 화면을 가리지 않고, 선택되면 3D 좌표를 매 프레임 화면 좌표로 변환해서
      그 자리를 따라다님(updateRotatePanelPosition 참고). */
@@ -561,6 +574,25 @@
     transition:transform .1s ease, background .1s ease;
   }
   .furniture-delete-btn:hover{ background:#fdf2f2; transform:scale(1.1); }
+  /* 문 가구를 선택했을 때만 나타나는 열기/닫기 토글 — 평소엔 숨겨두고(door-mode일 때만 보이게)
+     삭제 버튼 옆에 나란히 둠. */
+  .door-toggle-btn{
+    display:none; flex:none; align-items:center; justify-content:center; gap:2px;
+    padding:3px 7px; border-radius:9px; cursor:pointer; white-space:nowrap;
+    border:1px solid color-mix(in srgb, var(--blueprint) 45%, var(--line));
+    background:color-mix(in srgb, var(--paper) 85%, transparent);
+    color:var(--ink); font-size:.68rem; line-height:1.3;
+    transition:transform .1s ease, background .1s ease;
+  }
+  .door-toggle-btn:hover{ background:var(--blueprint-soft); transform:scale(1.05); }
+  .furniture-rotate-panel.door-mode .door-toggle-btn{ display:flex; }
+  /* 벽에만 붙는 아이템(창문/콘센트)은 회전이 항상 벽 방향으로 고정돼야 해서 회전 버튼 줄을
+     아예 숨김 — 이동 패드(↑↓←→)는 그대로 두되 의미만 바꿔서 씀(상하=높이, 좌우=벽을 따라 이동). */
+  .furniture-rotate-panel.wall-item-mode .handle-row{ display:none; }
+  /* 문은 항상 바닥에 붙어 있어야 해서(상하 이동 없음) 이동 패드에서 위/아래 버튼만 숨기고
+     좌우(벽을 따라 슬라이드) 버튼만 남김. */
+  .furniture-rotate-panel.door-mode .nudge-btn[data-dir="up"],
+  .furniture-rotate-panel.door-mode .nudge-btn[data-dir="down"]{ display:none; }
 
   /* 벽을 클릭했을 때 그 자리 위에 뜨는 색상 팔레트 — 가구 회전 핸들(.furniture-rotate-panel)과
      똑같은 방식(평소엔 opacity:0 + pointer-events:none으로 완전히 숨김, 선택되면 클릭한 3D 지점을
@@ -1509,25 +1541,56 @@
     // 영향이 없음.
     var wallMeshes = [];
 
-    function buildWallPiece(sx, sy, ex, ey, thickness){
-      var segLen = Math.hypot(ex-sx, ey-sy);
-      if (segLen < 0.03) return;
-      collisionWalls.push({ x1:sx, y1:sy, x2:ex, y2:ey, thickness:thickness });
-      var geo = new THREE.BoxGeometry(segLen, wallHeight, thickness);
-      var mat = new THREE.MeshStandardMaterial({ color: wallColor, roughness:0.85, metalness:0.05, transparent:true });
-      var mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set((sx+ex)/2, wallHeight/2, (sy+ey)/2);
-      mesh.rotation.y = -Math.atan2(ey-sy, ex-sx);
-      mesh.userData.isWall = true;
-      wallMeshes.push(mesh);
-      scene.add(mesh);
-      var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: edgeColor }));
-      edges.position.copy(mesh.position);
-      edges.rotation.copy(mesh.rotation);
-      scene.add(edges);
+    // 벽 하나의 단면(Shape)을 만듦 — 문처럼 바닥(또는 천장)까지 닿는 구멍은 테두리 자체에 노치를
+    // 파서 표현하고(둘러싸인 고리가 아니라 테두리와 이어진 패임이라 그래야 삼각분할이 안 깨짐),
+    // 창문처럼 사방이 막힌 구멍은 진짜 구멍(Shape.holes)으로 뚫음.
+    function buildWallShape(length, ext, wallHeight, gaps){
+      var extLen = length + 2*ext;
+      var g2 = gaps.map(function(g){ return { from: g.from+ext, to: g.to+ext, bottom: g.bottom, top: g.top }; });
+      var floorNotches = [], ceilNotches = [], holes = [];
+      g2.forEach(function(g){
+        if (g.bottom <= 0.01) floorNotches.push({ from: g.from, to: g.to, top: Math.min(g.top, wallHeight - 0.02) });
+        else if (g.top >= wallHeight - 0.01) ceilNotches.push({ from: g.from, to: g.to, bottom: Math.max(g.bottom, 0.02) });
+        else holes.push(g);
+      });
+      floorNotches.sort(function(a,b){ return a.from - b.from; });
+      ceilNotches.sort(function(a,b){ return b.from - a.from; }); // 위쪽 변은 오른쪽→왼쪽으로 훑으므로 내림차순
+
+      var shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      floorNotches.forEach(function(g){
+        shape.lineTo(g.from, 0);
+        shape.lineTo(g.from, g.top);
+        shape.lineTo(g.to, g.top);
+        shape.lineTo(g.to, 0);
+      });
+      shape.lineTo(extLen, 0);
+      shape.lineTo(extLen, wallHeight);
+      ceilNotches.forEach(function(g){
+        shape.lineTo(g.to, wallHeight);
+        shape.lineTo(g.to, g.bottom);
+        shape.lineTo(g.from, g.bottom);
+        shape.lineTo(g.from, wallHeight);
+      });
+      shape.lineTo(0, wallHeight);
+      shape.lineTo(0, 0);
+
+      holes.forEach(function(g){
+        var hole = new THREE.Path();
+        hole.moveTo(g.from, g.bottom);
+        hole.lineTo(g.from, g.top);
+        hole.lineTo(g.to, g.top);
+        hole.lineTo(g.to, g.bottom);
+        hole.lineTo(g.from, g.bottom);
+        shape.holes.push(hole);
+      });
+      return shape;
     }
 
-    function addWall(seg, thickness, doors){
+    // 벽 하나를 문/창문 자리에 실제로 구멍이 뚫린 통짜 메쉬 하나로 만듦(ExtrudeGeometry) — 예전처럼
+    // 좌/우/헤더/턱 여러 조각으로 쪼개서 이어붙이지 않아서, 색이나 사진(벽지)을 입혔을 때 조각
+    // 경계마다 끊기거나 반복돼 보이던 문제가 구조적으로 사라짐(메쉬가 하나라 UV도 하나로 이어짐).
+    function addWall(seg, thickness, doors, logicalIndex){
       var x1=seg[0], y1=seg[1], x2=seg[2], y2=seg[3];
       var dx = x2-x1, dy = y2-y1;
       var length = Math.hypot(dx, dy);
@@ -1535,25 +1598,71 @@
       var ux = dx/length, uy = dy/length;
       var ext = thickness/2;
 
-      if (!doors || doors.length === 0){
-        buildWallPiece(x1-ux*ext, y1-uy*ext, x2+ux*ext, y2+uy*ext, thickness);
-        return;
-      }
-
-      var gaps = doors.map(function(d){
+      var gaps = (doors || []).map(function(d){
         var halfW = (d.width || 0.9) / 2;
         var centerDist = Math.min(Math.max(d.pos, 0), 1) * length;
-        return { from: Math.max(0, centerDist - halfW), to: Math.min(length, centerDist + halfW) };
+        return {
+          from: Math.max(0, centerDist - halfW),
+          to: Math.min(length, centerDist + halfW),
+          bottom: d.bottom != null ? d.bottom : 0,
+          top: d.top != null ? d.top : wallHeight
+        };
       }).sort(function(a,b){ return a.from - b.from; });
 
-      var cursor = 0;
-      gaps.forEach(function(g, i){
-        var sx = x1 + ux*cursor - (i===0 ? ux*ext : 0);
-        var sy = y1 + uy*cursor - (i===0 ? uy*ext : 0);
-        buildWallPiece(sx, sy, x1 + ux*g.from, y1 + uy*g.from, thickness);
-        cursor = Math.max(cursor, g.to);
-      });
-      buildWallPiece(x1 + ux*cursor, y1 + uy*cursor, x2+ux*ext, y2+uy*ext, thickness);
+      var shape = buildWallShape(length, ext, wallHeight, gaps);
+      var geo = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, steps: 1 });
+      geo.translate(0, 0, -ext); // 두께를 중심선 기준으로 가운데 정렬
+
+      // ExtrudeGeometry 기본 UV는 로컬 좌표값(미터 단위)을 그대로 써서, 벽 길이가 1m를 넘으면
+      // 사진이 한쪽 구석에만 찌그러져 박히거나 반복됨 — 벽 전체 크기(extLen x wallHeight) 기준
+      // 0~1로 다시 맞춰서, 사진 한 장이 그 벽 전체에 딱 한 번 늘어나 보이게 함.
+      var posAttr = geo.attributes.position, uvAttr = geo.attributes.uv;
+      for (var vi = 0; vi < posAttr.count; vi++){
+        uvAttr.setXY(vi, posAttr.getX(vi) / (length + 2*ext), posAttr.getY(vi) / wallHeight);
+      }
+      uvAttr.needsUpdate = true;
+
+      var mat = new THREE.MeshStandardMaterial({ color: wallColor, roughness:0.85, metalness:0.05, transparent:true });
+      if (logicalIndex != null && wallColorOverrides[logicalIndex] != null) mat.color.setHex(wallColorOverrides[logicalIndex]);
+      if (logicalIndex != null && wallImageOverrides[logicalIndex] != null){
+        mat.map = wallImageOverrides[logicalIndex];
+        mat.color.set(0xffffff);
+      }
+      var mesh = new THREE.Mesh(geo, mat);
+      // 로컬 (0,0,0)이 (연장된) 벽 시작점이 되도록 만들어뒀으니, 그 시작점으로 옮기고 벽 방향으로
+      // 회전만 시키면 됨(따로 가운데 정렬 이동이 필요 없음).
+      mesh.position.set(x1 - ux*ext, 0, y1 - uy*ext);
+      mesh.rotation.y = -Math.atan2(dy, dx);
+      mesh.userData.isWall = true;
+      mesh.userData.logicalWallIndex = logicalIndex;
+      wallMeshes.push(mesh);
+      scene.add(mesh);
+
+      var edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: edgeColor }));
+      edges.position.copy(mesh.position);
+      edges.rotation.copy(mesh.rotation);
+      scene.add(edges);
+      wallPieceMeshes.push({ mesh: mesh, edges: edges });
+
+      // 충돌(2D, 높이 무관)은 시각적 메쉬와 별개로 계산 — 문처럼 바닥까지 뚫린 구간만 가구가
+      // 지나다닐 수 있게 충돌에서 빼고, 창문 밑 턱처럼 바닥이 막혀있는 구간은 그대로 충돌 처리.
+      var passable = gaps.filter(function(g){ return g.bottom <= 0.01; });
+      function pushCollisionSeg(from, to, extStart, extEnd){
+        if (to - from < 1e-6) return;
+        var sx = x1 + ux*from - (extStart ? ux*ext : 0), sy = y1 + uy*from - (extStart ? uy*ext : 0);
+        var ex = x1 + ux*to + (extEnd ? ux*ext : 0), ey = y1 + uy*to + (extEnd ? uy*ext : 0);
+        collisionWalls.push({ x1:sx, y1:sy, x2:ex, y2:ey, thickness:thickness, logicalWallIndex: logicalIndex });
+      }
+      if (!passable.length){
+        pushCollisionSeg(0, length, true, true);
+      } else {
+        var cursor = 0;
+        passable.forEach(function(g, i){
+          pushCollisionSeg(cursor, g.from, i === 0, false);
+          cursor = Math.max(cursor, g.to);
+        });
+        pushCollisionSeg(cursor, length, false, true);
+      }
     }
 
     function doorsOnWall(wallType, index){
@@ -1561,8 +1670,79 @@
       return plan.doors.filter(function(d){ return d.wall === wallType && d.index === index; });
     }
     
-    plan.outer.forEach(function(s){ addWall(s, 0.22); });
-    plan.inner.forEach(function(s){ addWall(s, 0.12); });
+    // 벽 뚫기(computeWallOpenings) 계산이 문/창문 가구 목록(furniture)을 미리 참조해야 해서 앞당겨
+    // 선언 — 아래 "가구 배치 편집기" 섹션에서 다시 한 번 선언되는데, 그 시점엔 아직 빈 배열이라
+    // 아무 영향 없음.
+    var furniture = [];
+    // 원본(안 갈라진) 벽 목록 — 문/창문이 생기거나 옮겨질 때마다 벽 전체를 다시 그리는(rebuildAllWalls)
+    // 기준이 되는, 절대 변하지 않는 "논리적인 벽" 정의. collisionWalls/wallMeshes는 여기서 매번 다시
+    // 계산되는 "실제로 그려진 조각들"이라 문/창문 때문에 한 벽이 여러 조각으로 갈라질 수 있지만,
+    // wallSegments는 항상 plan.outer 다음 plan.inner 순서 그대로, 1:1로 유지됨(door/window의
+    // wallIndex가 가리키는 것도 이 배열).
+    var wallSegments = [];
+    (plan.outer || []).forEach(function(s){ wallSegments.push({ x1:s[0], y1:s[1], x2:s[2], y2:s[3], thickness:0.22 }); });
+    (plan.inner || []).forEach(function(s){ wallSegments.push({ x1:s[0], y1:s[1], x2:s[2], y2:s[3], thickness:0.12 }); });
+    // 논리적 벽 인덱스 -> 사용자가 고른 색(hex 정수). 문/창문 때문에 벽을 통째로 다시 그릴 때도
+    // 색이 날아가지 않게 따로 저장해뒀다가 rebuildAllWalls에서 다시 입혀줌.
+    var wallColorOverrides = {};
+    // 논리적 벽 인덱스 -> 사용자가 고른 이미지 텍스처(THREE.Texture, 미리 로드해서 캐싱해둔 것).
+    // 벽 색상과 같은 이유로, rebuildAllWalls 때 다시 입혀주기 위해 따로 저장해둠.
+    var wallImageOverrides = {};
+    // 지금 화면에 떠 있는 벽 조각들 {mesh, edges} — rebuildAllWalls가 전부 지우고 다시 그릴 때 씀.
+    var wallPieceMeshes = [];
+    function computeWallOpenings(logicalIndex, excludeObj){
+      return furniture.filter(function(f){
+        return f.userData.isWallItem && (f.userData.type === 'door' || f.userData.type === 'window') && f.userData.wallIndex === logicalIndex && f !== excludeObj;
+      }).map(function(f){
+        var h = (f.userData.size && f.userData.size.h) || 2.0;
+        var bottom, top;
+        if (f.userData.type === 'door'){
+          bottom = 0; top = h;
+        } else {
+          bottom = Math.max(0, f.position.y - h/2);
+          top = Math.min(wallHeight, f.position.y + h/2);
+        }
+        return { pos: f.userData.wallAlong, width: (f.userData.size && f.userData.size.w) || 0.9, bottom: bottom, top: top };
+      });
+    }
+    function rebuildAllWalls(excludeObj){
+      // 문/창문을 벽 위에 새로 놓거나 옮기거나 지울 때마다 벽 전체를 지우고 다시 그림 — 어느 조각이
+      // 어느 문/창문 때문에 갈라졌는지 일일이 추적하는 대신, 방 한 채 분량의 벽은 통째로 다시 그려도
+      // 비용이 크지 않아서 가장 단순하고 확실한 방식을 택함.
+      // excludeObj가 있으면 그 아이템의 구멍은 빼고 계산(특정 아이템을 제외하고 다시 그리고 싶을 때 사용).
+      selectWall(null); // 지금 지우려는 메쉬가 선택돼 있으면 참조가 끊기므로 먼저 선택 해제
+      wallPieceMeshes.forEach(function(p){ scene.remove(p.mesh); if (p.edges) scene.remove(p.edges); });
+      wallPieceMeshes = [];
+      collisionWalls.length = 0;
+      wallMeshes.length = 0;
+      wallSegments.forEach(function(seg, i){
+        addWall([seg.x1, seg.y1, seg.x2, seg.y2], seg.thickness, computeWallOpenings(i, excludeObj), i);
+      });
+      updateWallFade();
+    }
+    // 벽 하나만 지우고 다시 그림(다른 벽은 안 건드림) — 문/창문을 드래그하는 동안 매 프레임 불러도
+    // 가볍게, 실시간으로 그 벽의 구멍 위치가 커서를 따라오게 하기 위한 용도.
+    function rebuildWallAt(logicalIndex, excludeObj){
+      var seg = wallSegments[logicalIndex];
+      if (!seg) return;
+      if (selectedWall && selectedWall.userData.logicalWallIndex === logicalIndex) selectWall(null);
+      for (var i = wallPieceMeshes.length - 1; i >= 0; i--){
+        if (wallPieceMeshes[i].mesh.userData.logicalWallIndex === logicalIndex){
+          scene.remove(wallPieceMeshes[i].mesh);
+          if (wallPieceMeshes[i].edges) scene.remove(wallPieceMeshes[i].edges);
+          wallPieceMeshes.splice(i, 1);
+        }
+      }
+      for (var j = wallMeshes.length - 1; j >= 0; j--){
+        if (wallMeshes[j].userData.logicalWallIndex === logicalIndex) wallMeshes.splice(j, 1);
+      }
+      for (var k = collisionWalls.length - 1; k >= 0; k--){
+        if (collisionWalls[k].logicalWallIndex === logicalIndex) collisionWalls.splice(k, 1);
+      }
+      addWall([seg.x1, seg.y1, seg.x2, seg.y2], seg.thickness, computeWallOpenings(logicalIndex, excludeObj), logicalIndex);
+      updateWallFade();
+    }
+    rebuildAllWalls();
 
     /* ============ 가구 배치 편집기 ============ */
     var furnitureEditor = opts.furnitureEditor === true;
@@ -1571,7 +1751,11 @@
     var raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
     var dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     var dragOffset = new THREE.Vector3();
-    var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61 };
+    var wallDragPlane = new THREE.Plane();
+    var wallDragState = null;
+    var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61, door:0x8a5a34, window:0xdfeff5, outlet:0xf1efe9 };
+    var WALL_ITEM_TYPES = { window:true, outlet:true, door:true };
+    var WALL_ITEM_DEFAULT_WIDTH = { door:0.9, window:1.2, outlet:0.11 };
     var ROTATE_STEP_DEG = 15, NUDGE_STEP = 0.08;
 
     var furnitureColorPicker;
@@ -1584,9 +1768,10 @@
       return m;
     }
     
-    function addFurniture(type, x, z){
+    function addFurniture(type, x, z, wallInfo){
       if (!furnitureEditor) return;
       type = type || 'sofa';
+      var isWallItem = !!WALL_ITEM_TYPES[type];
       var group = new THREE.Group(), c = furnitureColors[type] || furnitureColors.sofa;
       if (type === 'sofa'){
         group.add(furniturePart(new THREE.BoxGeometry(1.55,.38,.72),c,0,.28,0));
@@ -1600,39 +1785,177 @@
         group.add(furniturePart(new THREE.BoxGeometry(1.5,.26,2.0),c,0,.28,0));
         group.add(furniturePart(new THREE.BoxGeometry(1.5,.55,.14),c,0,.6,.9));
         group.add(furniturePart(new THREE.BoxGeometry(1.24,.10,.62),0xe9edf0,0,.46,-.35, false));
+      } else if (type === 'door'){
+        // 문틀(고정, 색 안 바뀜) + 경첩 기준으로 회전하는 문짝 하위 그룹(열기/닫기 토글이 이
+        // doorHinge.rotation.y를 돌림) — 문짝 중심이 아니라 경첩 위치를 피벗으로 둬야 자연스럽게
+        // "열리는" 모양이 나와서, 경첩 그룹을 따로 만들고 그 안에서 문짝을 절반만큼 떨어뜨려 넣음.
+        // (틈새처럼 보이던 건 실제 지오메트리 간격이 아니라 예전에 벽을 조각조각 나눠 그릴 때
+        // 조각 경계마다 그려지던 외곽선 때문이었음 — 지금은 벽이 통짜 메쉬 하나에 실제 구멍만
+        // 뚫려 있어서 그 문제 자체가 없고, 문틀 크기는 원래의 얇은 크기로 유지함.)
+        group.add(furniturePart(new THREE.BoxGeometry(.06,2.05,.14),0x5c4530,-.42,1.025,0, false));
+        group.add(furniturePart(new THREE.BoxGeometry(.06,2.05,.14),0x5c4530,.42,1.025,0, false));
+        var doorHinge = new THREE.Group();
+        doorHinge.position.set(-.39, 0, 0);
+        var doorPanel = furniturePart(new THREE.BoxGeometry(.78,2.0,.045),c,.39,1.0,0);
+        var doorKnob = furniturePart(new THREE.SphereGeometry(.03,8,8),0x2b2b2b,.72,1.0,.05, false);
+        doorHinge.add(doorPanel, doorKnob);
+        group.add(doorHinge);
+        group.userData.doorHinge = doorHinge;
+        group.userData.doorOpen = false;
+      } else if (type === 'window'){
+        // 유리를 채우지 않고 테두리(위/아래/좌/우 얇은 띠)만 만들어서 가운데는 완전히 뚫려있게 함
+        // — 벽 자체도 이 창문 높이만큼 실제로 뚫려 있어서(computeWallOpenings), 창틀 사이로 뒤쪽이
+        // 그대로 비쳐 보임. 가운데 세로 창살(mullion) 하나로 2분할된 창문 모양을 냄.
+        var winW = 1.2, winH = 1.1, ft = 0.07, fd = 0.09;
+        group.add(furniturePart(new THREE.BoxGeometry(winW, ft, fd), c, 0, winH/2 - ft/2, 0));   // 위
+        group.add(furniturePart(new THREE.BoxGeometry(winW, ft, fd), c, 0, -winH/2 + ft/2, 0));  // 아래
+        group.add(furniturePart(new THREE.BoxGeometry(ft, winH, fd), c, -winW/2 + ft/2, 0, 0));  // 왼쪽
+        group.add(furniturePart(new THREE.BoxGeometry(ft, winH, fd), c, winW/2 - ft/2, 0, 0));   // 오른쪽
+        group.add(furniturePart(new THREE.BoxGeometry(ft*0.85, winH, fd), c, 0, 0, 0));           // 가운데 창살
+        // 가운데 유리 부분은 실제로 뚫려있어서(메쉬가 없음) 거길 클릭하면 그대로 통과해버려 선택/이동이
+        // 어려웠음 — 눈에는 안 보이지만(투명) 클릭은 먹는 히트박스를 창문 전체 크기로 깔아서 테두리든
+        // 유리 부분이든 어디를 눌러도 이 창문이 선택되게 함.
+        var winHit = furniturePart(new THREE.BoxGeometry(winW, winH, fd), c, 0, 0, 0, false);
+        winHit.material.transparent = true;
+        winHit.material.opacity = 0;
+        winHit.material.depthWrite = false;
+        group.add(winHit);
+      } else if (type === 'outlet'){
+        group.add(furniturePart(new THREE.BoxGeometry(.11,.075,.02),c,0,0,0));
+        group.add(furniturePart(new THREE.BoxGeometry(.016,.016,.012),0x2b2b2b,-.022,.014,.014, false));
+        group.add(furniturePart(new THREE.BoxGeometry(.016,.016,.012),0x2b2b2b,.022,.014,.014, false));
       } else {
         group.add(furniturePart(new THREE.CylinderGeometry(.20,.25,.35,16),0xb78962,0,.18,0, false));
         group.add(furniturePart(new THREE.SphereGeometry(.34,16,12),c,0,.6,0));
       }
       // 도면 전체 크기에 비례하여 가구 스케일 보정 (기본 9m 기준)
       // 방이 커질 때 1:1로 정비례해서 너무 거대해지는 현상을 막기 위해, 실제 크기 증가분의
-      // 35% 정도만 반영하도록 완화합니다.
+      // 35% 정도만 반영하도록 완화합니다. 문/창문/콘센트는 표준 치수를 따르는 건축 요소라
+      // 방 크기에 맞춰 같이 커지면 부자연스러워서 이 보정에서 제외함(항상 1배).
       var rawScale = Math.max(b.w, b.d) / 9.0;
       var roomScale = 1 + (rawScale - 1) * 0.35;
       if (roomScale <= 0.2) roomScale = 0.2;
+      if (type === 'door' || type === 'window' || type === 'outlet') roomScale = 1;
 
-      group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
-      group.userData.isFurniture = true; 
+      group.userData.isFurniture = true;
       group.userData.type = type;
-      
+      group.userData.isWallItem = isWallItem;
+
       group.userData.baseSize = type === 'sofa' ? {w:1.55,d:.72,h:.94} :
         type === 'table' ? {w:1.04,d:1.04,h:.66} :
-        type === 'bed' ? {w:1.5,d:2.0,h:.88} : {w:.68,d:.68,h:.94};
+        type === 'bed' ? {w:1.5,d:2.0,h:.88} :
+        type === 'door' ? {w:.9,d:.16,h:2.05} :
+        type === 'window' ? {w:1.2,d:.11,h:1.1} :
+        type === 'outlet' ? {w:.11,d:.02,h:.075} : {w:.68,d:.68,h:.94};
       group.userData.size = {
         w: group.userData.baseSize.w * roomScale,
         d: group.userData.baseSize.d * roomScale,
         h: group.userData.baseSize.h * roomScale
       };
       group.scale.set(roomScale, roomScale, roomScale);
+
+      if (isWallItem && wallInfo && wallSegments[wallInfo.wallIndex]){
+        placeOnWall(group, wallInfo.wallIndex, wallInfo.along, wallInfo.height);
+        scene.add(group); furniture.push(group); selectFurniture(group);
+        if (type === 'door' || type === 'window') rebuildWallAt(wallInfo.wallIndex);
+        return group;
+      }
+
+      group.position.set(x == null ? center.x : x, 0, z == null ? center.z : z);
       clampFurniturePosition(group);
       resolveWallCollision(group);
+      applyFurnitureStacking(group);
       scene.add(group); furniture.push(group); selectFurniture(group);
+      return group;
     }
 
-    var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput;
+    // 창문/콘센트처럼 벽에만 붙는 아이템을 특정 벽(collisionWalls[wallIndex]) 위의 한 지점(along,
+    // 0~1 비율)에 배치 — 벽 진행 방향으로의 위치(along)와 바닥 기준 높이(height)만 정해주면, 벽
+    // 두께 절반만큼 벽 바깥(방 안쪽) 방향으로 내밀어서 벽 표면에 거의 붙어있는 것처럼 보이게 하고,
+    // 회전은 항상 벽 방향과 똑같이 맞춰서 벽에 딱 붙어 보이게 함.
+    function placeOnWall(obj, wallIndex, along, height){
+      // collisionWalls(실제로 지금 그려진 조각들)가 아니라 wallSegments(문/창문이 생기기 전, 안 갈라진
+      // 원본 벽 정의)를 기준으로 계산 — 벽이 여러 조각으로 갈라져도 이 아이템의 위치 계산은 항상 그
+      // 벽의 "전체 길이" 기준이어야 하기 때문.
+      var w = wallSegments[wallIndex];
+      if (!w) return;
+      var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
+      if (wallLen < 0.05) return;
+      var ux = dx/wallLen, uz = dz/wallLen;
+      along = Math.min(Math.max(along == null ? 0.5 : along, 0.08), 0.92);
+      var cx = w.x1 + ux*wallLen*along, cz = w.y1 + uz*wallLen*along;
+      var nx = -uz, nz = ux;
+      var toCenterX = center.x - cx, toCenterZ = center.z - cz;
+      if (nx*toCenterX + nz*toCenterZ < 0){ nx = -nx; nz = -nz; }
+      var type = obj.userData.type;
+      // 문/창문은 이제 벽에 실제로 구멍이 뚫리므로 그 구멍 한가운데(벽 중심선)에 놓고,
+      // 콘센트는 구멍 없이 벽 표면에 붙어야 해서 두께 절반만큼 방 안쪽으로 내밈.
+      var embed = type === 'outlet' ? Math.max(w.thickness/2 - 0.005, 0.02) : 0;
+      var defaultH = type === 'outlet' ? 0.32 : (type === 'door' ? 0 : 1.05);
+      var y = type === 'door' ? 0 : (height == null ? defaultH : height);
+      obj.position.set(cx + nx*embed, y, cz + nz*embed);
+      obj.rotation.y = -Math.atan2(uz, ux);
+      obj.userData.wallIndex = wallIndex;
+      obj.userData.wallAlong = along;
+    }
+
+    // 같은 벽 위에서 두 아이템(문/창문/콘센트 아무 조합이나)이 가로로 겹치는지 검사 — 겹치면 벽에
+    // 실제 구멍을 뚫는 계산(도형 테두리에 노치를 파는 방식)이 순서를 못 잡아서 삼각형이 이상하게
+    // 튀는 버그가 나서, 배치·이동·드래그·크기 조절 전부에서 겹치는 위치는 아예 막음.
+    function wallItemOverlaps(wallIndex, along, widthM, excludeObj){
+      var w = wallSegments[wallIndex];
+      if (!w) return false;
+      var wallLen = Math.hypot(w.x2-w.x1, w.y2-w.y1);
+      if (wallLen < 0.05) return false;
+      var halfW = (widthM || 0.9) / 2;
+      var centerDist = Math.min(Math.max(along == null ? 0.5 : along, 0), 1) * wallLen;
+      var from = centerDist - halfW, to = centerDist + halfW;
+      return furniture.some(function(f){
+        if (f === excludeObj || !f.userData.isWallItem || f.userData.wallIndex !== wallIndex) return false;
+        var fHalf = ((f.userData.size && f.userData.size.w) || 0.9) / 2;
+        var fCenterDist = (f.userData.wallAlong == null ? 0.5 : f.userData.wallAlong) * wallLen;
+        var fFrom = fCenterDist - fHalf, fTo = fCenterDist + fHalf;
+        return from < fTo && to > fFrom;
+      });
+    }
+    var collisionToastEl, collisionToastTimer;
+    function showCollisionToast(){
+      if (!collisionToastEl){
+        collisionToastEl = document.createElement('div');
+        collisionToastEl.className = 'furniture-collision-toast';
+        collisionToastEl.textContent = '⚠️ 다른 문/창문/콘센트와 겹칠 수 없어요';
+        container.appendChild(collisionToastEl);
+      }
+      collisionToastEl.classList.add('visible');
+      clearTimeout(collisionToastTimer);
+      collisionToastTimer = setTimeout(function(){ collisionToastEl.classList.remove('visible'); }, 1300);
+    }
+
+    // 가구 팔레트 아이템을 벽 위(raycaster로 wallMeshes를 맞힌 지점)에 놓을 때 씀 — 맞힌 메쉬가
+    // 어느 "논리적인" 벽(wallSegments) 소속인지는 addWall이 심어둔 logicalWallIndex로 바로
+    // 알 수 있음(문/창문 때문에 벽에 구멍이 뚫려 있어도 항상 원본 벽을 가리킴).
+    // hitPoint를 그 벽의 진행 방향으로 투영해서 along(0~1) 비율을 구한 뒤 addFurniture에 넘김.
+    function addWallItem(type, wallMesh, hitPoint){
+      if (!furnitureEditor) return;
+      var idx = wallMesh.userData.logicalWallIndex;
+      if (idx == null || !wallSegments[idx]) return;
+      var w = wallSegments[idx];
+      var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
+      if (wallLen < 0.05) return;
+      var ux = dx/wallLen, uz = dz/wallLen;
+      var t = ((hitPoint.x-w.x1)*ux + (hitPoint.z-w.y1)*uz) / wallLen;
+      if (wallItemOverlaps(idx, t, WALL_ITEM_DEFAULT_WIDTH[type])){
+        showCollisionToast();
+        return;
+      }
+      addFurniture(type, null, null, { wallIndex: idx, along: t });
+    }
+
+    var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput, sizePanelTitle, sizeDepthLabel, sizeHeightLabel;
     var rotatePanel;
     var wallColorPanel, wallColorPicker;
     var furnitureColorPanel, furnitureColorToggleBtn;
+    var FURNITURE_TYPE_LABELS = { sofa:'소파', table:'테이블', bed:'침대', plant:'식물', door:'문', window:'창문', outlet:'콘센트' };
     function syncSizePanel(){
       if (!sizePanel) return;
       var item=selectedFurniture;
@@ -1640,15 +1963,42 @@
       if (!item) return;
       var dims=item.userData.size;
       sizeWidthInput.value=dims.w.toFixed(2); sizeDepthInput.value=dims.d.toFixed(2); sizeHeightInput.value=dims.h.toFixed(2);
+      if (sizePanelTitle) sizePanelTitle.textContent = '선택 ' + (FURNITURE_TYPE_LABELS[item.userData.type] || '가구') + ' 크기 (m)';
+      // 문/창문은 깊이가 곧 벽 두께라서 따로 조절할 의미가 없고(가로·세로만 의미 있음),
+      // 대신 벽에 파묻혀 있지 않은 나머지 가구(소파·테이블 등)는 깊이가 중요해서 그대로 보여줌.
+      var isWallOpening = item.userData.type === 'door' || item.userData.type === 'window';
+      if (sizeDepthLabel) sizeDepthLabel.style.display = isWallOpening ? 'none' : '';
     }
     function applyFurnitureSize(){
       if (!selectedFurniture) return;
       var base=selectedFurniture.userData.baseSize, dims=selectedFurniture.userData.size;
-      var w=parseFloat(sizeWidthInput.value), d=parseFloat(sizeDepthInput.value), h=parseFloat(sizeHeightInput.value);
-      if (isFinite(w) && w>=.1) dims.w=w;
-      if (isFinite(d) && d>=.1) dims.d=d;
+      var type=selectedFurniture.userData.type, isWindow = type === 'window', isWallOpening = isWindow || type === 'door';
+      var oldH=dims.h, oldY=selectedFurniture.position.y;
+      var w=parseFloat(sizeWidthInput.value), h=parseFloat(sizeHeightInput.value);
+      if (isFinite(w) && w>=.1){
+        if (isWallOpening && wallItemOverlaps(selectedFurniture.userData.wallIndex, selectedFurniture.userData.wallAlong, w, selectedFurniture)){
+          showCollisionToast();
+        } else {
+          dims.w=w;
+        }
+      }
+      if (!isWallOpening){
+        var d=parseFloat(sizeDepthInput.value);
+        if (isFinite(d) && d>=.1) dims.d=d;
+      }
       if (isFinite(h) && h>=.1) dims.h=h;
       selectedFurniture.scale.set(dims.w/base.w,dims.h/base.h,dims.d/base.d);
+      if (isWindow && selectedFurniture.userData.isWallItem){
+        // 높이는 창문 맨 밑을 기준으로 측정 — 밑변은 그대로 두고 위로만 늘거나 줄게, 기존 바닥
+        // 높이를 구해서 그만큼 중심 y를 다시 잡아줌(placeOnWall이 쓰는 y는 창문 중심 높이임).
+        var oldBottom = oldY - oldH/2;
+        placeOnWall(selectedFurniture, selectedFurniture.userData.wallIndex, selectedFurniture.userData.wallAlong, oldBottom + dims.h/2);
+      }
+      if (selectedFurniture.userData.isWallItem && (type === 'door' || type === 'window')){
+        // 벽에 뚫리는 구멍 크기는 다시 그려야 실제로 반영됨 — 예전엔 이 호출이 없어서 크기만
+        // 바꿔서는 안 바뀌고, 위치를 한 번 옮겨야 그제서야 구멍 크기가 따라오는 것처럼 보였음.
+        rebuildWallAt(selectedFurniture.userData.wallIndex);
+      }
       syncSizePanel();
     }
     function clampFurniturePosition(obj){
@@ -1698,25 +2048,123 @@
       }
       clampFurniturePosition(obj);
     }
+    // 다른 가구 바로 위(발밑 지점 기준)에 놓였는지 찾아줌 — 나중에 놓인 가구가 화면상 위에
+    // 그려질 가능성이 높으므로 배열을 뒤에서부터 검사함. 이미 뭔가 위에 올라가 있는 가구
+    // 위에는 또 올리지 않음(2단 쌓기 방지 — position.y가 거의 0(바닥)인 가구만 대상으로 함).
+    function furnitureUnderPoint(px, pz, excludeObj){
+      for (var i = furniture.length - 1; i >= 0; i--){
+        var f = furniture[i];
+        if (f === excludeObj || f.position.y > 0.02 || f.userData.isWallItem) continue;
+        var dims = f.userData.size || {w:.6,d:.6,h:.6};
+        var cosR = Math.cos(f.rotation.y), sinR = Math.sin(f.rotation.y);
+        var dx = px - f.position.x, dz = pz - f.position.z;
+        var localX = dx*cosR - dz*sinR;
+        var localZ = dx*sinR + dz*cosR;
+        if (Math.abs(localX) <= dims.w/2 && Math.abs(localZ) <= dims.d/2) return f;
+      }
+      return null;
+    }
+    // 가구를 다른 가구 발판(footprint) 안으로 옮겼으면 그 가구 높이만큼 위로 올려서 얹고,
+    // 벗어나면 다시 바닥(y=0)으로 내림 — 예: 화분을 테이블 위로 끌어다 놓으면 테이블 높이만큼
+    // 붕 뜬 채로 테이블 위에 앉고, 테이블 밖으로 다시 빼면 바닥으로 내려옴.
+    function applyFurnitureStacking(obj){
+      var target = furnitureUnderPoint(obj.position.x, obj.position.z, obj);
+      obj.position.y = target ? target.position.y + target.userData.size.h : 0;
+    }
     function syncRotatePanel(){
       if (!rotatePanel) return;
       if (selectedFurniture) rotatePanel.classList.add('visible');
       else rotatePanel.classList.remove('visible');
+      var isWall = !!(selectedFurniture && selectedFurniture.userData.isWallItem);
+      var isDoor = !!(selectedFurniture && selectedFurniture.userData.type === 'door');
+      rotatePanel.classList.toggle('wall-item-mode', isWall);
+      rotatePanel.classList.toggle('door-mode', isDoor);
+      var upBtn = rotatePanel.querySelector('.nudge-btn[data-dir="up"]');
+      var downBtn = rotatePanel.querySelector('.nudge-btn[data-dir="down"]');
+      var leftBtn = rotatePanel.querySelector('.nudge-btn[data-dir="left"]');
+      var rightBtn = rotatePanel.querySelector('.nudge-btn[data-dir="right"]');
+      if (upBtn && downBtn && leftBtn && rightBtn){
+        if (isWall){
+          upBtn.title = '벽 위에서 더 높이'; upBtn.setAttribute('aria-label','벽 위에서 더 높이');
+          downBtn.title = '벽 위에서 더 낮게'; downBtn.setAttribute('aria-label','벽 위에서 더 낮게');
+          leftBtn.title = '벽을 따라 왼쪽으로'; leftBtn.setAttribute('aria-label','벽을 따라 왼쪽으로');
+          rightBtn.title = '벽을 따라 오른쪽으로'; rightBtn.setAttribute('aria-label','벽을 따라 오른쪽으로');
+        } else {
+          upBtn.removeAttribute('title'); upBtn.setAttribute('aria-label','위로 이동');
+          downBtn.removeAttribute('title'); downBtn.setAttribute('aria-label','아래로 이동');
+          leftBtn.removeAttribute('title'); leftBtn.setAttribute('aria-label','왼쪽으로 이동');
+          rightBtn.removeAttribute('title'); rightBtn.setAttribute('aria-label','오른쪽으로 이동');
+        }
+      }
+      var doorBtn = rotatePanel.querySelector('.door-toggle-btn');
+      if (doorBtn && selectedFurniture){
+        doorBtn.textContent = selectedFurniture.userData.doorOpen ? '🚪 닫기' : '🚪 열기';
+      }
     }
     function rotateBy(deltaDeg){
       if (!selectedFurniture) return;
-      var deg = (selectedFurniture.rotation.y * 180 / Math.PI) + deltaDeg;
+      if (selectedFurniture.userData.isWallItem) return; // 벽에 붙는 아이템은 항상 벽 방향으로 회전 고정
+      // THREE.js에서 rotation.y가 커지는 방향은(위에서 내려다볼 때) 시계 반대 방향이라,
+      // 화면에 그려진 ↻(오른쪽/시계 방향) 버튼을 누르면 오히려 반시계로 돌아 보이는 문제가
+      // 있었음 — 버튼이 뜻하는 화면상 방향과 실제 회전 값을 맞추려고 부호를 뒤집음.
+      var deg = (selectedFurniture.rotation.y * 180 / Math.PI) - deltaDeg;
       deg = ((deg % 360) + 360) % 360;
       selectedFurniture.rotation.y = deg * Math.PI / 180;
       resolveWallCollision(selectedFurniture);
     }
     function nudgeFurniture(dir){
       if (!selectedFurniture) return;
-      if (dir === 'up') selectedFurniture.position.z -= NUDGE_STEP;
-      else if (dir === 'down') selectedFurniture.position.z += NUDGE_STEP;
-      else if (dir === 'left') selectedFurniture.position.x -= NUDGE_STEP;
-      else if (dir === 'right') selectedFurniture.position.x += NUDGE_STEP;
+      if (selectedFurniture.userData.isWallItem){ nudgeWallItem(dir); return; }
+      // 고정된 세계 좌표(x/z)로만 밀면, 카메라를 돌려서 보고 있을 땐 화살표 방향과 실제
+      // 화면상 이동 방향이 어긋나 보임 — 지금 카메라가 보고 있는 각도(theta) 기준으로
+      // "화면에서의 위/아래/좌/우"를 계산해서 그 방향으로 밀어줌.
+      var fx = -Math.cos(theta), fz = -Math.sin(theta); // 화면 "위"(카메라에서 먼 쪽)
+      var rx = Math.sin(theta), rz = -Math.cos(theta);  // 화면 "오른쪽"
+      if (dir === 'up'){ selectedFurniture.position.x += fx*NUDGE_STEP; selectedFurniture.position.z += fz*NUDGE_STEP; }
+      else if (dir === 'down'){ selectedFurniture.position.x -= fx*NUDGE_STEP; selectedFurniture.position.z -= fz*NUDGE_STEP; }
+      else if (dir === 'left'){ selectedFurniture.position.x -= rx*NUDGE_STEP; selectedFurniture.position.z -= rz*NUDGE_STEP; }
+      else if (dir === 'right'){ selectedFurniture.position.x += rx*NUDGE_STEP; selectedFurniture.position.z += rz*NUDGE_STEP; }
       resolveWallCollision(selectedFurniture);
+      applyFurnitureStacking(selectedFurniture);
+    }
+    // 창문/콘센트는 벽에 붙어있어야 하니 일반 4방향(화면 기준) 이동 대신: 위/아래(↑↓)는 벽 위에서의
+    // 높이 조절, 왼쪽/오른쪽(←→)은 그 벽을 따라 옆으로 미끄러지듯 이동 — 회전은 항상 벽 방향 고정.
+    // 문은 바닥에 붙어 있어야 자연스러워서 높이 조절 없이 좌우(벽을 따라 슬라이드)만 가능.
+    function nudgeWallItem(dir){
+      var obj = selectedFurniture;
+      var type = obj.userData.type;
+      var w = wallSegments[obj.userData.wallIndex];
+      if (!w) return;
+      var dims = obj.userData.size || {h:.3};
+      if (dir === 'up'){
+        if (type === 'door') return;
+        obj.position.y = Math.min(obj.position.y + NUDGE_STEP, wallHeight - dims.h/2 - 0.02);
+        if (type === 'window') rebuildWallAt(obj.userData.wallIndex); // 위아래로 옮겨도 벽 구멍이 실시간으로 따라오게
+      } else if (dir === 'down'){
+        if (type === 'door') return;
+        obj.position.y = Math.max(obj.position.y - NUDGE_STEP, dims.h/2);
+        if (type === 'window') rebuildWallAt(obj.userData.wallIndex); // 위아래로 옮겨도 벽 구멍이 실시간으로 따라오게
+      } else if (dir === 'left' || dir === 'right'){
+        var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
+        if (wallLen < 0.05) return;
+        var sign = dir === 'left' ? -1 : 1;
+        var along = Math.min(Math.max((obj.userData.wallAlong||0.5) + sign*(NUDGE_STEP/wallLen), 0.08), 0.92);
+        if (wallItemOverlaps(obj.userData.wallIndex, along, dims.w, obj)){
+          showCollisionToast();
+          return;
+        }
+        placeOnWall(obj, obj.userData.wallIndex, along, obj.position.y);
+        if (type === 'door' || type === 'window') rebuildWallAt(obj.userData.wallIndex);
+      }
+      updateRotatePanelPosition();
+    }
+    // 문 가구의 열림/닫힘 토글 — doorHinge(경첩 피벗 그룹)의 rotation.y를 돌려서 문짝만 열린
+    // 것처럼 보이게 함(문틀은 그대로 고정).
+    function toggleDoorOpen(){
+      if (!selectedFurniture || selectedFurniture.userData.type !== 'door' || !selectedFurniture.userData.doorHinge) return;
+      var open = !selectedFurniture.userData.doorOpen;
+      selectedFurniture.userData.doorOpen = open;
+      selectedFurniture.userData.doorHinge.rotation.y = open ? -(Math.PI/2) * 0.82 : 0;
     }
     // 버튼을 짧게 클릭하면 한 번만, 누르고 있으면 떼기 전까지 계속 반복 실행 — 방향키(이동 패드)에
     // 씀. 처음 누르면 바로 한 번 실행되고, 잠깐(HOLD_DELAY) 눌린 채로 있으면 그때부터 일정 간격
@@ -1731,6 +2179,9 @@
       el.addEventListener('pointerdown', function(e){
         e.preventDefault();
         stop();
+        // 손을 떼도 다시 풀어주지 않음 — 연달아 짧게 여러 번 눌러도(꾹 누르고 있지 않아도) 패널이
+        // 안 움직여야 다음 클릭이 편해짐. 새로 선택하거나 드래그를 시작할 때(selectFurniture) 다시 풀림.
+        rotatePanelFrozen = true;
         fn();
         delayTimer = setTimeout(function(){
           repeatTimer = setInterval(fn, REPEAT_MS);
@@ -1744,6 +2195,7 @@
     function selectFurniture(obj){
       if (selectedFurniture) selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x000000); });
       selectedFurniture = obj || null;
+      rotatePanelFrozen = false; // 새로 선택하거나 드래그를 시작할 때는 다시 오브젝트를 따라가게 함
       // 가구 선택이 바뀔 때마다(다른 가구로 바꾸거나, 선택 해제하거나) 열려 있던 색상 팝업은
       // 일단 닫음 — 팝업 위치가 이전 가구 기준이라 그대로 두면 엉뚱한 자리에 남기 때문.
       if (furnitureColorPanel) furnitureColorPanel.classList.remove('visible');
@@ -1765,10 +2217,11 @@
       }
       syncSizePanel();
       syncRotatePanel();
+      updateRotatePanelPosition(); // 고정이 풀렸으니 지금 위치에 맞게 즉시 한 번 다시 잡아줌
     }
     // 벽 클릭 색상 변경 — hitPoint(THREE.Vector3, 클릭한 실제 3D 지점)가 있으면 그 지점 바로 위에
-    // 팔레트를 띄움. 벽마다(buildWallPiece에서) material을 따로 만들어두므로, 여기서 색을 바꿔도
-    // 그 벽 1개(선택한 안쪽면이 보이는 벽 메쉬)만 바뀌고 다른 벽엔 전혀 영향이 없음.
+    // 팔레트를 띄움. 벽마다(addWall에서) material을 따로 만들어두므로, 여기서 색을 바꿔도
+    // 그 벽 1개만 바뀌고 다른 벽엔 전혀 영향이 없음.
     function selectWall(mesh, hitPoint){
       if (selectedWall && selectedWall !== mesh){
         selectedWall.material.emissive && selectedWall.material.emissive.setHex(0x000000);
@@ -1818,21 +2271,85 @@
 
       selectFurniture(obj);
 
+      if (obj.userData.isWallItem){
+        // 벽에 붙는 아이템은 바닥 대신 그 벽을 담고 있는 수직 평면(wallDragPlane) 위에서만
+        // 드래그되게 함 — dragWallItem이 실제 이동을 처리.
+        if (beginWallItemDrag(obj)) canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+        return true;
+      }
+
       var point=new THREE.Vector3(); pointerToFloor(e,point);
       dragOffset.copy(obj.position).sub(point);
       furnitureDragging=true;
       canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
       return true;
     }
+    // 벽에 붙는 아이템(문/창문/콘센트) 드래그 시작 — 그 벽의 진행 방향(ux,uz)과 수직인 법선을 갖고
+    // 벽의 중심선을 지나는 "수직 평면"을 하나 만들어서, 이후 포인터가 그 평면 위 어디를 가리키는지로
+    // along(벽을 따라 좌우 위치)과 높이(y)를 동시에 구함(door는 항상 y=0으로 고정).
+    function beginWallItemDrag(obj){
+      var w = wallSegments[obj.userData.wallIndex];
+      if (!w) return false;
+      var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
+      if (wallLen < 0.05) return false;
+      var ux = dx/wallLen, uz = dz/wallLen;
+      var nx = -uz, nz = ux;
+      wallDragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(nx,0,nz), new THREE.Vector3(w.x1,0,w.y1));
+      wallDragState = { obj: obj, wallIndex: obj.userData.wallIndex, ux: ux, uz: uz, wallLen: wallLen, x1: w.x1, y1: w.y1, overlapWarned: false };
+      return true;
+    }
+    function dragWallItem(e){
+      if (!wallDragState) return false;
+      var rect = canvas.getBoundingClientRect();
+      pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(pointer, camera);
+      var hitPoint = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(wallDragPlane, hitPoint)) return true;
+      var st = wallDragState, obj = st.obj, type = obj.userData.type;
+      var along = ((hitPoint.x-st.x1)*st.ux + (hitPoint.z-st.y1)*st.uz) / st.wallLen;
+      along = Math.min(Math.max(along, 0.08), 0.92);
+      var dragDims = obj.userData.size || {w:.9, h:.3};
+      if (wallItemOverlaps(st.wallIndex, along, dragDims.w, obj)){
+        // 겹치는 자리로는 안 옮기고(마지막으로 유효했던 위치에 그대로 둠) 경고는 붙어있는 동안 한 번만.
+        if (!st.overlapWarned){ showCollisionToast(); st.overlapWarned = true; }
+        updateRotatePanelPosition();
+        return true;
+      }
+      st.overlapWarned = false;
+      var height;
+      if (type === 'door'){
+        height = 0; // 문은 항상 바닥(상하 이동 없음), 좌우로만 슬라이드
+      } else {
+        height = Math.min(Math.max(hitPoint.y, dragDims.h/2), wallHeight - dragDims.h/2 - 0.02);
+      }
+      placeOnWall(obj, st.wallIndex, along, height);
+      // 문/창문은 위치가 바뀔 때마다(매 프레임) 그 벽만 다시 그려서, 커서를 따라 실시간으로 구멍이
+      // 옮겨다니는 것처럼 보이게 함 — 벽 전체가 아니라 이 벽 하나만 가볍게 다시 그려서 부담이 적음.
+      if (type === 'door' || type === 'window') rebuildWallAt(st.wallIndex);
+      updateRotatePanelPosition();
+      return true;
+    }
+    function endWallItemDrag(e){
+      if (!wallDragState) return false;
+      var obj = wallDragState.obj, wallIdx = wallDragState.wallIndex;
+      wallDragState = null;
+      if (canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      // 드래그 내내 이미 실시간으로 갱신되고 있었지만, 마지막 프레임 상태를 확실히 확정해줌.
+      if (obj.userData.type === 'door' || obj.userData.type === 'window') rebuildWallAt(wallIdx);
+      return true;
+    }
     function dragFurniture(e){
+      if (wallDragState) return dragWallItem(e);
       if(!furnitureDragging || !selectedFurniture) return false;
       var point=new THREE.Vector3(); if(pointerToFloor(e,point)){
         selectedFurniture.position.x=Math.max(0.3,Math.min(b.w-.3,point.x+dragOffset.x));
         selectedFurniture.position.z=Math.max(0.3,Math.min(b.d-.3,point.z+dragOffset.z));
         resolveWallCollision(selectedFurniture);
+        applyFurnitureStacking(selectedFurniture);
       } return true;
     }
     function endFurnitureDrag(e){
+      if (wallDragState) return endWallItemDrag(e);
       if(!furnitureDragging) return false; furnitureDragging=false;
       if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
       return true;
@@ -2069,7 +2586,10 @@
         { id: 'sofa', label: '소파', icon: '🛋️' },
         { id: 'table', label: '테이블', icon: '🪑' },
         { id: 'bed', label: '침대', icon: '🛏️' },
-        { id: 'plant', label: '식물', icon: '🪴' }
+        { id: 'plant', label: '식물', icon: '🪴' },
+        { id: 'door', label: '문', icon: '🚪' },
+        { id: 'window', label: '창문', icon: '🪟' },
+        { id: 'outlet', label: '콘센트', icon: '🔌' }
       ];
 
       furnitureList.forEach(function(item) {
@@ -2078,7 +2598,15 @@
         btn.className = 'sims-btn';
         btn.draggable = true;
         btn.innerHTML = '<span style="font-size:1.4rem; margin-bottom:4px; pointer-events:none;">' + item.icon + '</span><span style="pointer-events:none;">' + item.label + '</span>';
-        btn.addEventListener('click', function() { addFurniture(item.id); });
+        btn.addEventListener('click', function() {
+          // 창문/콘센트는 벽 위에만 놓을 수 있어서, 클릭(어느 벽인지 알 수 없음)으로는 배치하지
+          // 않고 캔버스의 벽 위로 직접 끌어다 놓으라는 안내만 띄움.
+          if (WALL_ITEM_TYPES[item.id]) {
+            ohAlert('이 아이템은 벽 위에만 놓을 수 있어요. 아이콘을 벽으로 끌어다 놓아주세요.');
+            return;
+          }
+          addFurniture(item.id);
+        });
         // 버튼을 캔버스로 드래그해서 원하는 위치에 바로 놓을 수 있게 함(클릭은 기존처럼
         // 방 가운데 근처에 추가, 드래그는 놓은 자리에 정확히 추가).
         btn.addEventListener('dragstart', function(e) {
@@ -2096,9 +2624,12 @@
       sizePanel = document.createElement('div');
       sizePanel.className = 'furniture-size-panel';
       sizePanel.hidden = true;
-      sizePanel.innerHTML = '<strong>선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><label class="furniture-dimension">높이 <input type="number" min="0.1" step="0.05" aria-label="높이"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
+      sizePanel.innerHTML = '<strong id="furnitureSizeTitle">선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension dim-depth">깊이 <input type="number" min="0.1" step="0.05" aria-label="깊이"><span>m</span></label><label class="furniture-dimension dim-height">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
       var sizeInputs = sizePanel.querySelectorAll('input');
       sizeWidthInput = sizeInputs[0]; sizeDepthInput = sizeInputs[1]; sizeHeightInput = sizeInputs[2];
+      sizePanelTitle = sizePanel.querySelector('#furnitureSizeTitle');
+      sizeDepthLabel = sizePanel.querySelector('.dim-depth');
+      sizeHeightLabel = sizePanel.querySelector('.dim-height');
 
       sizeInputs.forEach(function(input){
         input.addEventListener('change', applyFurnitureSize);
@@ -2114,7 +2645,7 @@
       //    가구의 색상 팝업(furnitureColorPanel)이 뜨고, 삭제 버튼을 누르면 바로 그 가구를 지움.
       rotatePanel = document.createElement('div');
       rotatePanel.className = 'furniture-rotate-panel';
-      rotatePanel.innerHTML = '<div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="handle-lower-row"><div class="handle-left-col"><button type="button" class="furniture-color-toggle" aria-label="가구 색상 변경" title="가구 색상 변경"></button><button type="button" class="furniture-delete-btn" aria-label="가구 삭제" title="가구 삭제">🗑️</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div></div>';
+      rotatePanel.innerHTML = '<div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="handle-lower-row"><div class="handle-left-col"><button type="button" class="furniture-color-toggle" aria-label="가구 색상 변경" title="가구 색상 변경"></button><button type="button" class="furniture-delete-btn" aria-label="가구 삭제" title="가구 삭제">🗑️</button><button type="button" class="door-toggle-btn" aria-label="문 열기/닫기" title="문 열기/닫기">🚪 열기</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div></div>';
       rotatePanel.querySelectorAll('.handle-btn').forEach(function(btn){
         bindHoldRepeat(btn, function(){ rotateBy(parseFloat(btn.getAttribute('data-rotate')) * ROTATE_STEP_DEG); });
       });
@@ -2130,9 +2661,17 @@
       rotatePanel.querySelector('.furniture-delete-btn').addEventListener('click', function(e){
         e.stopPropagation();
         if (!selectedFurniture) return;
+        var wasWallOpening = selectedFurniture.userData.type === 'door' || selectedFurniture.userData.type === 'window';
+        var deletedWallIndex = selectedFurniture.userData.wallIndex;
         scene.remove(selectedFurniture);
         furniture = furniture.filter(function(f){ return f !== selectedFurniture; });
         selectFurniture(null);
+        if (wasWallOpening) rebuildWallAt(deletedWallIndex); // 뚫려있던 자리를 다시 메움
+      });
+      rotatePanel.querySelector('.door-toggle-btn').addEventListener('click', function(e){
+        e.stopPropagation();
+        toggleDoorOpen();
+        syncRotatePanel();
       });
       container.appendChild(rotatePanel);
 
@@ -2179,17 +2718,25 @@
         if (!file || !selectedWall) return;
         var reader = new FileReader();
         reader.onload = function(ev){
-          var wallForImage = selectedWall; // 로딩 도중 다른 벽을 선택했을 수도 있어서 지금 벽을 따로 붙잡아둠
+          var idxForImage = selectedWall.userData.logicalWallIndex; // 로딩 도중 다른 벽을 선택했을 수도 있어서 논리적 벽 인덱스를 따로 붙잡아둠
           var loader = new THREE.TextureLoader();
           loader.load(ev.target.result, function(tex){
             tex.wrapS = THREE.ClampToEdgeWrapping;
             tex.wrapT = THREE.ClampToEdgeWrapping;
             tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); // 비스듬히 봐도 계단식으로 안 깨지게
             tex.needsUpdate = true;
-            var mat = wallForImage.material;
-            mat.map = tex;
-            mat.color.set(0xffffff); // map은 색이랑 곱해지므로, 사진이 원래 색 그대로 보이게 흰색으로 둠
-            mat.needsUpdate = true;
+            // 문/창문 때문에 벽이 여러 조각으로 잘려 있을 수 있으므로, 같은 논리적 벽에 속한 조각을
+            // 전부 찾아서 한꺼번에 입혀줌 — 클릭해서 선택된 조각 하나만 바뀌던 문제를 고침.
+            var pieces = idxForImage != null ? wallMeshes.filter(function(m){ return m.userData.logicalWallIndex === idxForImage; }) : [selectedWall];
+            pieces.forEach(function(m){
+              var mat = m.material;
+              mat.map = tex;
+              mat.color.set(0xffffff); // map은 색이랑 곱해지므로, 사진이 원래 색 그대로 보이게 흰색으로 둠
+              mat.needsUpdate = true;
+            });
+            // 문/창문 때문에 나중에 벽이 다시 그려져도(rebuildAllWalls) 이 이미지가 유지되게 논리적
+            // 벽 인덱스 기준으로 따로 저장해둠(벽 색상과 동일한 방식).
+            if (idxForImage != null) wallImageOverrides[idxForImage] = tex;
           });
         };
         reader.readAsDataURL(file);
@@ -2198,12 +2745,25 @@
       wallColorPanel.appendChild(wallImageInput);
       wallColorPicker = createColorPicker('#' + wallColor.getHexString(), function(hex){
         if (!selectedWall) return;
-        if (selectedWall.material.map){
-          // 색을 직접 고르면 이미지 벽지는 해제하고 단색으로 되돌림(둘이 동시에 있으면 헷갈림)
-          selectedWall.material.map = null;
-          selectedWall.material.needsUpdate = true;
+        var idx = selectedWall.userData.logicalWallIndex;
+        var hexNum = parseInt(hex.replace('#', ''), 16);
+        // 문/창문 때문에 벽이 여러 조각으로 잘려 있을 수 있으므로, 같은 논리적 벽에 속한 조각을
+        // 전부 찾아서 한꺼번에 바꿔줌 — 클릭해서 선택된 조각 하나만 바뀌던 문제를 고침.
+        var pieces = idx != null ? wallMeshes.filter(function(m){ return m.userData.logicalWallIndex === idx; }) : [selectedWall];
+        pieces.forEach(function(m){
+          if (m.material.map){
+            // 색을 직접 고르면 이미지 벽지는 해제하고 단색으로 되돌림(둘이 동시에 있으면 헷갈림)
+            m.material.map = null;
+            m.material.needsUpdate = true;
+          }
+          m.material.color.setHex(hexNum);
+        });
+        // 문/창문 때문에 나중에 벽이 다시 그려져도(rebuildAllWalls) 이 색이 유지되게 논리적 벽
+        // 인덱스 기준으로 따로 저장해둠. 이미지 벽지가 있었다면 색으로 덮어썼으니 그 오버라이드도 지움.
+        if (idx != null){
+          wallColorOverrides[idx] = hexNum;
+          delete wallImageOverrides[idx];
         }
-        selectedWall.material.color.setHex(parseInt(hex.replace('#', ''), 16));
       });
       wallColorPanel.appendChild(wallColorPicker.el);
       container.appendChild(wallColorPanel);
@@ -2313,6 +2873,18 @@
       canvas.addEventListener("drop", function(e){
         e.preventDefault();
         var type = e.dataTransfer.getData("text/plain");
+        if (WALL_ITEM_TYPES[type]) {
+          var rect = canvas.getBoundingClientRect();
+          pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
+          raycaster.setFromCamera(pointer, camera);
+          var wallHit = raycaster.intersectObjects(wallMeshes, false)[0];
+          if (wallHit) {
+            addWallItem(type, wallHit.object, wallHit.point);
+          } else {
+            ohAlert('벽 위로 끌어다 놓아주세요.');
+          }
+          return;
+        }
         if (['sofa', 'table', 'bed', 'plant'].indexOf(type) !== -1) {
           var point = new THREE.Vector3();
           if (pointerToFloor(e, point)) {
@@ -2422,10 +2994,14 @@
     ro.observe(container);
 
     var rotatePanelAnchor = furnitureEditor ? new THREE.Vector3() : null;
+    var rotatePanelFrozen = false;
     function updateRotatePanelPosition(){
-      if (!rotatePanel || !selectedFurniture) return;
+      // rotatePanelAnchor는 이 함수보다 한참 뒤에 선언돼 있어서, 초기 setup 중 addFurniture가
+      // 기본 가구를 놓으며 selectFurniture -> updateRotatePanelPosition을 이 시점보다 먼저 부르면
+      // 아직 undefined라 여기서 죽어서 화면 전체가 안 뜨는 문제가 있었음 — 방어적으로 가드 추가.
+      if (!rotatePanel || !selectedFurniture || !rotatePanelAnchor || rotatePanelFrozen) return;
       var dims = selectedFurniture.userData.size || {w:.6,d:.6,h:.9};
-      rotatePanelAnchor.set(selectedFurniture.position.x, dims.h + 0.3, selectedFurniture.position.z);
+      rotatePanelAnchor.set(selectedFurniture.position.x, selectedFurniture.position.y + dims.h + 0.3, selectedFurniture.position.z);
       rotatePanelAnchor.project(camera);
       if (rotatePanelAnchor.z > 1) return; 
       var w = container.clientWidth, h = container.clientHeight;
@@ -2522,16 +3098,21 @@
             }
           });
           var dims = f.userData.size || { w:.6, d:.6, h:.6 };
-          return { type: f.userData.type, x: f.position.x, z: f.position.z, rotY: f.rotation.y, w: dims.w, d: dims.d, h: dims.h, color: colorHex };
+          return { type: f.userData.type, x: f.position.x, y: f.position.y, z: f.position.z, rotY: f.rotation.y, w: dims.w, d: dims.d, h: dims.h, color: colorHex, doorOpen: !!f.userData.doorOpen, wallIndex: (f.userData.wallIndex != null ? f.userData.wallIndex : null), wallAlong: (f.userData.wallAlong != null ? f.userData.wallAlong : null) };
         });
       },
       getBounds: function(){ return { w: b.w, d: b.d }; },
-      // 벽마다 지금 실제로 적용된 색을 순서대로(outer 먼저, 그다음 inner — addWall이 plan.outer.forEach
-      // 다음 plan.inner.forEach 순서로 wallMeshes를 채우기 때문에 그 순서와 항상 일치함) 뽑아냄.
-      // 게시할 때 wallData.wallColors로 같이 저장해서, 갤러리/게시물 상세 화면(post.html)에서도
-      // 사용자가 고른 벽 색이 기본 파란 테마색 대신 그대로 보이게 함.
+      // 벽마다 지금 실제로 적용된 색을 순서대로(outer 먼저, 그다음 inner — wallSegments가 그
+      // 순서 그대로임) 뽑아냄. wallMeshes(실제로 그려진 조각들)가 아니라 논리적 벽(wallSegments)
+      // 기준으로 하나씩 뽑아야, 문/창문 때문에 벽 하나가 여러 조각으로 갈라져 있어도 항상
+      // plan.outer/plan.inner 개수와 정확히 같은 길이의 배열이 나옴(post.html의 wallColorIdx
+      // 매칭 방식과 어긋나지 않게 하기 위함). 게시할 때 wallData.wallColors로 같이 저장해서,
+      // 갤러리/게시물 상세 화면(post.html)에서도 사용자가 고른 벽 색이 그대로 보이게 함.
       getWallColors: function(){
-        return wallMeshes.map(function(m){ return "#" + m.material.color.getHexString(); });
+        return wallSegments.map(function(seg, i){
+          var hex = wallColorOverrides[i] != null ? wallColorOverrides[i] : wallColor.getHex();
+          return "#" + ("000000" + hex.toString(16)).slice(-6);
+        });
       },
       // 지금 보이는 3D 화면을 작은 썸네일 이미지(JPEG data URL)로 캡처. 원본 캔버스가 크더라도
       // maxW 기준으로 축소해서 localStorage에 여러 게시물을 저장해도 용량 부담이 적게 함.
@@ -2917,6 +3498,12 @@
   var traceBoxStart = null;
   var traceHoverPoint = null;
 
+  // 이미 그려진 벽을 클릭하면 선택되고(핸들+삭제 버튼이 뜸), 핸들을 드래그하면 그 벽을
+  // 수직 방향(가로벽이면 위/아래, 세로벽이면 좌/우)으로 밀어서 위치를 옮길 수 있음 —
+  // 체인 안에서 이웃 벽과 점을 공유하고 있어서 자동으로 이웃 벽까지 같이 늘어나거나 줄어듦.
+  var selectedWallSeg = null; // { chainIdx, segIdx }
+  var wallDragState = null;   // { chainIdx, segIdx, axis, startPt, startU1,V1,U2,V2 }
+
   function traceEl(name, attrs){
     var n = document.createElementNS(SVG_TRACE_NS, name);
     for (var k in attrs) n.setAttribute(k, attrs[k]);
@@ -2933,11 +3520,22 @@
   function snapChainAxis(chain){
     if (chain.length === 0) return [];
     var out = [{ u: chain[0].u, v: chain[0].v }];
+    // 가로/세로에서 살짝 삐뚤어진 정도만(짧은 변이 긴 변의 18% 안쪽 — 대략 10도 이내) 직선으로
+    // 딱 맞춰주고, 뚜렷하게 대각선으로 그린 벽(발코니 모서리처럼 일부러 비스듬한 벽 등)은 원래
+    // 각도 그대로 둠. 예전엔 무조건 가로 또는 세로 둘 중 하나로 강제 정렬해버려서, 보정을 켜고
+    // 있으면 대각선 벽 자체를 그릴 수가 없는 문제가 있었음.
+    var AXIS_SNAP_RATIO = 0.18;
     for (var i = 1; i < chain.length; i++){
       var dx = chain[i].u - chain[i-1].u;
       var dy = chain[i].v - chain[i-1].v;
       var prev = out[i-1];
-      out.push(Math.abs(dx) >= Math.abs(dy) ? { u: prev.u + dx, v: prev.v } : { u: prev.u, v: prev.v + dy });
+      var adx = Math.abs(dx), ady = Math.abs(dy);
+      var longer = Math.max(adx, ady), shorter = Math.min(adx, ady);
+      if (longer > 0 && shorter / longer < AXIS_SNAP_RATIO){
+        out.push(adx >= ady ? { u: prev.u + dx, v: prev.v } : { u: prev.u, v: prev.v + dy });
+      } else {
+        out.push({ u: prev.u + dx, v: prev.v + dy });
+      }
     }
     return out;
   }
@@ -2988,12 +3586,40 @@
     traceSvg.setAttribute("preserveAspectRatio", "none");
     traceSvg.innerHTML = "";
 
-    function drawChain(chain, isCurrent){
+    // 지우기/되돌리기 등으로 선택했던 벽이 더 이상 없으면 선택 해제
+    if (selectedWallSeg && (selectedWallSeg.chainIdx >= traceChains.length ||
+        !traceChains[selectedWallSeg.chainIdx] ||
+        selectedWallSeg.segIdx >= traceChains[selectedWallSeg.chainIdx].length - 1)){
+      selectedWallSeg = null;
+    }
+
+    function drawChain(chain, isCurrent, chainIdx){
       for (var i = 0; i < chain.length - 1; i++){
+        var isSelected = !isCurrent && selectedWallSeg && selectedWallSeg.chainIdx === chainIdx && selectedWallSeg.segIdx === i;
         traceSvg.appendChild(traceEl("line", {
           x1: chain[i].u*100, y1: chain[i].v*100, x2: chain[i+1].u*100, y2: chain[i+1].v*100,
-          stroke: isCurrent ? "#E2725B" : "#2F5D8A", "stroke-width": 1.1, "stroke-linecap": "round"
+          stroke: isCurrent ? "#E2725B" : (isSelected ? "#ff9f43" : "#2F5D8A"),
+          "stroke-width": isSelected ? 1.9 : 1.1, "stroke-linecap": "round"
         }));
+        // 완성된 벽(그리는 중인 벽 제외)마다, 실제 보이는 선보다 훨씬 두꺼운 투명한 선을 겹쳐 그려서
+        // 얇은 선이라도 클릭해서 선택하기 쉽게 함. 사각형 모드에서는 원래 동작(모서리 찍기)을
+        // 그대로 두기 위해 선택 처리를 하지 않고 클릭을 그대로 통과시킴.
+        if (!isCurrent){
+          (function(ci, si){
+            var hit = traceEl("line", {
+              x1: chain[si].u*100, y1: chain[si].v*100, x2: chain[si+1].u*100, y2: chain[si+1].v*100,
+              stroke: "#000", "stroke-opacity": 0, "stroke-width": 3.4, "pointer-events": "stroke"
+            });
+            hit.style.cursor = "pointer";
+            hit.addEventListener("click", function(e){
+              if (traceBoxMode) return;
+              e.stopPropagation();
+              selectedWallSeg = { chainIdx: ci, segIdx: si };
+              traceRedraw();
+            });
+            traceSvg.appendChild(hit);
+          })(chainIdx, i);
+        }
       }
       chain.forEach(function(p){
         traceSvg.appendChild(traceEl("circle", {
@@ -3003,8 +3629,8 @@
       });
     }
     var geo = traceDisplayGeometry();
-    geo.chains.forEach(function(c){ drawChain(c, false); });
-    drawChain(geo.current, true);
+    geo.chains.forEach(function(c, idx){ drawChain(c, false, idx); });
+    drawChain(geo.current, true, -1);
 
     // 사각형 모드 — 첫 모서리를 찍어둔 상태면, 지금 마우스(또는 마지막으로 움직인 자리) 위치까지
     // 점선 사각형으로 미리보기를 그려서 두 번째 점을 어디에 찍을지 가늠할 수 있게 해줌.
@@ -3022,7 +3648,124 @@
       }));
     }
 
+    // 선택된 벽이 있으면 그 위에 핸들(밀어서 위치 옮기기)과 삭제 버튼을 띄움.
+    // 가로로 뻗은 벽(가로벽)은 위/아래로만, 세로로 뻗은 벽(세로벽)은 좌/우로만 밀 수 있음.
+    if (selectedWallSeg && geo.chains[selectedWallSeg.chainIdx]){
+      var selChain = geo.chains[selectedWallSeg.chainIdx];
+      var sp1 = selChain[selectedWallSeg.segIdx], sp2 = selChain[selectedWallSeg.segIdx + 1];
+      if (sp1 && sp2){
+        var sdu = sp2.u - sp1.u, sdv = sp2.v - sp1.v;
+        var isHorizontalWall = Math.abs(sdu) >= Math.abs(sdv);
+        var midU = (sp1.u + sp2.u) / 2 * 100, midV = (sp1.v + sp2.v) / 2 * 100;
+        var off = 4.2;
+        var hx1, hy1, hx2, hy2;
+        if (isHorizontalWall){ hx1 = midU; hy1 = midV - off; hx2 = midU; hy2 = midV + off; }
+        else { hx1 = midU - off; hy1 = midV; hx2 = midU + off; hy2 = midV; }
+
+        // 원 배경 위에 흰색 화살표 삼각형을 얹어서, 이 핸들을 밀면 어느 쪽으로 움직이는지
+        // 방향이 바로 보이게 함(가로벽 위쪽 핸들=▲, 아래쪽=▼ / 세로벽 왼쪽=◀, 오른쪽=▶).
+        function arrowPoints(hx, hy, dir, size){
+          if (dir === "up") return (hx)+","+(hy-size)+" "+(hx-size*0.85)+","+(hy+size*0.6)+" "+(hx+size*0.85)+","+(hy+size*0.6);
+          if (dir === "down") return (hx)+","+(hy+size)+" "+(hx-size*0.85)+","+(hy-size*0.6)+" "+(hx+size*0.85)+","+(hy-size*0.6);
+          if (dir === "left") return (hx-size)+","+(hy)+" "+(hx+size*0.6)+","+(hy-size*0.85)+" "+(hx+size*0.6)+","+(hy+size*0.85);
+          return (hx+size)+","+(hy)+" "+(hx-size*0.6)+","+(hy-size*0.85)+" "+(hx-size*0.6)+","+(hy+size*0.85);
+        }
+        function makeWallHandle(hx, hy, dir){
+          var g = traceEl("g", {});
+          g.appendChild(traceEl("circle", {
+            cx: hx, cy: hy, r: 2.3, fill: "#ff9f43", stroke: "#fff", "stroke-width": 0.6
+          }));
+          g.appendChild(traceEl("polygon", {
+            points: arrowPoints(hx, hy, dir, 1.25), fill: "#fff"
+          }));
+          g.style.cursor = isHorizontalWall ? "ns-resize" : "ew-resize";
+          g.addEventListener("pointerdown", function(e){
+            e.stopPropagation();
+            e.preventDefault();
+            beginWallHandleDrag(isHorizontalWall ? "v" : "u");
+          });
+          return g;
+        }
+        if (isHorizontalWall){
+          traceSvg.appendChild(makeWallHandle(hx1, hy1, "up"));
+          traceSvg.appendChild(makeWallHandle(hx2, hy2, "down"));
+        } else {
+          traceSvg.appendChild(makeWallHandle(hx1, hy1, "left"));
+          traceSvg.appendChild(makeWallHandle(hx2, hy2, "right"));
+        }
+
+        // 삭제 버튼 — 핸들과 겹치지 않게 항상 중점 대각선(오른쪽 위) 방향에 둠
+        var delX = midU + off * 1.7, delY = midV - off * 1.7;
+        var delGroup = traceEl("g", {});
+        delGroup.style.cursor = "pointer";
+        delGroup.appendChild(traceEl("circle", { cx: delX, cy: delY, r: 2.3, fill: "#e5484d", stroke: "#fff", "stroke-width": 0.6 }));
+        delGroup.appendChild(traceEl("line", { x1: delX - 1, y1: delY - 1, x2: delX + 1, y2: delY + 1, stroke: "#fff", "stroke-width": 0.6, "stroke-linecap": "round" }));
+        delGroup.appendChild(traceEl("line", { x1: delX - 1, y1: delY + 1, x2: delX + 1, y2: delY - 1, stroke: "#fff", "stroke-width": 0.6, "stroke-linecap": "round" }));
+        delGroup.addEventListener("click", function(e){
+          e.stopPropagation();
+          deleteSelectedWallSegment();
+        });
+        traceSvg.appendChild(delGroup);
+      }
+    }
+
     traceCount.textContent = "벽 " + traceSegCount() + "개 그림";
+  }
+
+  // 벽 핸들을 눌러서 드래그를 시작 — axis가 "u"면 좌우로만, "v"면 위아래로만 두 끝점을 같이 옮김
+  // (같은 체인 안의 이웃 벽과 점을 공유하고 있어서 이웃 벽 끝도 자동으로 따라 늘어남/줄어듦).
+  function beginWallHandleDrag(axis){
+    if (!selectedWallSeg) return;
+    var chain = traceChains[selectedWallSeg.chainIdx];
+    if (!chain) return;
+    var p1 = chain[selectedWallSeg.segIdx], p2 = chain[selectedWallSeg.segIdx + 1];
+    if (!p1 || !p2) return;
+    wallDragState = {
+      chainIdx: selectedWallSeg.chainIdx, segIdx: selectedWallSeg.segIdx, axis: axis,
+      startU1: p1.u, startV1: p1.v, startU2: p2.u, startV2: p2.v,
+      startPt: null
+    };
+  }
+
+  window.addEventListener("pointermove", function(e){
+    if (!wallDragState) return;
+    var pt = traceStagePoint(e);
+    if (!wallDragState.startPt){ wallDragState.startPt = pt; return; }
+    var chain = traceChains[wallDragState.chainIdx];
+    if (!chain){ wallDragState = null; return; }
+    var p1 = chain[wallDragState.segIdx], p2 = chain[wallDragState.segIdx + 1];
+    if (!p1 || !p2){ wallDragState = null; return; }
+    if (wallDragState.axis === "u"){
+      var du = pt.u - wallDragState.startPt.u;
+      p1.u = wallDragState.startU1 + du;
+      p2.u = wallDragState.startU2 + du;
+    } else {
+      var dv = pt.v - wallDragState.startPt.v;
+      p1.v = wallDragState.startV1 + dv;
+      p2.v = wallDragState.startV2 + dv;
+    }
+    traceRedraw();
+  });
+  window.addEventListener("pointerup", function(){
+    wallDragState = null;
+  });
+
+  // 선택된 벽 하나를 지움 — 체인 중간 벽이면 체인이 둘로 쪼개지고(양쪽 나머지 벽은 그대로 남음),
+  // 맨 앞/뒤 벽이면 그만큼만 잘려나가고, 벽이 하나뿐인 체인이면 체인 자체가 사라짐.
+  function deleteSelectedWallSegment(){
+    if (!selectedWallSeg) return;
+    var chainIdx = selectedWallSeg.chainIdx, segIdx = selectedWallSeg.segIdx;
+    var chain = traceChains[chainIdx];
+    if (!chain){ selectedWallSeg = null; traceRedraw(); return; }
+    var before = chain.slice(0, segIdx + 1);
+    var after = chain.slice(segIdx + 1);
+    var replacement = [];
+    if (before.length >= 2) replacement.push(before);
+    if (after.length >= 2) replacement.push(after);
+    var spliceArgs = [chainIdx, 1].concat(replacement);
+    traceChains.splice.apply(traceChains, spliceArgs);
+    selectedWallSeg = null;
+    traceRedraw();
   }
 
   function traceStagePoint(e){
@@ -3030,6 +3773,22 @@
     var u = (e.clientX - rect.left) / rect.width;
     var v = (e.clientY - rect.top) / rect.height;
     return { u: Math.min(1, Math.max(0, u)), v: Math.min(1, Math.max(0, v)) };
+  }
+
+  // 이미 완성된 다른 벽(체인)의 끝점 중, 지금 찍은 점과 가장 가깝고 허용 오차 안에 있는 점을
+  // 찾아서 그 "점 객체 자체"를 돌려줌 — 값만 복사하면 나중에 벽을 밀 때 서로 떨어져 버리므로,
+  // 반드시 같은 객체를 공유해야 두 벽이 그 모서리에서 계속 맞물려 움직임.
+  function findTraceSnapPoint(pt, tol){
+    var best = null, bestDist = tol;
+    traceChains.forEach(function(chain){
+      if (!chain.length) return;
+      var candidates = chain.length > 1 ? [chain[0], chain[chain.length - 1]] : [chain[0]];
+      candidates.forEach(function(p){
+        var d = Math.max(Math.abs(p.u - pt.u), Math.abs(p.v - pt.v));
+        if (d < bestDist){ bestDist = d; best = p; }
+      });
+    });
+    return best;
   }
 
   var traceHintFree = "모서리마다 클릭해서 벽 선을 이어가세요. 벽이 끊기는 곳(다른 벽으로 넘어갈 때)은 \"새 벽 시작\"을 누른 뒤 다시 클릭해서 이어가면 돼요.";
@@ -3049,11 +3808,19 @@
     // 자유 그리기 중이던(점 2개 이상) 체인이 있으면 "새 벽 시작"과 똑같이 먼저 확정해서
     // 모드를 바꿔도 그리던 벽을 잃어버리지 않게 함.
     if (!traceBoxMode && traceCurrent.length >= 2){ traceChains.push(traceCurrent); traceCurrent = []; }
+    selectedWallSeg = null;
     setTraceBoxMode(!traceBoxMode);
   });
 
   traceStage.addEventListener("click", function(e){
     var pt = traceStagePoint(e);
+    // 벽이 선택된 상태에서 빈 곳을 클릭하면 선택만 풀고, 그 클릭이 새 점을 찍거나
+    // 사각형 모서리를 찍는 데는 쓰이지 않게 함(선택 해제 클릭과 그리기 클릭을 분리).
+    if (selectedWallSeg){
+      selectedWallSeg = null;
+      traceRedraw();
+      return;
+    }
     if (traceBoxMode){
       if (!traceBoxStart){
         // 첫 번째 모서리 — 두 번째 점을 찍을 때까지 미리보기 사각형이 마우스를 따라다님
@@ -3065,16 +3832,37 @@
       // 첫 점과 거의 같은 자리를 또 찍은 거면(실수로 더블클릭 등) 무시하고 계속 첫 점 유지
       if (Math.abs(pt.u - traceBoxStart.u) < 0.01 && Math.abs(pt.v - traceBoxStart.v) < 0.01) return;
       var x1 = traceBoxStart.u, y1 = traceBoxStart.v, x2 = pt.u, y2 = pt.v;
-      // 대각선 두 점을 네 모서리로 펼치고, 마지막에 시작점을 한 번 더 넣어 벽 4개(닫힌 사각형)를 만듦
+      // 대각선 두 점을 네 모서리로 펼치고, 마지막에 시작점을 한 번 더 넣어 벽 4개(닫힌 사각형)를 만듦.
+      // 시작점과 닫는 점은 같은 객체(startCorner)를 그대로 재사용함 — 값만 같은 별개 객체로
+      // 만들면, 나중에 벽 하나를 밀어서 옮길 때 그 모서리가 서로 안 붙어있는 것처럼 떨어져 버림.
+      var startCorner = { u:x1, v:y1 };
       traceChains.push([
-        { u:x1, v:y1 }, { u:x2, v:y1 }, { u:x2, v:y2 }, { u:x1, v:y2 }, { u:x1, v:y1 }
+        startCorner, { u:x2, v:y1 }, { u:x2, v:y2 }, { u:x1, v:y2 }, startCorner
       ]);
       traceBoxStart = null;
       traceHoverPoint = null;
       traceRedraw();
       return;
     }
-    traceCurrent.push(pt);
+    // 지금 그리고 있는 체인이 2점 이상이고, 새로 찍은 점이 그 체인의 시작점과 거의 겹치면
+    // 자동으로 시작점 객체를 그대로 재사용해서 닫아줌(사각형 도구와 동일한 이유 —
+    // 값만 같은 별개 점이면 나중에 벽을 밀 때 그 모서리가 떨어져 버림).
+    var SNAP_TOL = 0.022;
+    if (traceCurrent.length >= 2){
+      var startPt = traceCurrent[0];
+      if (Math.abs(pt.u - startPt.u) < SNAP_TOL && Math.abs(pt.v - startPt.v) < SNAP_TOL){
+        traceCurrent.push(startPt);
+        traceChains.push(traceCurrent);
+        traceCurrent = [];
+        traceRedraw();
+        return;
+      }
+    }
+    // 다른(이미 완성된) 벽의 끝점 바로 근처를 찍으면 그 점을 그대로 재사용해서 새로 그리는
+    // 벽이 그 모서리에 정확히 맞물리게 함 — 예를 들어 ㄷ자 모양으로 벽 3개를 먼저 그려두고,
+    // 그중 한쪽 끝 바로 밑에서 새 벽을 시작해도 서로 떨어지지 않고 이어짐.
+    var snapPt = findTraceSnapPoint(pt, SNAP_TOL);
+    traceCurrent.push(snapPt || pt);
     traceRedraw();
   });
 
@@ -3086,12 +3874,14 @@
 
   traceNewChainBtn.addEventListener("click", function(){
     traceBoxStart = null; traceHoverPoint = null; // 그리던 사각형이 있었으면 취소
+    selectedWallSeg = null;
     if (traceCurrent.length >= 2) traceChains.push(traceCurrent);
     traceCurrent = [];
     traceRedraw();
   });
 
   traceUndoBtn.addEventListener("click", function(){
+    selectedWallSeg = null;
     if (traceBoxStart){ traceBoxStart = null; traceHoverPoint = null; } // 찍어둔 첫 모서리부터 취소
     else if (traceCurrent.length > 0) traceCurrent.pop();
     else if (traceChains.length > 0) traceCurrent = traceChains.pop();
@@ -3103,6 +3893,7 @@
     traceCurrent = [];
     traceBoxStart = null;
     traceHoverPoint = null;
+    selectedWallSeg = null;
     traceRedraw();
   });
 
@@ -3113,6 +3904,8 @@
     tracePlan = plan;
     traceChains = [];
     traceCurrent = [];
+    selectedWallSeg = null;
+    wallDragState = null;
     traceCorrectToggle.checked = false; // 기본값: 보정 끔(그린 그대로)
     setTraceBoxMode(false); // 새로 시작할 땐 항상 자유 그리기로
     showOnly(panelTrace);
