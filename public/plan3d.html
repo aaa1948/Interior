@@ -475,42 +475,90 @@
      .is-furniture-editor 스코프로 top:52px) → 크기 패널, 이렇게 세로로 쌓이도록 순서대로 배치.
      .view-controls는 히어로 미리보기/결과 비교 화면에서도 공용으로 쓰이므로(그쪽엔 전체화면 버튼이
      없음) 기본값(top:10px)은 그대로 두고, 가구 배치 화면(.is-furniture-editor)에서만 아래로 내림. */
-  .furniture-size-panel{position:absolute;right:10px;top:96px;z-index:3;width:176px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
-  .furniture-size-panel[hidden]{display:none!important}
+  .furniture-size-panel{position:absolute;right:10px;top:176px;z-index:3;width:176px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper-raised) 94%,transparent);box-shadow:0 2px 10px var(--shadow);font:600 .72rem/1.2 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;color:var(--ink)}
+  .furniture-size-panel{ opacity:0; visibility:hidden; pointer-events:none; transform:translateX(22px) scale(.94); transform-origin:right top;
+    transition:opacity .22s ease, transform .34s cubic-bezier(.34,1.56,.64,1), visibility 0s linear .34s; }
+  .furniture-size-panel.open{ opacity:1; visibility:visible; pointer-events:auto; transform:none; transition-delay:0s; }
+  @media (prefers-reduced-motion:reduce){ .move-arrow, .furniture-size-panel, .furniture-rotate-panel{ transition:opacity .1s !important; transform:none; } .furniture-rotate-panel{ transform:translate(-50%,calc(-100% - 14px)) !important; } .furniture-rotate-panel.flip-below{ transform:translate(-50%,14px) !important; } }
   .furniture-size-panel strong{display:block;margin-bottom:8px;font-size:.76rem}
   .furniture-dimension{display:grid;grid-template-columns:40px 1fr 13px;align-items:center;gap:5px;margin:6px 0;color:var(--ink-soft)}
   .furniture-dimension input{width:100%;min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit}
   .furniture-size-tip{margin:8px 0 0;font-size:.62rem;color:var(--ink-soft);line-height:1.35}
-  @media (max-width:600px){.furniture-size-panel{right:8px;top:84px;width:150px}}
+  @media (max-width:600px){.furniture-size-panel{right:8px;top:160px;width:150px}}
   /* 가구 배치 화면(캔버스+오버레이 UI 전체)만 브라우저 전체화면(Fullscreen API)으로 띄우는 버튼.
      맨 위(top:10px)로 두고, 그 아래(top:52px)로 탑뷰/재생 버튼줄(.view-controls)이 오도록 함
      (아래 .is-furniture-editor .view-controls 규칙 참고). */
   .furniture-fullscreen-btn{
     position:absolute; top:10px; right:10px; z-index:5;
     display:flex; align-items:center; gap:6px;
-    padding:7px 12px; border-radius:999px;
+    padding:14px 20px; border-radius:999px;
     border:1px solid var(--line); background:color-mix(in srgb,var(--paper-raised) 94%,transparent); color:var(--ink);
-    font:600 .74rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;
+    font:600 .98rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;
     cursor:pointer; box-shadow:0 2px 10px var(--shadow); white-space:nowrap;
   }
   .furniture-fullscreen-btn:hover{background:var(--blueprint-soft); border-color:var(--blueprint)}
-  @media (max-width:600px){.furniture-fullscreen-btn{top:8px;right:8px;padding:6px 10px;font-size:.66rem}}
+  @media (max-width:600px){.furniture-fullscreen-btn{top:8px;right:8px;padding:8px 12px;font-size:.76rem}}
   /* 탑뷰/재생 버튼줄은 다른 화면(히어로 미리보기, 결과 비교)에서도 .view-controls를 그대로 쓰므로
      기본 top:10px는 안 건드리고, 가구 배치 화면에서만(.is-furniture-editor 컨테이너 안) 전체화면
      버튼 밑으로 내림 — 이게 "전체화면 버튼이 위, 그 밑에 탑뷰 버튼" 순서. */
-  .is-furniture-editor .view-controls{ top:52px; }
-  @media (max-width:600px){ .is-furniture-editor .view-controls{ top:46px; } }
+  .is-furniture-editor .view-controls{ top:64px; gap:12px; align-items:flex-start; }
+  /* 전체화면 버튼 + 탑뷰/노클립/튜토리얼 버튼줄을 한 묶음(세로 스택)으로 만들어서, 전체화면 버튼이
+     버튼줄 왼쪽 끝(탑뷰 시작)부터 오른쪽 끝(튜토리얼 끝)까지 정확히 같은 너비로 늘어나게 함. */
+  .furniture-top-right{
+    position:absolute; top:10px; right:10px; z-index:5; width:max-content;
+    display:flex; flex-direction:column; align-items:stretch; gap:12px;
+  }
+  .furniture-top-right .furniture-fullscreen-btn{ position:static; justify-content:center; }
+  .is-furniture-editor .furniture-top-right .view-controls{ position:static; top:auto; right:auto; }
+  .furniture-top-right .plan-row{ justify-content:center; } /* 3개 버튼줄의 가운데(노클립) 바로 아래 */
+  /* 가구 크기 패널도 같은 묶음 안으로 넣어서 위 버튼들과 똑같은 너비로 맞추고, 글자/입력칸을 키움 */
+  /* width:0 + min-width:100% — 패널 안 글자 길이가 묶음 전체 너비를 밀어내지 않고(선택할 때마다 버튼들이 커지던 문제), 위 버튼줄 너비에 딱 맞게만 늘어나게 함 */
+  .furniture-top-right .furniture-size-panel{ position:static; width:0; min-width:100%; box-sizing:border-box; right:auto; top:auto; padding:14px 16px; font-size:.88rem; border-radius:14px; }
+  .furniture-top-right .furniture-size-panel strong{ font-size:1rem; margin-bottom:10px; }
+  .furniture-top-right .furniture-dimension{ grid-template-columns:52px 1fr 18px; gap:8px; margin:9px 0; font-size:.9rem; }
+  .furniture-top-right .furniture-dimension input{ padding:8px 10px; font-size:.95rem; border-radius:8px; }
+  .furniture-top-right .furniture-size-tip{ font-size:.76rem; margin-top:10px; }
+  @media (max-width:600px){ .furniture-top-right{ top:8px; right:8px; } .furniture-top-right .furniture-size-panel{ padding:10px 12px; } }
+  .is-furniture-editor .view-btn-wrap{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .is-furniture-editor .view-btn{ width:58px; height:58px; border-radius:14px; }
+  .is-furniture-editor .view-btn svg{ width:30px; height:30px; }
+  .view-btn-label{
+    font:600 .74rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif; color:var(--ink);
+    background:color-mix(in srgb,var(--paper-raised) 90%,transparent); padding:3px 8px; border-radius:999px;
+    box-shadow:0 1px 3px var(--shadow); white-space:nowrap;
+  }
+  @media (max-width:600px){ .is-furniture-editor .view-controls{ top:58px; } .is-furniture-editor .view-btn{ width:44px; height:44px; } }
   /* 벽 색상 변경은 더블클릭이라는 걸 알려주는 안내 배지 — 화면 상단 중앙, 좁은 화면에서도 안 잘리게
      max-width + 줄바꿈 허용. 하단 좌측의 기존 canvas-hint(가구 드래그 안내)와 안 겹치도록 위쪽에 둠. */
   .furniture-wall-hint{
     position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:2;
-    font-size:.7rem; color:var(--ink-soft); text-align:center; white-space:nowrap;
-    background:color-mix(in srgb, var(--paper-raised) 82%, transparent);
-    padding:5px 12px; border-radius:999px; box-shadow:0 1px 4px var(--shadow);
+    font-size:.88rem; color:var(--ink); text-align:center; white-space:nowrap;
+    background:color-mix(in srgb, var(--paper-raised) 88%, transparent);
+    padding:6px 16px 6px 6px; border-radius:999px; box-shadow:0 1px 4px var(--shadow);
     pointer-events:none;
+    display:flex; align-items:center; gap:6px; width:max-content; box-sizing:border-box; overflow:visible;
+    transition:opacity .25s ease, transform .34s cubic-bezier(.34,1.56,.64,1), visibility 0s;
   }
+  .furniture-wall-hint.hint-hidden{ opacity:0; visibility:hidden; transform:translateX(-50%) translateY(-10px) scale(.92); transition:opacity .2s ease, transform .25s ease, visibility 0s linear .25s; }
+  .furniture-wall-hint.hint-off{ padding:6px; gap:0; }
+  .furniture-wall-hint.hint-off .hint-text{ display:none; }
+  .hint-text{ display:block; min-width:0; flex:0 1 auto; position:relative; }
+  .hint-ghost{ position:absolute !important; left:0; top:0; pointer-events:none; }
+  .hint-text-inner{ display:block; white-space:nowrap; overflow:hidden; text-overflow:clip; text-align:center; transition:opacity .11s ease; }
+  /* 전구: 켜져 있으면 은은하게 빛나고, 누르면 도움말이 작아지며 꺼짐(회색) */
+  .hint-bulb{
+    pointer-events:auto; flex:none; width:28px; height:28px; padding:0; border:none; border-radius:50%;
+    background:transparent; cursor:pointer; font-size:1.05rem; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    transition:filter .3s ease, opacity .3s ease, transform .2s ease, background .2s ease;
+  }
+  .hint-bulb:hover{ background:var(--blueprint-soft); }
+  .hint-bulb:active{ transform:scale(.86); }
+  .furniture-wall-hint:not(.hint-off) .hint-bulb{ filter:drop-shadow(0 0 5px rgba(255,200,50,.8)); }
+  .furniture-wall-hint.hint-off .hint-bulb{ filter:grayscale(1) brightness(.85); opacity:.55; }
+  @media (prefers-reduced-motion:reduce){ .furniture-wall-hint, .hint-text-inner{ transition:none !important; } }
   @media (max-width:600px){
-    .furniture-wall-hint{ font-size:.62rem; white-space:normal; max-width:78%; padding:5px 10px; }
+    .furniture-wall-hint{ font-size:.76rem; white-space:nowrap; max-width:78%; padding:4px 12px 4px 4px; }
   }
   /* 문/창문/콘센트끼리 겹치는 위치로 배치·이동하려 할 때 잠깐 떴다가 스스로 사라지는 경고 토스트 —
      확인 버튼을 눌러야 하는 ohAlert 모달과 달리, 드래그 도중에도 흐름이 안 끊기게 자동으로 없어짐. */
@@ -539,8 +587,76 @@
     opacity:0; pointer-events:none;
     transform:translate(-50%,calc(-100% - 14px)) scale(.8);
     transform-origin:center bottom;
-    transition:opacity .15s ease, transform .15s ease;
+    transition:opacity .2s ease, transform .32s cubic-bezier(.34,1.56,.64,1);
   }
+  /* 가구를 끌 때 아래에서 올라오는 삭제 휴지통 */
+  .drop-trash{
+    position:absolute; left:50%; bottom:128px; width:84px; height:84px; margin-left:-42px; z-index:11;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--paper-raised); border:2px solid var(--line); box-shadow:0 8px 22px var(--shadow);
+    opacity:0; transform:translateY(240%) scale(.7); pointer-events:none;
+    transition:transform .42s cubic-bezier(.34,1.56,.64,1), opacity .2s ease, background .15s ease, border-color .15s ease;
+  }
+  .drop-trash.show{ opacity:1; transform:translateY(0) scale(1); }
+  .drop-trash.hot{
+    transform:translateY(-6px) scale(1.2);
+    background:color-mix(in srgb, #e0705e 32%, var(--paper-raised)); border-color:#e0705e;
+  }
+  .drop-trash .ic{ font-size:38px; line-height:1; display:block; }
+  .drop-trash.hot .ic{ animation:trashShake .4s ease-in-out infinite; }
+  .drop-trash.gulp .ic{ animation:trashGulp .5s cubic-bezier(.34,1.56,.64,1); }
+  .drop-trash::after{
+    content:'놓으면 삭제'; position:absolute; top:-30px; left:50%; transform:translateX(-50%);
+    padding:3px 9px; border-radius:999px; background:var(--ink); color:var(--paper);
+    font-size:.72rem; font-weight:700; white-space:nowrap; opacity:0; transition:opacity .15s;
+  }
+  .drop-trash.hot::after{ opacity:1; }
+  .trash-spark{
+    position:absolute; left:50%; top:50%; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%;
+    background:#e0705e; pointer-events:none; animation:trashSpark .6s ease-out forwards;
+  }
+  .trash-spark.alt{ background:var(--blueprint); }
+  /* 삭제 완료 때 터지는 입자: 색 점 대신 휴지통/쓰레기 이모지 */
+  .trash-spark{ width:1em; height:1em; margin:-.5em 0 0 -.5em; background:none !important; border-radius:0; box-shadow:none;
+    font-size:var(--fs,22px); line-height:1; text-align:center; animation:trashSpark .85s ease-out forwards; }
+  /* 빨려 들어가는 동안: 휴지통이 커지고 아이콘이 두근거림 */
+  .drop-trash.sucking{ transform:translateY(-8px) scale(1.3); }
+  .drop-trash.sucking .ic{ animation:trashSuckPulse .3s ease-in-out infinite alternate; }
+  @keyframes trashSuckPulse{ from{ transform:scale(.95) rotate(-6deg); } to{ transform:scale(1.12) rotate(6deg); } }
+  @media (prefers-reduced-motion: reduce){ .drop-trash.sucking .ic{ animation:none !important; } }
+  @keyframes trashShake{ 0%,100%{ transform:rotate(-9deg); } 50%{ transform:rotate(9deg) scale(1.06); } }
+  @keyframes trashGulp{ 0%{ transform:scale(1); } 25%{ transform:scale(.72); } 55%{ transform:scale(1.32) rotate(-6deg); } 100%{ transform:scale(1); } }
+  @keyframes trashSpark{ 0%{ opacity:1; transform:translate(0,0) rotate(0deg) scale(1.1); } 70%{ opacity:1; } 100%{ opacity:0; transform:translate(var(--tx),var(--ty)) rotate(var(--rot,0deg)) scale(.5); } }
+  @media (prefers-reduced-motion: reduce){ .drop-trash, .drop-trash .ic, .trash-spark{ animation:none !important; transition:opacity .1s !important; } }
+  /* 가구 주변 바닥에 뜨는 이동 화살표 — 가구를 선택했을 때만 보이고, 선택이 풀리면 사라짐 */
+  .furniture-move-arrows{ position:absolute; left:0; top:0; width:0; height:0; z-index:3; pointer-events:none; }
+  .move-arrow{
+    position:absolute; left:0; top:0; width:34px; height:34px; margin:-17px 0 0 -17px; padding:0;
+    border-radius:50%; border:1.5px solid var(--blueprint);
+    background:color-mix(in srgb, var(--paper-raised) 78%, transparent);
+    backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+    color:var(--blueprint); font-size:15px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; pointer-events:none; transform:scale(.4);
+    box-shadow:0 2px 8px rgba(0,0,0,.28); touch-action:none; user-select:none; -webkit-user-select:none;
+    transition:background .12s, color .12s, opacity .2s ease, transform .32s cubic-bezier(.34,1.56,.64,1), visibility 0s linear .32s;
+  }
+  .move-arrow.show{ opacity:1; visibility:visible; pointer-events:auto; transform:scale(1); transition-delay:0s; }
+  .move-arrow:hover{ background:var(--blueprint); color:var(--paper); }
+  .move-arrow.show:active{ transform:scale(.92); transition-duration:.08s; }
+  /* 팝업 맨 위 손잡이(═) — 끌면 팝업을 원하는 곳으로 옮길 수 있음 */
+  .panel-grip{
+    align-self:stretch; height:14px; margin:-4px 0 -2px; cursor:grab;
+    display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  .panel-grip::before{
+    content:''; width:24px; height:7px; box-sizing:border-box;
+    border-top:2px solid color-mix(in srgb, var(--ink) 55%, transparent);
+    border-bottom:2px solid color-mix(in srgb, var(--ink) 55%, transparent);
+    border-radius:1px; transition:border-color .12s;
+  }
+  .panel-grip:hover::before, .panel-grip.dragging::before{ border-color:var(--blueprint); }
+  .panel-grip.dragging{ cursor:grabbing; }
   .furniture-rotate-panel.visible{ opacity:1; pointer-events:auto; transform:translate(-50%,calc(-100% - 14px)) scale(1); }
   /* 벽 색상 팔레트와 같은 이유(화면/전체화면 위쪽에 있는 가구를 선택하면 패널이 위로 잘림)로,
      위쪽 공간이 모자라면 가구 위가 아니라 아래로 뒤집어서 띄움. */
@@ -628,6 +744,20 @@
     color:var(--ink); cursor:pointer; transition:transform .1s ease, border-color .1s ease;
   }
   .wall-image-btn:hover{ border-color:var(--blueprint); transform:scale(1.08); }
+  /* 프리셋 색상 맨 마지막 줄의 남는 칸에 들어가는 "최근 색상 / 최근 이미지" 버튼 — 방금 다른 벽에 쓴
+     색(또는 이미지)을 이 벽에도 한 번에 똑같이 적용해서 벽을 빠르게 통일하게 해줌. */
+  .wall-recent-btn{
+    flex:1 1 auto; min-width:0; height:22px; padding:0 8px 0 3px; gap:4px;
+    display:flex; align-items:center; border-radius:999px; cursor:pointer;
+    border:1px solid color-mix(in srgb, var(--blueprint) 55%, transparent);
+    background:color-mix(in srgb, var(--blueprint) 12%, var(--paper));
+    color:var(--ink); font:700 .62rem/1 system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif; white-space:nowrap;
+  }
+  .wall-recent-btn:hover{ border-color:var(--blueprint); }
+  .wall-recent-chip{
+    flex:none; width:16px; height:16px; border-radius:50%; border:1px solid var(--line);
+    background-size:cover; background-position:center;
+  }
 
   /* 브라우저 네이티브 색상 선택창(input[type=color] 클릭 시 뜨는 OS 팝업)은 CSS로 모서리를
      둥글게 바꿀 수 없는 시스템 UI라서, 똑같은 기능(스펙트럼 + 색조 슬라이더 + RGB 입력)을
@@ -696,11 +826,16 @@
     width:calc(100vw - 24px);max-width:calc(100vw - 24px);
     height:calc(100vh - 24px);max-height:calc(100vh - 24px);
     display:flex;flex-direction:column;overflow:hidden;
+    padding:10px 14px 12px;
   }
   .modal.furniture-fullscreen #panelResult{
     display:flex;flex-direction:column;flex:1;min-height:0;
   }
-  .modal.furniture-fullscreen .result-head{flex:none;}
+  .modal.furniture-fullscreen .result-head{display:none;}
+  /* 가구 배치 화면에서는 제목줄("가구 배치 작업 화면 · 드래그 앤 드롭")과 × 버튼을 숨기고 그 자리까지
+     3D 작업 화면으로 채움 — 나가기는 아래 "메인화면으로" 버튼으로 함. */
+  .modal.furniture-fullscreen .panel-box .panel-title{ display:none; }
+  .modal.furniture-fullscreen .modal-close{ display:none; }
   .modal.furniture-fullscreen .result-grid{
     display:block;flex:1;min-height:0;margin-bottom:12px;
   }
@@ -710,11 +845,125 @@
   }
   .modal.furniture-fullscreen #resultStage{
     flex:1;min-height:0;height:auto;aspect-ratio:auto;
+    /* 3D 화면 모서리를 둥글게 깎으면 제목줄과 만나는 위쪽 양끝에 어두운 배경이 삼각형처럼 비쳐서 각지게 함 */
+    border-radius:0;
   }
   .modal.furniture-fullscreen .result-stats{display:none;}
-  .modal.furniture-fullscreen .result-actions{flex:none;}
+  /* 가구 배치 화면에서는 아래 버튼 줄(가구 배치 완료/편집/메인화면으로)을 숨기고, 같은 기능을 하단 패널 오른쪽에 둠 */
+  .modal.furniture-fullscreen .result-actions{display:none;}
   .modal.furniture-fullscreen .next-note{flex:none;margin-top:8px;}
   @media (max-width:600px){.modal.furniture-fullscreen{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);padding:18px}}
+
+  /* 가구 배치 화면 안내 배지는 오른쪽 위 버튼들과 안 겹치게 가운데 영역 안에서 줄바꿈 */
+  .is-furniture-editor .furniture-wall-hint{ white-space:nowrap; max-width:calc(100% - 460px); }
+  @media (max-width:600px){ .is-furniture-editor .furniture-wall-hint{ max-width:calc(100% - 24px); } }
+  /* 가구 배치 화면에서는 드래그/더블클릭 때 글자가 파랗게 선택되지 않게 막음(입력칸은 예외 — 사파리는 user-select:none이면 입력도 안 됨) */
+  .is-furniture-editor, .modal.furniture-fullscreen{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .is-furniture-editor input, .is-furniture-editor textarea, .modal.furniture-fullscreen input, .modal.furniture-fullscreen textarea,
+  .oh-dialog-overlay input, .oh-dialog-overlay textarea{ -webkit-user-select:text; user-select:text; }
+  /* ---------- 튜토리얼 카드 ---------- */
+  .tut-card{
+    position:absolute; left:50%; bottom:130px; transform:translateX(-50%); z-index:30;
+    width:min(460px, calc(100% - 24px)); padding:14px 16px 12px;
+    background:var(--paper-raised); color:var(--ink);
+    border:1.5px solid var(--blueprint); border-radius:14px; box-shadow:0 10px 30px var(--shadow);
+    font-family:system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif; cursor:default;
+  }
+  .tut-card.tut-ok{ border-color:#3fa66a; }
+  /* 가구를 끌어 휴지통이 올라오면 튜토리얼 카드는 그 위로 비켜났다가, 휴지통이 내려가면 원래 자리로 돌아옴 */
+  .tut-card{ transition:bottom .4s cubic-bezier(.22,1,.36,1) .3s; }
+  .tut-card.trash-up{ bottom:228px; transition-delay:0s; transition-timing-function:cubic-bezier(.34,1.4,.64,1); }
+  @media (prefers-reduced-motion:reduce){ .tut-card{ transition:none; } }
+  @keyframes tutCardIn{ from{ opacity:0; transform:translateX(-50%) translateY(34px) scale(.78); } 55%{ opacity:1; } to{ opacity:1; transform:translateX(-50%) translateY(0) scale(1); } }
+  @keyframes tutCardOut{ from{ opacity:1; transform:translateX(-50%) translateY(0) scale(1); } to{ opacity:0; transform:translateX(-50%) translateY(26px) scale(.82); } }
+  .tut-card.pop-in{ animation:tutCardIn .55s cubic-bezier(.34,1.56,.64,1) backwards; }
+  .tut-card.tut-out{ animation:tutCardOut .26s cubic-bezier(.4,0,1,1) forwards; pointer-events:none; }
+  @media (prefers-reduced-motion:reduce){ .tut-card.pop-in, .tut-card.tut-out{ animation:none; } }
+  .tut-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .tut-step{ font-size:.72rem; font-weight:700; letter-spacing:.04em; color:var(--blueprint); }
+  .tut-close{
+    appearance:none; width:24px; height:24px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink-soft); font-size:1rem; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tut-close:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tut-title{ font-size:1.02rem; font-weight:700; margin:4px 0 6px; }
+  .tut-card.tut-ok .tut-title::after{ content:"  ✓ 좋아요!"; color:#3fa66a; font-size:.9rem; }
+  .tut-text{ font-size:.92rem; line-height:1.65; word-break:keep-all; overflow-wrap:break-word; text-wrap:pretty; }
+  .tut-note{ display:block; margin-top:6px; font-size:.82rem; line-height:1.6; color:var(--ink-soft); }
+  .tut-text kbd{
+    display:inline-block; min-width:24px; padding:1px 7px; margin:0 2px; text-align:center;
+    border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; background:var(--paper);
+    font:600 .8rem/1.5 ui-monospace,'SF Mono',Menlo,monospace; color:var(--ink); white-space:nowrap;
+  }
+  .tut-bar{ height:4px; border-radius:2px; background:var(--line); margin:12px 0 10px; overflow:hidden; }
+  .tut-bar > span{ display:block; height:100%; background:var(--blueprint); transition:width .25s ease; }
+  .tut-actions{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .tut-btn{
+    appearance:none; cursor:pointer; padding:7px 14px; border-radius:999px; font:600 .8rem/1 system-ui,'Apple SD Gothic Neo',sans-serif;
+    border:1px solid var(--line); background:transparent; color:var(--ink-soft);
+  }
+  .tut-btn:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tut-btn.primary{ background:var(--blueprint); border-color:var(--blueprint); color:#fff; padding:9px 18px; margin-left:auto; }
+  .tut-btn.primary:hover{ filter:brightness(1.1); color:#fff; }
+  .tut-keys{
+    position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); z-index:29; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; gap:10px; padding:18px 22px;
+    background:color-mix(in srgb,var(--paper-raised) 82%,transparent); border-radius:20px;
+    box-shadow:0 10px 30px var(--shadow);
+  }
+  .tut-key-row{ display:flex; gap:10px; }
+  .tut-key{
+    width:72px; height:72px; border-radius:14px; border:2px solid var(--line); border-bottom-width:6px;
+    background:var(--paper); color:var(--ink); text-align:center; line-height:64px;
+    font:700 1.8rem/64px system-ui,'Apple SD Gothic Neo',sans-serif; transition:background .15s ease, color .15s ease;
+  }
+  .tut-key.sm{ width:auto; padding:0 14px; font-size:1rem; }
+  .tut-key.done{ background:#3fa66a; border-color:#2e8a54; color:#fff; }
+  .tut-key.press{ transform:translateY(4px); border-bottom-width:2px; background:var(--blueprint-soft); }
+  .tut-key.big{ width:auto; min-width:150px; padding:0 22px; font-size:1.5rem; }
+  .tut-key{ transition:background .15s ease, color .15s ease, transform .08s ease, border-bottom-width .08s ease; }
+  @media (max-width:600px){ .tut-key{ width:54px; height:54px; line-height:48px; font-size:1.4rem; } }
+  .tut-pulse{ outline:3px solid transparent; outline-offset:3px; animation:tutPulse 1.2s ease-in-out infinite; }
+  .sims-bottom-panel.tut-pulse{ outline-offset:-4px; }
+  @keyframes tutPulse{ 0%,100%{ outline-color:transparent; } 50%{ outline-color:var(--blueprint); } }
+  @media (prefers-reduced-motion:reduce){ .tut-pulse{ animation:none; outline-color:var(--blueprint); } }
+  @media (max-width:600px){ .tut-card{ bottom:122px; } .tut-text{ font-size:.86rem; } }
+
+  /* ---------- 가구 배치 화면 첫 입장 안내 팝업 ---------- */
+  .tut-welcome-overlay{
+    position:fixed; inset:0; z-index:300; display:flex; align-items:center; justify-content:center; padding:20px;
+    background:color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+  }
+  @keyframes ohWelcomePop{ from{ opacity:0; transform:scale(.7) translateY(24px); } 55%{ opacity:1; } to{ opacity:1; transform:scale(1) translateY(0); } }
+  .tut-welcome-overlay{ animation:ohFadeIn .35s ease backwards; }
+  .tut-welcome-box{ animation:ohWelcomePop .6s cubic-bezier(.34,1.56,.64,1) .06s backwards; }
+  @media (prefers-reduced-motion:reduce){ .tut-welcome-overlay, .tut-welcome-box{ animation:none; } }
+  .tut-welcome-box{
+    position:relative; width:min(460px, 100%); padding:30px 28px 16px;
+    background:var(--paper-raised); color:var(--ink); border:1px solid var(--line); border-radius:20px;
+    box-shadow:0 24px 60px -16px var(--shadow);
+  }
+  .tut-welcome-close{
+    position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:50%;
+    border:1px solid var(--line); background:var(--paper-raised); color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.1rem; line-height:1;
+  }
+  .tut-welcome-close:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tut-welcome-badge{
+    display:inline-block; padding:4px 11px; border-radius:999px; margin-bottom:12px;
+    background:color-mix(in srgb, var(--blueprint) 16%, transparent); color:var(--blueprint);
+    font-size:.74rem; font-weight:700; letter-spacing:.03em;
+  }
+  .tut-welcome-box h3{ font-size:1.25rem; line-height:1.35; margin:0 0 10px; text-wrap:balance; }
+  .tut-welcome-box p{ font-size:.94rem; line-height:1.65; color:var(--ink-soft); margin:0 0 20px; }
+  .tut-welcome-start{ width:100%; justify-content:center; padding:14px 20px; font-size:1rem; }
+  .tut-welcome-skip{
+    display:flex; align-items:center; justify-content:flex-end; gap:7px; margin-top:14px;
+    font-size:.78rem; color:var(--ink-soft); cursor:pointer; user-select:none;
+  }
+  .tut-welcome-skip input{ width:15px; height:15px; accent-color:var(--blueprint); cursor:pointer; }
 
   /* ---------- 심즈 스타일 하단 가구 패널 ---------- */
   .sims-bottom-panel {
@@ -722,7 +971,7 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 190px;
+    height: 112px;
     background: var(--paper-raised);
     border-top: 2px solid var(--line);
     display: flex;
@@ -763,9 +1012,127 @@
     border-color: var(--blueprint);
     transform: translateY(-2px);
   }
+  /* 하단 패널 맨 오른쪽: "가구 배치 완료" + "전 단계로" 버튼을 위아래로 배치 */
+  .sims-done{
+    flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:8px;
+    padding:0 20px; border-left:1px solid var(--line);
+  }
+  .sims-action-btn{
+    appearance:none; min-width:150px; height:42px; padding:0 14px; border-radius:8px;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink);
+    font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; white-space:nowrap;
+    transition:background .15s, border-color .15s, filter .15s, transform .08s;
+  }
+  .sims-action-btn:hover{ background:var(--blueprint-soft); border-color:var(--blueprint); }
+  .sims-action-btn:active{ transform:scale(.97); }
+  .sims-action-btn.primary{ background:var(--blueprint); border-color:var(--blueprint); color:var(--paper); }
+  .sims-action-btn.primary:hover{ background:var(--blueprint); filter:brightness(1.12); }
+  /* "전 단계로" 말풍선 — 되돌아가면 진행 상황이 초기화된다는 경고 + 취소/돌아가기 */
+  .sims-done{ position:relative; }
+  .back-bubble{
+    position:absolute; right:12px; bottom:calc(100% + 14px); width:max-content; min-width:260px; max-width:min(340px, calc(100vw - 40px)); z-index:12;
+    padding:14px 14px 12px; border-radius:14px;
+    background:var(--paper-raised); color:var(--ink);
+    border:1px solid color-mix(in srgb, var(--blueprint) 45%, var(--line));
+    box-shadow:0 12px 30px var(--shadow);
+    transform-origin:calc(100% - 60px) 100%;
+    animation:bubblePop .32s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .back-bubble::after{
+    content:''; position:absolute; bottom:-8px; right:56px; width:14px; height:14px;
+    background:var(--paper-raised); transform:rotate(45deg);
+    border-right:1px solid color-mix(in srgb, var(--blueprint) 45%, var(--line));
+    border-bottom:1px solid color-mix(in srgb, var(--blueprint) 45%, var(--line));
+  }
+  .back-bubble p{ margin:0 0 12px; font-size:.86rem; line-height:1.55; word-break:keep-all; text-wrap:balance; }
+  .back-bubble p strong{ color:var(--blueprint); }
+  .back-bubble-actions{ display:flex; gap:8px; }
+  .back-bubble-actions button{
+    flex:1; height:34px; border-radius:8px; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink);
+    animation:bubblePop .3s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .back-bubble-actions button:nth-child(1){ animation-delay:.12s; }
+  .back-bubble-actions button:nth-child(2){ animation-delay:.2s; }
+  .back-bubble-actions button:hover{ background:var(--blueprint-soft); border-color:var(--blueprint); }
+  .back-bubble-actions .danger{ background:var(--blueprint); border-color:var(--blueprint); color:var(--paper); }
+  .back-bubble-actions .danger:hover{ background:var(--blueprint); filter:brightness(1.12); }
+  @keyframes bubblePop{ 0%{ opacity:0; transform:scale(.55) translateY(8px); } 100%{ opacity:1; transform:scale(1) translateY(0); } }
+  @media (prefers-reduced-motion: reduce){ .back-bubble, .back-bubble-actions button{ animation:none; } }
   /* 하단 패널이 있을 때 캔버스 힌트 위치 조정 */
   .modal.furniture-fullscreen .canvas-hint {
-    bottom: 140px;
+    bottom: 126px;
+  }
+
+  /* ---------- 화면 전환 애니메이션 (팝업/단계 이동을 뚝뚝 끊기지 않고 부드럽게) ----------
+     hidden 속성이 풀려서 display:none -> 보임으로 바뀌는 순간 CSS 애니메이션이 자동으로 다시 재생되는 성질을 씀.
+     크기 측정(도면 캔버스 등)에 영향이 없게 scale 없이 투명도 + 위로 떠오르는 이동만 사용. */
+  @keyframes ohFadeIn{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes ohFadeOut{ from{ opacity:1; } to{ opacity:0; } }
+  @keyframes ohRise{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes ohRise2{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes ohRiseSoft{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes ohSink{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(12px); } }
+  @keyframes ohPop{ from{ opacity:0; transform:scale(.92) translateY(8px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+  .overlay{ animation:ohFadeIn .24s ease backwards; }
+  .modal{ animation:ohRise .38s cubic-bezier(.22,1,.36,1) backwards; }
+  .overlay.closing{ animation:ohFadeOut .2s ease forwards; pointer-events:none; }
+  .overlay.closing .modal{ animation:ohSink .2s ease forwards !important; }
+  .modal.pop-in{ animation:ohRise2 .42s cubic-bezier(.22,1,.36,1) backwards; } /* 이름이 다른 같은 키프레임 — 클래스를 다시 붙여도 애니메이션이 새로 재생되게 */
+  #panelSearch > *, #panelLoading > *, #panelTrace > *, #modalResultBox > *{
+    animation:ohRiseSoft .46s cubic-bezier(.22,1,.36,1) backwards;
+  }
+  #panelSearch > :nth-child(2), #panelLoading > :nth-child(2), #panelTrace > :nth-child(2), #modalResultBox > :nth-child(2){ animation-delay:.05s; }
+  #panelSearch > :nth-child(3), #panelLoading > :nth-child(3), #panelTrace > :nth-child(3), #modalResultBox > :nth-child(3){ animation-delay:.10s; }
+  #panelSearch > :nth-child(4), #panelLoading > :nth-child(4), #panelTrace > :nth-child(4), #modalResultBox > :nth-child(4){ animation-delay:.15s; }
+  #panelSearch > :nth-child(5), #panelLoading > :nth-child(5), #panelTrace > :nth-child(5), #modalResultBox > :nth-child(5){ animation-delay:.20s; }
+  #panelSearch > :nth-child(n+6), #panelLoading > :nth-child(n+6), #panelTrace > :nth-child(n+6), #modalResultBox > :nth-child(n+6){ animation-delay:.25s; }
+  /* 가구 배치 전체화면에서는 안쪽 요소들을 다시 애니메이션시키지 않음(3D 화면 크기 측정 등에 방해 안 되게) */
+  #modalResultBox.furniture-fullscreen > *{ animation:none; }
+  /* alert/confirm/prompt 대화상자 */
+  /* 다른 팝업(.overlay/.modal)과 똑같은 등장/퇴장: 배경은 서서히, 상자는 아래에서 떠오르고 / 닫힐 땐 아래로 가라앉음.
+     연달아 뜨는 대화상자(제목 입력 → 닉네임 → 완료 확인)는 배경은 그대로 두고 상자만 갈아 끼움(.chained) */
+  .oh-dialog-overlay{ animation:ohFadeIn .24s ease backwards; }
+  .oh-dialog-box{ animation:ohRise .38s cubic-bezier(.22,1,.36,1) backwards; }
+  .oh-dialog-overlay.chained{ animation:none; }
+  .oh-dialog-overlay.box-out{ pointer-events:none; }
+  .oh-dialog-overlay.box-out .oh-dialog-box{ animation:ohSink .18s ease forwards; }
+  .oh-dialog-overlay.fade-out{ animation:ohFadeOut .2s ease forwards; pointer-events:none; }
+  /* 메인 페이지 스크롤 등장: 화면에 처음 보일 때 아래에서 부드럽게 떠오름 */
+  .reveal-pending{ opacity:0; transform:translateY(24px); }
+  .reveal-pending.reveal-in{ opacity:1; transform:none; transition:opacity .6s ease var(--rd,0s), transform .66s cubic-bezier(.22,1,.36,1) var(--rd,0s); }
+  /* 팝업(도면 화면)끼리 넘어갈 때: 떠나는 화면의 복제본(ghost)이 제자리에서 위로 살짝 떠오르며 사라지고, 새 화면은 아래에서 떠오름 */
+  @keyframes ohGhostFade{ from{ opacity:1; } to{ opacity:0; } }
+  .modal-ghost{ animation:ohGhostFade .16s ease forwards !important; z-index:2; }
+  .modal-ghost.slow{ animation:ohGhostFade .45s ease forwards !important; }
+  .modal-ghost.keepframe{ animation:none !important; } /* 새 창이 더 작아질 땐 이전 창 틀은 남겨서 오므라드는 모양을 보여주고, 안쪽 내용만 빨리 사라짐 */
+  .modal-ghost.keepframe > *{ animation:ohGhostFade .14s ease forwards !important; }
+  .modal-ghost, .modal-ghost *{ pointer-events:none !important; }
+  /* 화면 전환 중: 새 창은 틀(배경)이 바로 열려 있고, 이전 내용이 사라진 뒤에 새 내용이 차례로 나타남 → 두 화면 내용이 겹쳐 비치지 않음 */
+  .overlay.ghosting .modal, .overlay.ghosting .modal.pop-in{ animation:none; }
+  .overlay.ghosting #panelSearch > *, .overlay.ghosting #panelLoading > *, .overlay.ghosting #panelTrace > *, .overlay.ghosting #modalResultBox > *{ animation-delay:.14s; }
+  .overlay.ghosting #panelSearch > :nth-child(2), .overlay.ghosting #panelLoading > :nth-child(2), .overlay.ghosting #panelTrace > :nth-child(2), .overlay.ghosting #modalResultBox > :nth-child(2){ animation-delay:0.19s; }
+  .overlay.ghosting #panelSearch > :nth-child(3), .overlay.ghosting #panelLoading > :nth-child(3), .overlay.ghosting #panelTrace > :nth-child(3), .overlay.ghosting #modalResultBox > :nth-child(3){ animation-delay:0.24s; }
+  .overlay.ghosting #panelSearch > :nth-child(4), .overlay.ghosting #panelLoading > :nth-child(4), .overlay.ghosting #panelTrace > :nth-child(4), .overlay.ghosting #modalResultBox > :nth-child(4){ animation-delay:0.29s; }
+  .overlay.ghosting #panelSearch > :nth-child(n+5), .overlay.ghosting #panelLoading > :nth-child(n+5), .overlay.ghosting #panelTrace > :nth-child(n+5), .overlay.ghosting #modalResultBox > :nth-child(n+5){ animation-delay:.34s; }
+  /* 비슷한 크기의 화면끼리(예: 도면 그리기 → 3D 결과) 넘어갈 땐 빈 화면 없이 바로 교차되게: 대기 시간 없이 새 내용이 곧바로 나타남 */
+  .overlay.ghosting.ghost-cross #panelSearch > *, .overlay.ghosting.ghost-cross #panelLoading > *, .overlay.ghosting.ghost-cross #panelTrace > *, .overlay.ghosting.ghost-cross #modalResultBox > *{ animation-delay:0s; }
+  .overlay.ghosting.ghost-cross #panelSearch > :nth-child(2), .overlay.ghosting.ghost-cross #panelLoading > :nth-child(2), .overlay.ghosting.ghost-cross #panelTrace > :nth-child(2), .overlay.ghosting.ghost-cross #modalResultBox > :nth-child(2){ animation-delay:0.05s; }
+  .overlay.ghosting.ghost-cross #panelSearch > :nth-child(3), .overlay.ghosting.ghost-cross #panelLoading > :nth-child(3), .overlay.ghosting.ghost-cross #panelTrace > :nth-child(3), .overlay.ghosting.ghost-cross #modalResultBox > :nth-child(3){ animation-delay:0.1s; }
+  .overlay.ghosting.ghost-cross #panelSearch > :nth-child(4), .overlay.ghosting.ghost-cross #panelLoading > :nth-child(4), .overlay.ghosting.ghost-cross #panelTrace > :nth-child(4), .overlay.ghosting.ghost-cross #modalResultBox > :nth-child(4){ animation-delay:0.15s; }
+  .overlay.ghosting.ghost-cross #panelSearch > :nth-child(n+5), .overlay.ghosting.ghost-cross #panelLoading > :nth-child(n+5), .overlay.ghosting.ghost-cross #panelTrace > :nth-child(n+5), .overlay.ghosting.ghost-cross #modalResultBox > :nth-child(n+5){ animation-delay:.2s; }
+  .modal-ghost.cross{ animation:ohGhostFade .3s ease forwards !important; }
+  #resultStage > canvas{ animation:ohFadeIn .5s ease backwards; }
+  /* 가구 배치 화면에 들어올 때 3D 화면이 서서히 나타남 */
+  .modal.furniture-fullscreen #resultStage > canvas{ animation:ohFadeIn .9s ease .3s backwards; }
+  /* 앵커 링크(예: "핵심 기능 6가지 보기")를 누르면 뚝 이동하지 않고 부드럽게 스크롤. 상단 고정 헤더에 제목이 가리지 않게 여유를 둠 */
+  html{ scroll-behavior:smooth; scroll-padding-top:76px; }
+  @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+  @media (prefers-reduced-motion: reduce){
+    .overlay, .modal, .modal.pop-in, .overlay.closing, .overlay.closing .modal, .modal-ghost, .modal-ghost > *,
+    #panelSearch > *, #panelLoading > *, #panelTrace > *, #modalResultBox > *,
+    .oh-dialog-overlay, .oh-dialog-box{ animation:none !important; }
+    .reveal-pending{ opacity:1 !important; transform:none !important; }
   }
 </style>
 
@@ -1182,10 +1549,27 @@
       var actions = document.createElement("div");
       actions.className = "oh-dialog-actions";
 
+      var closed = false;
       function close(result){
+        if (closed) return;
+        closed = true;
         document.removeEventListener("keydown", onKeydown);
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        resolve(result);
+        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduce){
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          resolve(result);
+          return;
+        }
+        // 상자가 먼저 가라앉고, 그 뒤에 결과를 넘김. 바로 다음 대화상자가 뜨면 배경은 이어받고(.chained), 안 뜨면 배경이 서서히 걷힘.
+        overlay.classList.add("box-out");
+        setTimeout(function(){
+          resolve(result);
+          setTimeout(function(){
+            if (!overlay.parentNode) return; // 다음 대화상자가 이어받아 이미 치워짐
+            overlay.classList.add("fade-out");
+            setTimeout(function(){ if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
+          }, 30);
+        }, 170);
       }
 
       var cancelBtn = null;
@@ -1209,7 +1593,12 @@
 
       box.appendChild(actions);
       overlay.appendChild(box);
-      document.body.appendChild(overlay);
+      // 브라우저 전체화면 중에는 전체화면 요소(가구 배치 화면) 안에 있는 것만 보이므로, 그 안에 붙여야 대화상자가 보임.
+      var dlgHost = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+      var prevDlg = dlgHost.querySelector(".oh-dialog-overlay.box-out");
+      if (prevDlg){ overlay.classList.add("chained"); } // 앞 대화상자가 막 닫히는 중이면 배경은 그대로 이어받음
+      dlgHost.appendChild(overlay);
+      if (prevDlg && prevDlg.parentNode) prevDlg.parentNode.removeChild(prevDlg);
 
       function onKeydown(e){
         if (e.key === "Escape"){ close(opts.showInput ? null : (opts.showCancel ? false : true)); }
@@ -1494,6 +1883,7 @@
     // 게시 썸네일 캡처 때만 잠깐 숨기려고 참조를 남겨둠(screenshot() 참고) — 에디터 화면 자체엔
     // 그대로 원본 도면 사진이 깔려서 보임, 갤러리 카드 썸네일에서만 빼고 찍음.
     var photoFloorMesh = null;
+    var planHidden = false; // 도면 on/off 버튼 — 켜면(true) 바닥의 도면 사진을 숨기고 격자만 보임
     if (plan.floorplanImageUrl && plan.imageBBox){
       var texLoader = new THREE.TextureLoader();
       texLoader.crossOrigin = "anonymous";
@@ -1527,6 +1917,7 @@
         photoFloor.position.set(center.x, -0.008, center.z);
         scene.add(photoFloor);
         photoFloorMesh = photoFloor;
+        photoFloor.visible = !planHidden; // 텍스처가 늦게 로드돼도 버튼 상태를 따름
       }, undefined, function(err){ console.error("[oh-floor-photo] load FAILED", textureSrc.slice(0,60), err); });
     }
 
@@ -1756,7 +2147,7 @@
     var furnitureColors = { sofa:0xc98f72, table:0x9a704d, bed:0x90a8bb, plant:0x5c8d61, door:0x8a5a34, window:0xdfeff5, outlet:0xf1efe9 };
     var WALL_ITEM_TYPES = { window:true, outlet:true, door:true };
     var WALL_ITEM_DEFAULT_WIDTH = { door:0.9, window:1.2, outlet:0.11 };
-    var ROTATE_STEP_DEG = 15, NUDGE_STEP = 0.08;
+    var ROTATE_STEP_DEG = 15, NUDGE_STEP = 0.08, MOVE_ARROW_STEP = 0.05;
 
     var furnitureColorPicker;
 
@@ -1858,6 +2249,8 @@
         placeOnWall(group, wallInfo.wallIndex, wallInfo.along, wallInfo.height);
         scene.add(group); furniture.push(group); selectFurniture(group);
         if (type === 'door' || type === 'window') rebuildWallAt(wallInfo.wallIndex);
+        startPopAnim(group);
+        tutNotify('furnitureAdded');
         return group;
       }
 
@@ -1866,13 +2259,271 @@
       resolveWallCollision(group);
       applyFurnitureStacking(group);
       scene.add(group); furniture.push(group); selectFurniture(group);
+      startPopAnim(group);
+      tutNotify('furnitureAdded');
       return group;
+    }
+
+    // 가구/문/창문/콘센트를 새로 놓을 때: 작게 시작해서 살짝 튀어 오르며 제자리 크기로 커지고(easeOutBack),
+    // 바닥 가구는 놓인 자리에서 파문(링)이 퍼져나감. 크기는 group.scale 그대로 배율만 곱하므로, 사용자가 정한
+    // 크기(가로/세로/높이)는 건드리지 않음.
+    function startPopAnim(obj, durMs){
+      if (!popEnabled || !obj) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var prevAnim = obj.userData.popAnim;
+      var base = (prevAnim && prevAnim.base) ? prevAnim.base.clone() : obj.scale.clone(); // 진행 중이던 애니메이션이 있으면 그 목표 크기를 유지
+      var ring = null;
+      var dm = obj.userData.size || { w:.6, d:.6 };
+      var rr = Math.max(dm.w, dm.d) / 2 * 0.9 + 0.12;
+      if (!obj.userData.isWallItem){
+        ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.88, 1, 48),
+          new THREE.MeshBasicMaterial({ color: 0x5b8dd9, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(obj.position.x, obj.position.y + 0.02, obj.position.z);
+        ring.scale.setScalar(rr * 0.5);
+        scene.add(ring);
+      }
+      obj.scale.copy(base).multiplyScalar(0.001);
+      obj.userData.popAnim = { t0: performance.now(), dur: durMs || 560, base: base, ring: ring, rr: rr };
+      if (popAnims.indexOf(obj) < 0) popAnims.push(obj);
+    }
+    // 삭제 애니메이션: 살짝 부풀었다가 쏙 줄어들며 사라지고(easeInBack), 바닥 가구는 붉은 링이 안쪽으로 오므라듦.
+    // 가구 목록/선택에서는 이미 빠진 상태라 클릭·저장에 영향 없고, 애니메이션이 끝난 뒤에 실제로 scene에서 지움(onDone).
+    function startRemoveAnim(obj, onDone){
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!popEnabled || reduce){ onDone(); return; }
+      var prev = obj.userData.popAnim;
+      var base = prev ? prev.base.clone() : obj.scale.clone();
+      if (prev) finishPop(obj);
+      obj.scale.copy(base);
+      var ring = null;
+      var dm = obj.userData.size || { w:.6, d:.6 };
+      var rr = Math.max(dm.w, dm.d) / 2 * 0.9 + 0.12;
+      if (!obj.userData.isWallItem){
+        ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.88, 1, 48),
+          new THREE.MeshBasicMaterial({ color: 0xe0705e, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(obj.position.x, obj.position.y + 0.02, obj.position.z);
+        ring.scale.setScalar(rr * 1.5);
+        scene.add(ring);
+      }
+      obj.userData.popAnim = { out: true, t0: performance.now(), dur: 300, base: base, ring: ring, rr: rr, onDone: onDone };
+      if (popAnims.indexOf(obj) < 0) popAnims.push(obj);
+    }
+    // ---- 가구를 끌 때: 아이폰 홈화면 앱처럼 부들부들 떨리고, 화면 아래에서 휴지통이 올라옴 ----
+    function isOverTrash(x, y){
+      if (!dropTrash || !dropTrash.classList.contains('show')) return false;
+      var r = dropTrash.getBoundingClientRect(), m = 16;
+      return x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
+    }
+    function currentDragObj(){
+      return wallDragState ? wallDragState.obj : (furnitureDragging ? selectedFurniture : null);
+    }
+    function updateTrashDrag(e){
+      var obj = currentDragObj();
+      if (!obj || !dropTrash) return;
+      if (!dragActive){
+        if (Math.hypot(e.clientX - dragSX, e.clientY - dragSY) < 5) return; // 그냥 클릭은 무시, 실제로 끌기 시작했을 때만
+        dragActive = true; dragObj = obj; dragActT = performance.now();
+        dropTrash.classList.remove('gulp');
+        dropTrash.classList.add('show');
+      }
+      dropTrash.classList.toggle('hot', isOverTrash(e.clientX, e.clientY));
+    }
+    function stepDragWiggle(now){
+      if (!dragActive || !dragObj || !dragObj.parent) return;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) return;
+      // 끌기 시작 0.5초 뒤부터 떨리기 시작(짧게 옮기고 놓을 땐 조용), 0.15초 동안 서서히 세짐
+      var el = now - dragActT - 500;
+      if (el < 0) return;
+      var amp = Math.min(1, el / 150);
+      dragObj.rotation.z = 0.05 * amp * Math.sin(now / 42);
+      dragObj.rotation.x = 0.03 * amp * Math.sin(now / 42 + 1.9);
+    }
+    function trashBurst(){
+      if (!dropTrash) return;
+      dropTrash.classList.remove('gulp'); void dropTrash.offsetWidth; dropTrash.classList.add('gulp');
+      var TRASH_EMOJI = ['🗑️', '♻️', '🍂', '🧻', '📦', '🥫', '📰', '🗑️'];
+      for (var i = 0; i < 14; i++){
+        var s = document.createElement('span');
+        s.className = 'trash-spark';
+        s.textContent = TRASH_EMOJI[Math.floor(Math.random() * TRASH_EMOJI.length)];
+        var ang = (Math.PI * 2 * i / 14) + Math.random() * 0.35, dist = 70 + Math.random() * 55;
+        s.style.setProperty('--tx', Math.cos(ang) * dist + 'px');
+        s.style.setProperty('--ty', Math.sin(ang) * dist + 'px');
+        s.style.setProperty('--rot', (Math.random() * 500 - 250) + 'deg');
+        s.style.setProperty('--fs', (18 + Math.random() * 12) + 'px');
+        dropTrash.appendChild(s);
+        (function(el){ setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 950); })(s);
+      }
+    }
+    // 오버레이 렌더러: 메인 3D 캔버스는 휴지통(DOM)보다 아래라서 가구가 휴지통 "뒤"로 가려져 버림. 빨려 들어가는
+    // 가구만 layer 1로 옮겨서, 메인 캔버스 위·휴지통 아이콘 위에 얹힌 투명 캔버스에 따로 그리면
+    // 휴지통이 맨 밑에 깔리고 그 위로 가구가 보이는 채로 소용돌이쳐 들어감.
+    function ensureFxRenderer(){
+      if (!fxRenderer){
+        fxRenderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+        fxRenderer.setClearColor(0x000000, 0);
+        if (renderer.outputEncoding !== undefined) fxRenderer.outputEncoding = renderer.outputEncoding;
+        var el = fxRenderer.domElement;
+        el.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:12;display:none;';
+        container.appendChild(el);
+      }
+      fxRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      fxRenderer.setSize(container.clientWidth, container.clientHeight, false);
+      return fxRenderer;
+    }
+    function renderFxOverlay(){
+      if (!fxActive || !fxRenderer) return;
+      var bg = scene.background;
+      scene.background = null;
+      camera.layers.set(1);
+      fxRenderer.render(scene, camera);
+      camera.layers.set(0);
+      scene.background = bg;
+    }
+    function endFx(){
+      fxActive = false;
+      if (fxRenderer){ fxRenderer.clear(); fxRenderer.domElement.style.display = 'none'; }
+    }
+    // 휴지통에 놓았을 때: 가구가 빙글 돌며 휴지통 쪽(화면상 위치)으로 빨려 들어가 작아지고, 휴지통이 꿀꺽 + 뿅
+    function dropToTrash(obj){
+      var wasWallOpening = obj.userData.type === 'door' || obj.userData.type === 'window';
+      var wallIdx = obj.userData.wallIndex;
+      furniture = furniture.filter(function(f){ return f !== obj; });
+      selectFurniture(null);
+      tutNotify('delete');
+      var finish = function(){
+        endFx();
+        if (dropTrash) dropTrash.classList.remove('sucking');
+        scene.remove(obj);
+        if (wasWallOpening) rebuildWallAt(wallIdx);
+        trashBurst();
+        setTimeout(function(){ if (dropTrash && !dragActive) dropTrash.classList.remove('show', 'hot'); }, 650);
+      };
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!popEnabled || reduce || !dropTrash){ finish(); return; }
+      var tr = dropTrash.getBoundingClientRect(), cr = canvas.getBoundingClientRect();
+      var nx = ((tr.left + tr.width / 2 - cr.left) / cr.width) * 2 - 1;
+      var ny = -((tr.top + tr.height / 2 - cr.top) / cr.height) * 2 + 1;
+      var dir = new THREE.Vector3(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+      var target = camera.position.clone().addScaledVector(dir, camera.position.distanceTo(obj.position) * 0.96);
+      var prev = obj.userData.popAnim;
+      var base = prev ? prev.base.clone() : obj.scale.clone();
+      if (prev) finishPop(obj);
+      obj.scale.copy(base);
+      // 이 가구만 layer 1(오버레이)로 옮기고, 조명도 layer 1에서 비치게 함
+      scene.traverse(function(n){ if (n.isLight) n.layers.enable(1); });
+      obj.traverse(function(n){ n.layers.set(1); });
+      ensureFxRenderer().domElement.style.display = 'block';
+      fxActive = true;
+      var sdm = obj.userData.size || { w:.6, d:.6 };
+      var spR = Math.min(Math.max(Math.max(sdm.w, sdm.d) * 1.3, 0.8), 2.6) * (camera.position.distanceTo(obj.position) / 8);
+      dropTrash.classList.add('sucking');
+      obj.userData.popAnim = { suck: true, t0: performance.now(), dur: 1150, base: base, from: obj.position.clone(), to: target, rot0: obj.rotation.y, spR: spR, ph0: Math.random() * Math.PI * 2, onDone: finish };
+      if (popAnims.indexOf(obj) < 0) popAnims.push(obj);
+    }
+    function finishDragFx(e, dobj){
+      var drop = !!(dobj && dragActive && e.type === 'pointerup' && isOverTrash(e.clientX, e.clientY));
+      if (dragActive){
+        if (dragObj){ dragObj.rotation.x = 0; dragObj.rotation.z = 0; }
+        dragActive = false; dragObj = null;
+        if (drop && dobj) dropToTrash(dobj);
+        else if (dropTrash) dropTrash.classList.remove('show', 'hot');
+      }
+    }
+    function finishPop(obj){
+      var a = obj.userData.popAnim;
+      if (a && a.ring){
+        scene.remove(a.ring);
+        a.ring.geometry.dispose(); a.ring.material.dispose();
+      }
+      obj.userData.popAnim = null;
+    }
+    function stepPopAnims(now){
+      for (var i = popAnims.length - 1; i >= 0; i--){
+        var o = popAnims[i], a = o.userData.popAnim;
+        if (!a || !o.parent){ // 도중에 삭제됐거나 이미 끝남
+          if (a) finishPop(o);
+          popAnims.splice(i, 1);
+          continue;
+        }
+        var t = Math.min(1, (now - a.t0) / a.dur);
+        if (a.suck){
+          // 회오리: 휴지통 방향 직선 경로를 따라(점점 빨라짐) 가면서, 화면 기준 좌우/상하로 원을 그리며 도는데
+          // 반경이 처음에 빠르게 커졌다가 깔때기처럼 0으로 좁아짐 → 소용돌이에 말려 들어가는 모양.
+          var ep = Math.pow(t, 2.1);
+          var rad = a.spR * (1 - Math.pow(t, 1.5)) * Math.min(1, t * 5);
+          var ph = a.ph0 + t * Math.PI * 8;
+          camera.updateMatrixWorld();
+          var cr = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+          var cu = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+          o.position.lerpVectors(a.from, a.to, ep)
+            .addScaledVector(cr, Math.cos(ph) * rad)
+            .addScaledVector(cu, Math.sin(ph) * rad * 0.8);
+          o.rotation.y = a.rot0 + t * Math.PI * 4;
+          o.rotation.z = 0.5 * Math.sin(t * Math.PI) ;
+          o.scale.copy(a.base).multiplyScalar(Math.max(1 - Math.pow(t, 3.2), 0.001));
+          if (t >= 1){
+            var doneS = a.onDone;
+            finishPop(o);
+            popAnims.splice(i, 1);
+            if (doneS) doneS();
+          }
+          continue;
+        }
+        if (a.out){
+          var c1o = 1.9, c3o = c1o + 1;
+          var kOut = 1 - (c3o * t*t*t - c1o * t*t); // easeInBack 반대로: 처음엔 살짝 커졌다가 0으로
+          o.scale.copy(a.base).multiplyScalar(Math.max(kOut, 0.001));
+          if (a.ring){
+            a.ring.scale.setScalar(a.rr * (1.5 - 1.2 * t));
+            a.ring.material.opacity = 0.7 * (1 - t);
+          }
+          if (t >= 1){
+            var done = a.onDone;
+            finishPop(o);
+            popAnims.splice(i, 1);
+            if (done) done();
+          }
+          continue;
+        }
+        var u = t - 1, c1 = 1.9, c3 = c1 + 1;
+        var k = 1 + c3 * u*u*u + c1 * u*u; // easeOutBack — 목표 크기를 살짝 넘었다가 안착
+        o.scale.copy(a.base).multiplyScalar(Math.max(k, 0.001));
+        if (a.ring){
+          a.ring.scale.setScalar(a.rr * (0.5 + 1.1 * t));
+          a.ring.material.opacity = 0.75 * (1 - t) * (1 - t);
+        }
+        if (t >= 1){
+          o.scale.copy(a.base);
+          finishPop(o);
+          popAnims.splice(i, 1);
+        }
+      }
     }
 
     // 창문/콘센트처럼 벽에만 붙는 아이템을 특정 벽(collisionWalls[wallIndex]) 위의 한 지점(along,
     // 0~1 비율)에 배치 — 벽 진행 방향으로의 위치(along)와 바닥 기준 높이(height)만 정해주면, 벽
     // 두께 절반만큼 벽 바깥(방 안쪽) 방향으로 내밀어서 벽 표면에 거의 붙어있는 것처럼 보이게 하고,
     // 회전은 항상 벽 방향과 똑같이 맞춰서 벽에 딱 붙어 보이게 함.
+    // 벽 위에서 아이템 중심이 갈 수 있는 범위(벽 길이 대비 비율). 예전엔 길이와 상관없이 8%~92%로 고정이라
+    // 긴 벽에서는 모서리 앞에서 훨씬 일찍 멈췄음 — 이제 "아이템 폭의 절반 + 벽 두께의 절반 + 여유 2cm"만
+    // 남기고 모서리 바로 앞까지 갈 수 있게, 실제 치수로 계산함.
+    function wallAlongRange(wallIndex, widthM){
+      var w = wallSegments[wallIndex];
+      if (!w) return { min:0.08, max:0.92 };
+      var L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+      if (L < 0.05) return { min:0.5, max:0.5 };
+      var m = ((widthM || 0.9) / 2 + Math.max((w.thickness || 0.12) / 2, 0.06) + 0.02) / L;
+      if (m >= 0.5) return { min:0.5, max:0.5 };
+      return { min:m, max:1 - m };
+    }
     function placeOnWall(obj, wallIndex, along, height){
       // collisionWalls(실제로 지금 그려진 조각들)가 아니라 wallSegments(문/창문이 생기기 전, 안 갈라진
       // 원본 벽 정의)를 기준으로 계산 — 벽이 여러 조각으로 갈라져도 이 아이템의 위치 계산은 항상 그
@@ -1882,7 +2533,8 @@
       var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
       if (wallLen < 0.05) return;
       var ux = dx/wallLen, uz = dz/wallLen;
-      along = Math.min(Math.max(along == null ? 0.5 : along, 0.08), 0.92);
+      var aRange = wallAlongRange(wallIndex, obj.userData.size && obj.userData.size.w);
+      along = Math.min(Math.max(along == null ? 0.5 : along, aRange.min), aRange.max);
       var cx = w.x1 + ux*wallLen*along, cz = w.y1 + uz*wallLen*along;
       var nx = -uz, nz = ux;
       var toCenterX = center.x - cx, toCenterZ = center.z - cz;
@@ -1902,7 +2554,13 @@
     // 같은 벽 위에서 두 아이템(문/창문/콘센트 아무 조합이나)이 가로로 겹치는지 검사 — 겹치면 벽에
     // 실제 구멍을 뚫는 계산(도형 테두리에 노치를 파는 방식)이 순서를 못 잡아서 삼각형이 이상하게
     // 튀는 버그가 나서, 배치·이동·드래그·크기 조절 전부에서 겹치는 위치는 아예 막음.
-    function wallItemOverlaps(wallIndex, along, widthM, excludeObj){
+    // 벽 아이템이 차지하는 높이 구간 [아래, 위] — 문은 바닥(0)부터, 창문/콘센트는 중심 y를 기준으로 위아래 절반씩.
+    function wallItemYSpan(type, y, h){
+      h = h || 0.1;
+      return type === 'door' ? [0, h] : [y - h/2, y + h/2];
+    }
+    // 가로(벽 방향)로 겹치더라도 높이가 안 겹치면(예: 창문 아래 콘센트) 겹친 게 아님. yLo/yHi를 안 주면 가로만 비교.
+    function wallItemOverlaps(wallIndex, along, widthM, excludeObj, yLo, yHi){
       var w = wallSegments[wallIndex];
       if (!w) return false;
       var wallLen = Math.hypot(w.x2-w.x1, w.y2-w.y1);
@@ -1915,7 +2573,12 @@
         var fHalf = ((f.userData.size && f.userData.size.w) || 0.9) / 2;
         var fCenterDist = (f.userData.wallAlong == null ? 0.5 : f.userData.wallAlong) * wallLen;
         var fFrom = fCenterDist - fHalf, fTo = fCenterDist + fHalf;
-        return from < fTo && to > fFrom;
+        if (!(from < fTo && to > fFrom)) return false;
+        if (yLo != null && yHi != null){
+          var fs = wallItemYSpan(f.userData.type, f.position.y, f.userData.size && f.userData.size.h);
+          if (!(yLo < fs[1] && yHi > fs[0])) return false; // 높이가 안 겹침
+        }
+        return true;
       });
     }
     var collisionToastEl, collisionToastTimer;
@@ -1944,22 +2607,34 @@
       if (wallLen < 0.05) return;
       var ux = dx/wallLen, uz = dz/wallLen;
       var t = ((hitPoint.x-w.x1)*ux + (hitPoint.z-w.y1)*uz) / wallLen;
-      if (wallItemOverlaps(idx, t, WALL_ITEM_DEFAULT_WIDTH[type])){
+      // 놓는 높이는 포인터가 가리킨 높이(문은 항상 바닥) — 창문 아래에 콘센트를 놓는 것처럼 높이가 다르면 겹침이 아님
+      var newH = { door:2.05, window:1.1, outlet:0.075 }[type] || 0.3;
+      var newY = type === 'door' ? 0 : Math.min(Math.max(hitPoint.y, newH/2), wallHeight - newH/2 - 0.02);
+      var newSpan = wallItemYSpan(type, newY, newH);
+      var newRange = wallAlongRange(idx, WALL_ITEM_DEFAULT_WIDTH[type]);
+      var tClamped = Math.min(Math.max(t, newRange.min), newRange.max);
+      if (wallItemOverlaps(idx, tClamped, WALL_ITEM_DEFAULT_WIDTH[type], null, newSpan[0], newSpan[1])){
         showCollisionToast();
         return;
       }
-      addFurniture(type, null, null, { wallIndex: idx, along: t });
+      addFurniture(type, null, null, { wallIndex: idx, along: t, height: type === 'door' ? undefined : newY });
     }
 
     var sizePanel, sizeWidthInput, sizeDepthInput, sizeHeightInput, sizePanelTitle, sizeDepthLabel, sizeHeightLabel;
     var rotatePanel;
+    var moveArrows = null, moveArrowBtns = null, moveArrowsHeld = false;
+    var doneBtnEl = null;
+    var dropTrash = null, dragActive = false, dragObj = null, dragSX = 0, dragSY = 0, dragActT = 0; // 끌기 효과
+    var fxRenderer = null, fxActive = false; // 휴지통 위로 빨려 들어가는 가구만 따로 그리는 투명 오버레이 렌더러(떨림 + 휴지통)
+    var popEnabled = false, popAnims = []; // 새로 놓을 때 "뿅" 하고 나타나는 애니메이션(초기 기본 가구는 제외)
+    var rotatePanelOffset = { x:0, y:0 }; // 팝업을 손잡이로 직접 옮긴 만큼의 화면 오프셋(가구 기준 상대 위치)
     var wallColorPanel, wallColorPicker;
     var furnitureColorPanel, furnitureColorToggleBtn;
     var FURNITURE_TYPE_LABELS = { sofa:'소파', table:'테이블', bed:'침대', plant:'식물', door:'문', window:'창문', outlet:'콘센트' };
     function syncSizePanel(){
       if (!sizePanel) return;
       var item=selectedFurniture;
-      sizePanel.hidden=!item;
+      sizePanel.classList.toggle('open', !!item);
       if (!item) return;
       var dims=item.userData.size;
       sizeWidthInput.value=dims.w.toFixed(2); sizeDepthInput.value=dims.d.toFixed(2); sizeHeightInput.value=dims.h.toFixed(2);
@@ -1976,7 +2651,7 @@
       var oldH=dims.h, oldY=selectedFurniture.position.y;
       var w=parseFloat(sizeWidthInput.value), h=parseFloat(sizeHeightInput.value);
       if (isFinite(w) && w>=.1){
-        if (isWallOpening && wallItemOverlaps(selectedFurniture.userData.wallIndex, selectedFurniture.userData.wallAlong, w, selectedFurniture)){
+        if (isWallOpening && wallItemOverlaps(selectedFurniture.userData.wallIndex, selectedFurniture.userData.wallAlong, w, selectedFurniture, wallItemYSpan(type, selectedFurniture.position.y, dims.h)[0], wallItemYSpan(type, selectedFurniture.position.y, dims.h)[1])){
           showCollisionToast();
         } else {
           dims.w=w;
@@ -1988,6 +2663,7 @@
       }
       if (isFinite(h) && h>=.1) dims.h=h;
       selectedFurniture.scale.set(dims.w/base.w,dims.h/base.h,dims.d/base.d);
+      if (selectedFurniture.userData.popAnim) selectedFurniture.userData.popAnim.base.copy(selectedFurniture.scale); // 애니메이션 중 크기를 바꿔도 새 크기로 안착
       if (isWindow && selectedFurniture.userData.isWallItem){
         // 높이는 창문 맨 밑을 기준으로 측정 — 밑변은 그대로 두고 위로만 늘거나 줄게, 기존 바닥
         // 높이를 구해서 그만큼 중심 y를 다시 잡아줌(placeOnWall이 쓰는 y는 창문 중심 높이임).
@@ -2115,20 +2791,30 @@
       selectedFurniture.rotation.y = deg * Math.PI / 180;
       resolveWallCollision(selectedFurniture);
     }
-    function nudgeFurniture(dir){
+    // 지금 카메라 기준 "화면 위/오른쪽"이 바닥(x/z)에서 가리키는 방향. 탑뷰는 theta=π/2 와 같고,
+    // 노클립 중에는 theta 대신 비행 방향(flyYaw)을 씀.
+    function viewFloorDirs(){
+      if (noclipMode) return { fx:-Math.sin(flyYaw), fz:-Math.cos(flyYaw), rx:Math.cos(flyYaw), rz:-Math.sin(flyYaw) };
+      var th = trueTopView ? Math.PI/2 : theta;
+      return { fx:-Math.cos(th), fz:-Math.sin(th), rx:Math.sin(th), rz:-Math.cos(th) };
+    }
+    function nudgeFurniture(dir, step){
       if (!selectedFurniture) return;
       if (selectedFurniture.userData.isWallItem){ nudgeWallItem(dir); return; }
+      var S = step || NUDGE_STEP;
       // 고정된 세계 좌표(x/z)로만 밀면, 카메라를 돌려서 보고 있을 땐 화살표 방향과 실제
       // 화면상 이동 방향이 어긋나 보임 — 지금 카메라가 보고 있는 각도(theta) 기준으로
       // "화면에서의 위/아래/좌/우"를 계산해서 그 방향으로 밀어줌.
-      var fx = -Math.cos(theta), fz = -Math.sin(theta); // 화면 "위"(카메라에서 먼 쪽)
-      var rx = Math.sin(theta), rz = -Math.cos(theta);  // 화면 "오른쪽"
-      if (dir === 'up'){ selectedFurniture.position.x += fx*NUDGE_STEP; selectedFurniture.position.z += fz*NUDGE_STEP; }
-      else if (dir === 'down'){ selectedFurniture.position.x -= fx*NUDGE_STEP; selectedFurniture.position.z -= fz*NUDGE_STEP; }
-      else if (dir === 'left'){ selectedFurniture.position.x -= rx*NUDGE_STEP; selectedFurniture.position.z -= rz*NUDGE_STEP; }
-      else if (dir === 'right'){ selectedFurniture.position.x += rx*NUDGE_STEP; selectedFurniture.position.z += rz*NUDGE_STEP; }
+      var vd = viewFloorDirs();
+      var fx = vd.fx, fz = vd.fz; // 화면 "위"(카메라에서 먼 쪽)
+      var rx = vd.rx, rz = vd.rz; // 화면 "오른쪽"
+      if (dir === 'up'){ selectedFurniture.position.x += fx*S; selectedFurniture.position.z += fz*S; }
+      else if (dir === 'down'){ selectedFurniture.position.x -= fx*S; selectedFurniture.position.z -= fz*S; }
+      else if (dir === 'left'){ selectedFurniture.position.x -= rx*S; selectedFurniture.position.z -= rz*S; }
+      else if (dir === 'right'){ selectedFurniture.position.x += rx*S; selectedFurniture.position.z += rz*S; }
       resolveWallCollision(selectedFurniture);
       applyFurnitureStacking(selectedFurniture);
+      tutNotify('move');
     }
     // 창문/콘센트는 벽에 붙어있어야 하니 일반 4방향(화면 기준) 이동 대신: 위/아래(↑↓)는 벽 위에서의
     // 높이 조절, 왼쪽/오른쪽(←→)은 그 벽을 따라 옆으로 미끄러지듯 이동 — 회전은 항상 벽 방향 고정.
@@ -2139,6 +2825,14 @@
       var w = wallSegments[obj.userData.wallIndex];
       if (!w) return;
       var dims = obj.userData.size || {h:.3};
+      if (dir === 'up' || dir === 'down'){
+        // 위/아래로 옮겨서 다른 벽 아이템(예: 창문)과 겹치게 되면 막음
+        var ny = dir === 'up' ? Math.min(obj.position.y + NUDGE_STEP, wallHeight - dims.h/2 - 0.02) : Math.max(obj.position.y - NUDGE_STEP, dims.h/2);
+        if (type !== 'door'){
+          var vs = wallItemYSpan(type, ny, dims.h);
+          if (wallItemOverlaps(obj.userData.wallIndex, obj.userData.wallAlong, dims.w, obj, vs[0], vs[1])){ showCollisionToast(); return; }
+        }
+      }
       if (dir === 'up'){
         if (type === 'door') return;
         obj.position.y = Math.min(obj.position.y + NUDGE_STEP, wallHeight - dims.h/2 - 0.02);
@@ -2151,8 +2845,10 @@
         var dx = w.x2-w.x1, dz = w.y2-w.y1, wallLen = Math.hypot(dx,dz);
         if (wallLen < 0.05) return;
         var sign = dir === 'left' ? -1 : 1;
-        var along = Math.min(Math.max((obj.userData.wallAlong||0.5) + sign*(NUDGE_STEP/wallLen), 0.08), 0.92);
-        if (wallItemOverlaps(obj.userData.wallIndex, along, dims.w, obj)){
+        var nRange = wallAlongRange(obj.userData.wallIndex, dims.w);
+        var along = Math.min(Math.max((obj.userData.wallAlong||0.5) + sign*(NUDGE_STEP/wallLen), nRange.min), nRange.max);
+        var hs = wallItemYSpan(type, obj.position.y, dims.h);
+        if (wallItemOverlaps(obj.userData.wallIndex, along, dims.w, obj, hs[0], hs[1])){
           showCollisionToast();
           return;
         }
@@ -2197,6 +2893,7 @@
     }
     function selectFurniture(obj){
       if (selectedFurniture) selectedFurniture.traverse(function(n){ if(n.isMesh) n.material.emissive && n.material.emissive.setHex(0x000000); });
+      if ((obj || null) !== selectedFurniture){ rotatePanelOffset.x = 0; rotatePanelOffset.y = 0; } // 다른 가구를 고르거나 선택을 풀면 팝업은 기본 위치로
       selectedFurniture = obj || null;
       rotatePanelFrozen = false; // 새로 선택하거나 드래그를 시작할 때는 다시 오브젝트를 따라가게 함
       // 가구 선택이 바뀔 때마다(다른 가구로 바꾸거나, 선택 해제하거나) 열려 있던 색상 팝업은
@@ -2255,6 +2952,7 @@
       var o=hit.object; while(o && !o.userData.isFurniture) o=o.parent; return o;
     }
     function beginFurnitureDrag(e){
+      dragSX = e.clientX; dragSY = e.clientY;
       var rect=canvas.getBoundingClientRect();
       pointer.x=((e.clientX-rect.left)/rect.width)*2-1; pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;
       raycaster.setFromCamera(pointer,camera);
@@ -2301,30 +2999,92 @@
       wallDragState = { obj: obj, wallIndex: obj.userData.wallIndex, ux: ux, uz: uz, wallLen: wallLen, x1: w.x1, y1: w.y1, overlapWarned: false };
       return true;
     }
+    // 끌고 있던 창문/문/콘센트를 포인터가 가리키는 다른 벽으로 옮김. 새 벽에서 겹치거나 너무 짧으면 포기(false).
+    function trySwitchDragWall(st, obj){
+      var hits = raycaster.intersectObjects(wallMeshes, false);
+      var cur = wallSegments[st.wallIndex];
+      var best = null, bestD = Infinity;
+      for (var i = 0; i < hits.length; i++){
+        var ni = hits[i].object.userData.logicalWallIndex;
+        if (ni == null || ni === st.wallIndex || !wallSegments[ni]) continue;
+        // 지금 벽 선분과 가장 가까운 지점에 닿은 벽을 우선(= 바로 옆 벽)
+        var px = hits[i].point.x, pz = hits[i].point.z;
+        var sx = cur.x2 - cur.x1, sz = cur.y2 - cur.y1, sl = sx*sx + sz*sz || 1;
+        var tt = Math.min(Math.max(((px - cur.x1)*sx + (pz - cur.y1)*sz) / sl, 0), 1);
+        var d = Math.hypot(px - (cur.x1 + sx*tt), pz - (cur.y1 + sz*tt));
+        if (d < bestD){ bestD = d; best = hits[i]; }
+      }
+      if (!best) return false;
+      var nidx = best.object.userData.logicalWallIndex;
+      var w = wallSegments[nidx];
+      var dx = w.x2 - w.x1, dz = w.y2 - w.y1, wallLen = Math.hypot(dx, dz);
+      var dims = obj.userData.size || { w:.9, h:.3 };
+      if (wallLen < dims.w + 0.3) return false; // 아이템이 들어가기엔 너무 짧은 벽
+      var ux = dx / wallLen, uz = dz / wallLen;
+      var sRange = wallAlongRange(nidx, dims.w);
+      var rawAlong = ((best.point.x - w.x1)*ux + (best.point.z - w.y1)*uz) / wallLen;
+      // 포인터가 새 벽의 "끝 부분(모서리)" 위에 있으면 아직 그 벽 위라고 보기 애매하므로 갈아타지 않음
+      if (rawAlong < sRange.min - 0.01 || rawAlong > sRange.max + 0.01) return false;
+      var along = Math.min(Math.max(rawAlong, sRange.min), sRange.max);
+      var swType = obj.userData.type;
+      var swHeight = swType === 'door' ? 0 : Math.min(Math.max(best.point.y, dims.h/2), wallHeight - dims.h/2 - 0.02);
+      var swSpan = wallItemYSpan(swType, swHeight, dims.h);
+      if (wallItemOverlaps(nidx, along, dims.w, obj, swSpan[0], swSpan[1])){
+        if (!st.overlapWarned){ showCollisionToast(); st.overlapWarned = true; }
+        return false;
+      }
+      st.overlapWarned = false;
+      st.lockUntil = performance.now() + 350;
+      var oldIdx = st.wallIndex, type = obj.userData.type;
+      st.wallIndex = nidx; st.ux = ux; st.uz = uz; st.wallLen = wallLen; st.x1 = w.x1; st.y1 = w.y1;
+      wallDragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(-uz, 0, ux), new THREE.Vector3(w.x1, 0, w.y1));
+      var height = type === 'door' ? 0 : Math.min(Math.max(best.point.y, dims.h/2), wallHeight - dims.h/2 - 0.02);
+      placeOnWall(obj, nidx, along, height); // obj.userData.wallIndex도 새 벽으로 바뀜
+      if (type === 'door' || type === 'window'){
+        rebuildWallAt(oldIdx); // 옛 벽의 구멍은 메우고
+        rebuildWallAt(nidx);   // 새 벽에 구멍을 뚫음
+      }
+      startPopAnim(obj, 340); // 벽을 갈아탈 때 살짝 "톡" 튀는 모션
+      updateRotatePanelPosition();
+      return true;
+    }
     function dragWallItem(e){
       if (!wallDragState) return false;
       var rect = canvas.getBoundingClientRect();
       pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
       raycaster.setFromCamera(pointer, camera);
       var hitPoint = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(wallDragPlane, hitPoint)) return true;
+      var planeHit = raycaster.ray.intersectPlane(wallDragPlane, hitPoint);
       var st = wallDragState, obj = st.obj, type = obj.userData.type;
+      // 다른 벽으로 갈아타기: 포인터가 지금 벽의 끝을 벗어났거나(옆 벽으로 넘어감) 지금 벽 면 위가 아니면,
+      // 포인터가 가리키는 다른 벽을 찾아 그쪽으로 옮김. 지금 벽 위에 있는 동안은(앞쪽의 반투명 벽이 가려도) 안 갈아탐.
+      var curAlong = planeHit ? ((hitPoint.x-st.x1)*st.ux + (hitPoint.z-st.y1)*st.uz) / st.wallLen : null;
+      var curW = (obj.userData.size && obj.userData.size.w) || 0.9;
+      var curRange = wallAlongRange(st.wallIndex, curW);
+      // 창문이 이 벽의 끝(허용 범위 끝)에 닿았는데 포인터가 더 넘어가려 하면, 옆 벽이 있는지 찾아봄
+      // 모서리 근처에서 두 벽 사이를 오락가락(갈팡질팡)하지 않게: ① 허용 범위를 6cm 이상 확실히 벗어났을 때만 갈아타고,
+      // ② 갈아탄 직후 0.35초는 다시 갈아타지 않음(쿨다운).
+      var outM = planeHit ? Math.max((curRange.min - curAlong) * st.wallLen, (curAlong - curRange.max) * st.wallLen) : 0;
+      var offCurrent = !planeHit || outM > 0.06 || hitPoint.y < -0.2 || hitPoint.y > wallHeight + 0.2;
+      if (offCurrent && performance.now() >= (st.lockUntil || 0) && trySwitchDragWall(st, obj)) return true;
+      if (!planeHit) return true;
       var along = ((hitPoint.x-st.x1)*st.ux + (hitPoint.z-st.y1)*st.uz) / st.wallLen;
-      along = Math.min(Math.max(along, 0.08), 0.92);
+      along = Math.min(Math.max(along, curRange.min), curRange.max);
       var dragDims = obj.userData.size || {w:.9, h:.3};
-      if (wallItemOverlaps(st.wallIndex, along, dragDims.w, obj)){
-        // 겹치는 자리로는 안 옮기고(마지막으로 유효했던 위치에 그대로 둠) 경고는 붙어있는 동안 한 번만.
-        if (!st.overlapWarned){ showCollisionToast(); st.overlapWarned = true; }
-        updateRotatePanelPosition();
-        return true;
-      }
-      st.overlapWarned = false;
       var height;
       if (type === 'door'){
         height = 0; // 문은 항상 바닥(상하 이동 없음), 좌우로만 슬라이드
       } else {
         height = Math.min(Math.max(hitPoint.y, dragDims.h/2), wallHeight - dragDims.h/2 - 0.02);
       }
+      var dragSpan = wallItemYSpan(type, height, dragDims.h);
+      if (wallItemOverlaps(st.wallIndex, along, dragDims.w, obj, dragSpan[0], dragSpan[1])){
+        // 겹치는 자리로는 안 옮기고(마지막으로 유효했던 위치에 그대로 둠) 경고는 붙어있는 동안 한 번만.
+        if (!st.overlapWarned){ showCollisionToast(); st.overlapWarned = true; }
+        updateRotatePanelPosition();
+        return true;
+      }
+      st.overlapWarned = false;
       placeOnWall(obj, st.wallIndex, along, height);
       // 문/창문은 위치가 바뀔 때마다(매 프레임) 그 벽만 다시 그려서, 커서를 따라 실시간으로 구멍이
       // 옮겨다니는 것처럼 보이게 함 — 벽 전체가 아니라 이 벽 하나만 가볍게 다시 그려서 부담이 적음.
@@ -2342,6 +3102,7 @@
       return true;
     }
     function dragFurniture(e){
+      updateTrashDrag(e);
       if (wallDragState) return dragWallItem(e);
       if(!furnitureDragging || !selectedFurniture) return false;
       var point=new THREE.Vector3(); if(pointerToFloor(e,point)){
@@ -2351,11 +3112,17 @@
         applyFurnitureStacking(selectedFurniture);
       } return true;
     }
-    function endFurnitureDrag(e){
+    function endFurnitureDragCore(e){
       if (wallDragState) return endWallItemDrag(e);
       if(!furnitureDragging) return false; furnitureDragging=false;
       if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
       return true;
+    }
+    function endFurnitureDrag(e){
+      var dobj = currentDragObj(); // 드래그 상태가 지워지기 전에 대상 확보
+      var handled = endFurnitureDragCore(e);
+      finishDragFx(e, dobj);
+      return handled;
     }
 
     // 색상 변환 유틸 — 브라우저 네이티브 색상 선택창(input[type=color] 팝업)은 CSS로 모서리를
@@ -2521,6 +3288,17 @@
       //    미리보기·결과 비교 화면에서도 공용으로 쓰이기 때문에, 이 화면에서만 전체화면 버튼 밑으로
       //    내려서 겹치지 않게 하려면 이 클래스로 범위를 좁혀야 함(CSS의 .is-furniture-editor .view-controls 참고).
       container.classList.add('is-furniture-editor');
+      // 가구 배치 화면에서는 오른쪽 클릭 메뉴(브라우저 기본 메뉴)·글자 선택 시작을 막음(입력칸은 예외). dragstart는 막으면 하단 가구 버튼 드래그 배치가 안 되므로 건드리지 않음
+      container.addEventListener('contextmenu', function(e){
+        var t = e.target;
+        if (t && t.closest && t.closest('input,textarea,[contenteditable]')) return;
+        e.preventDefault();
+      });
+      container.addEventListener('selectstart', function(e){
+        var t = e.target && e.target.nodeType === 3 ? e.target.parentNode : e.target;
+        if (t && t.closest && t.closest('input,textarea,[contenteditable]')) return;
+        e.preventDefault();
+      });
 
       // 1. 바닥에 심즈 스타일 그리드(격자) 추가 — 도면 사진이 있어도 치수 감을 잡기 좋아서 같이 켜둠
       // (겹쳐도 안 깨지게 하는 처리는 위 photoFloor 쪽 높이/카메라 near-far 조정 참고).
@@ -2532,11 +3310,14 @@
       gridHelper.position.set(center.x, 0.01, center.z);
       scene.add(gridHelper);
 
-      // 1-0. 좌측 상단 도움말 — 벽 색상 변경은 더블클릭이라는 걸 안 알려주면 아무도 모를 것 같아서
+      // 1-0. 좌측 상단 안내 배지 — 벽 색상 변경은 더블클릭이라는 걸 안 알려주면 아무도 모를 것 같아서
       //      화면 맨 위에 작게 띄워둠(가구 배치 화면에서만, 다른 3D 미리보기 화면엔 안 뜸).
       var wallHintBadge = document.createElement('div');
       wallHintBadge.className = 'furniture-wall-hint';
-      wallHintBadge.textContent = '💡 벽을 더블클릭하면 그 벽만 색상을 바꿀 수 있어요';
+      wallHintBadge.innerHTML = '<button type="button" class="hint-bulb" aria-label="도움말 끄기/켜기" title="도움말 끄기/켜기">💡</button><span class="hint-text"><span class="hint-text-inner"></span></span>';
+      var wallHintBulb = wallHintBadge.querySelector('.hint-bulb');
+      var wallHintInner = wallHintBadge.querySelector('.hint-text-inner');
+      wallHintInner.textContent = '처음이면 오른쪽 위 "튜토리얼" 버튼 · 벽 더블클릭: 벽 색 변경 · F: 선택 가구 포커스';
       container.appendChild(wallHintBadge);
 
       // 1-1. 가구 배치 화면(캔버스 + 위의 모든 오버레이 UI)만 브라우저 전체화면으로 띄우는 버튼.
@@ -2620,13 +3401,68 @@
       });
       bottomPanel.appendChild(itemsPanel);
 
+      // 맨 오른쪽 위아래 버튼: "✅ 가구 배치 완료"(게시 흐름 시작) / "전 단계로"(벽 편집으로 돌아가기).
+      // 실제 동작은 페이지의 기존 버튼 핸들러(nextStepBtn, editWallsBtn)가 담당하고, 여기선 호출만 넘겨줌.
+      if (opts && (typeof opts.onComplete === 'function' || typeof opts.onBack === 'function')){
+        var doneWrap = document.createElement('div');
+        doneWrap.className = 'sims-done';
+        if (typeof opts.onComplete === 'function'){
+          doneBtnEl = document.createElement('button');
+          doneBtnEl.type = 'button';
+          doneBtnEl.className = 'sims-action-btn primary';
+          doneBtnEl.textContent = '✅ 가구 배치 완료';
+          doneBtnEl.addEventListener('click', function(){ opts.onComplete(); });
+          doneWrap.appendChild(doneBtnEl);
+        }
+        if (typeof opts.onBack === 'function'){
+          var backBtnEl = document.createElement('button');
+          backBtnEl.type = 'button';
+          backBtnEl.className = 'sims-action-btn';
+          backBtnEl.textContent = '전 단계로';
+          // 바로 되돌아가지 않고, 진행 상황이 초기화된다는 말풍선을 먼저 띄움(취소 / 돌아가기)
+          var bubble = null, bubbleOff = null;
+          var closeBackBubble = function(){
+            if (bubble && bubble.parentNode) bubble.parentNode.removeChild(bubble);
+            bubble = null;
+            if (bubbleOff){ bubbleOff(); bubbleOff = null; }
+          };
+          var openBackBubble = function(){
+            if (bubble){ closeBackBubble(); return; }
+            bubble = document.createElement('div');
+            bubble.className = 'back-bubble';
+            bubble.setAttribute('role', 'alertdialog');
+            bubble.innerHTML = '<p><strong>전 단계로 돌아갈까요?</strong><br>도면 편집 화면으로 돌아가면<br>지금 배치한 가구와 벽지 등<br>모든 진행 상황이 초기화됩니다.</p>' +
+              '<div class="back-bubble-actions"><button type="button" data-act="cancel">취소</button><button type="button" class="danger" data-act="go">돌아가기</button></div>';
+            bubble.addEventListener('click', function(e){
+              var b = e.target.closest ? e.target.closest('button[data-act]') : null;
+              if (!b) return;
+              var act = b.getAttribute('data-act');
+              closeBackBubble();
+              if (act === 'go') opts.onBack();
+            });
+            doneWrap.appendChild(bubble);
+            // 말풍선 밖을 누르거나 Esc를 누르면 닫힘
+            var onDocDown = function(e){ if (bubble && !bubble.contains(e.target) && e.target !== backBtnEl) closeBackBubble(); };
+            var onDocKey = function(e){ if (e.key === 'Escape') closeBackBubble(); };
+            document.addEventListener('pointerdown', onDocDown, true);
+            document.addEventListener('keydown', onDocKey);
+            bubbleOff = function(){
+              document.removeEventListener('pointerdown', onDocDown, true);
+              document.removeEventListener('keydown', onDocKey);
+            };
+          };
+          backBtnEl.addEventListener('click', openBackBubble);
+          doneWrap.appendChild(backBtnEl);
+        }
+        bottomPanel.appendChild(doneWrap);
+      }
+
       // 삭제 버튼은 더 이상 하단 바에 따로 두지 않음 — 가구를 고를 때만 의미가 있는 동작이라
       // 아래 4번 핸들 패널의 색상 버튼 바로 밑으로 옮김(가구 선택 즉시 바로 옆에서 지울 수 있게).
       container.appendChild(bottomPanel);
 
       sizePanel = document.createElement('div');
       sizePanel.className = 'furniture-size-panel';
-      sizePanel.hidden = true;
       sizePanel.innerHTML = '<strong id="furnitureSizeTitle">선택 가구 크기 (m)</strong><label class="furniture-dimension">가로 <input type="number" min="0.1" step="0.05" aria-label="가로"><span>m</span></label><label class="furniture-dimension dim-depth">깊이 <input type="number" min="0.1" step="0.05" aria-label="깊이"><span>m</span></label><label class="furniture-dimension dim-height">세로 <input type="number" min="0.1" step="0.05" aria-label="세로"><span>m</span></label><p class="furniture-size-tip">값을 입력하거나 화살표로 조절하면 즉시 반영됩니다.</p>';
       var sizeInputs = sizePanel.querySelectorAll('input');
       sizeWidthInput = sizeInputs[0]; sizeDepthInput = sizeInputs[1]; sizeHeightInput = sizeInputs[2];
@@ -2648,7 +3484,39 @@
       //    가구의 색상 팝업(furnitureColorPanel)이 뜨고, 삭제 버튼을 누르면 바로 그 가구를 지움.
       rotatePanel = document.createElement('div');
       rotatePanel.className = 'furniture-rotate-panel';
-      rotatePanel.innerHTML = '<div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="handle-lower-row"><div class="handle-left-col"><button type="button" class="furniture-color-toggle" aria-label="가구 색상 변경" title="가구 색상 변경"></button><button type="button" class="furniture-delete-btn" aria-label="가구 삭제" title="가구 삭제">🗑️</button><button type="button" class="door-toggle-btn" aria-label="문 열기/닫기" title="문 열기/닫기">🚪 열기</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div></div>';
+      rotatePanel.innerHTML = '<div class="panel-grip" title="끌어서 팝업 옮기기 (더블클릭: 원래 위치)" aria-label="팝업 옮기기"></div><div class="handle-row"><button type="button" class="handle-btn" data-rotate="-1" aria-label="왼쪽으로 15도 회전">↺</button><button type="button" class="handle-btn" data-rotate="1" aria-label="오른쪽으로 15도 회전">↻</button></div><div class="handle-lower-row"><div class="handle-left-col"><button type="button" class="furniture-color-toggle" aria-label="가구 색상 변경" title="가구 색상 변경"></button><button type="button" class="furniture-delete-btn" aria-label="가구 삭제" title="가구 삭제">🗑️</button><button type="button" class="door-toggle-btn" aria-label="문 열기/닫기" title="문 열기/닫기">🚪 열기</button></div><div class="nudge-pad"><button type="button" class="nudge-btn" data-dir="up" aria-label="위로 이동">↑</button><div class="nudge-mid"><button type="button" class="nudge-btn" data-dir="left" aria-label="왼쪽으로 이동">←</button><button type="button" class="nudge-btn" data-dir="right" aria-label="오른쪽으로 이동">→</button></div><button type="button" class="nudge-btn" data-dir="down" aria-label="아래로 이동">↓</button></div></div>';
+      // 손잡이를 끌면 팝업이 그만큼 옮겨짐 — 위치는 가구 기준 상대값(rotatePanelOffset)이라 가구/카메라가 움직여도
+      // 같은 간격으로 따라다님. 더블클릭하면 기본 위치로 복귀.
+      (function(){
+        var grip = rotatePanel.querySelector('.panel-grip');
+        var gx = 0, gy = 0, gid = null;
+        grip.addEventListener('pointerdown', function(e){
+          if (e.button != null && e.button !== 0) return;
+          e.preventDefault(); e.stopPropagation();
+          gid = e.pointerId; gx = e.clientX; gy = e.clientY;
+          rotatePanelFrozen = false;
+          grip.classList.add('dragging');
+          grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
+        });
+        grip.addEventListener('pointermove', function(e){
+          if (gid !== e.pointerId) return;
+          rotatePanelOffset.x += e.clientX - gx; rotatePanelOffset.y += e.clientY - gy;
+          gx = e.clientX; gy = e.clientY;
+          updateRotatePanelPosition();
+        });
+        var end = function(e){
+          if (gid !== e.pointerId) return;
+          gid = null; grip.classList.remove('dragging');
+        };
+        grip.addEventListener('pointerup', end);
+        grip.addEventListener('pointercancel', end);
+        grip.addEventListener('dblclick', function(e){
+          e.stopPropagation();
+          rotatePanelOffset.x = 0; rotatePanelOffset.y = 0;
+          rotatePanelFrozen = false;
+          updateRotatePanelPosition();
+        });
+      })();
       rotatePanel.querySelectorAll('.handle-btn').forEach(function(btn){
         bindHoldRepeat(btn, function(){ rotateBy(parseFloat(btn.getAttribute('data-rotate')) * ROTATE_STEP_DEG); });
       });
@@ -2666,10 +3534,15 @@
         if (!selectedFurniture) return;
         var wasWallOpening = selectedFurniture.userData.type === 'door' || selectedFurniture.userData.type === 'window';
         var deletedWallIndex = selectedFurniture.userData.wallIndex;
-        scene.remove(selectedFurniture);
-        furniture = furniture.filter(function(f){ return f !== selectedFurniture; });
+        var removing = selectedFurniture;
+        furniture = furniture.filter(function(f){ return f !== removing; });
         selectFurniture(null);
-        if (wasWallOpening) rebuildWallAt(deletedWallIndex); // 뚫려있던 자리를 다시 메움
+        tutNotify('delete');
+        // 줄어들며 사라지는 애니메이션이 끝난 뒤 실제로 지움 (문/창문은 그때 뚫려있던 자리도 다시 메움)
+        startRemoveAnim(removing, function(){
+          scene.remove(removing);
+          if (wasWallOpening) rebuildWallAt(deletedWallIndex);
+        });
       });
       rotatePanel.querySelector('.door-toggle-btn').addEventListener('click', function(e){
         e.stopPropagation();
@@ -2677,6 +3550,33 @@
         syncRotatePanel();
       });
       container.appendChild(rotatePanel);
+
+      // 4-0. 가구 주변 이동 화살표 — 선택한 바닥 가구의 앞/뒤/좌/우(화면 기준)에 떠서, 누르면 5cm씩,
+      //      꾹 누르면 연속으로 움직임. 선택이 풀리거나 벽 아이템/드래그 중이면 숨김(updateMoveArrows).
+      moveArrows = document.createElement('div');
+      moveArrows.className = 'furniture-move-arrows';
+      moveArrowBtns = {};
+      [['up','▲','위로 이동 (화면 기준)'],['down','▼','아래로 이동 (화면 기준)'],['left','◀','왼쪽으로 이동 (화면 기준)'],['right','▶','오른쪽으로 이동 (화면 기준)']].forEach(function(d){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'move-arrow'; b.textContent = d[1];
+        b.setAttribute('aria-label', d[2]); b.title = d[2];
+        bindHoldRepeat(b, function(){ nudgeFurniture(d[0], MOVE_ARROW_STEP); });
+        // 누르고 있는 동안은 화살표가 가구를 따라 움직이지 않게 고정(따라가면 손가락/커서 밑에서 버튼이 빠져나가 반복이 끊김)
+        b.addEventListener('pointerdown', function(){ moveArrowsHeld = true; });
+        moveArrows.appendChild(b);
+        moveArrowBtns[d[0]] = b;
+      });
+      var releaseMoveArrows = function(){ moveArrowsHeld = false; };
+      document.addEventListener('pointerup', releaseMoveArrows);
+      document.addEventListener('pointercancel', releaseMoveArrows);
+      container.appendChild(moveArrows);
+
+      // 5. 삭제 휴지통 — 평소엔 화면 아래로 숨어 있다가 가구를 끌기 시작하면 올라옴. 여기에 놓으면 삭제.
+      dropTrash = document.createElement('div');
+      dropTrash.className = 'drop-trash';
+      dropTrash.setAttribute('aria-hidden', 'true');
+      dropTrash.innerHTML = '<span class="ic">🗑️</span>';
+      container.appendChild(dropTrash);
 
       // 4-1. 가구 색상 팝업 — 벽 색상 팔레트(wall-color-panel)와 똑같은 떠다니는 카드 스타일을
       //      그대로 재사용(clamp/flip-below 위치 로직도 공용 positionFloatingPanel로 공유).
@@ -2740,13 +3640,14 @@
             // 문/창문 때문에 나중에 벽이 다시 그려져도(rebuildAllWalls) 이 이미지가 유지되게 논리적
             // 벽 인덱스 기준으로 따로 저장해둠(벽 색상과 동일한 방식).
             if (idxForImage != null) wallImageOverrides[idxForImage] = tex;
+            setLastWallStyle({ type:'image', tex:tex, thumb:ev.target.result });
           });
         };
         reader.readAsDataURL(file);
         wallImageInput.value = ''; // 같은 파일을 다시 골라도 change 이벤트가 또 뜨도록 초기화
       });
       wallColorPanel.appendChild(wallImageInput);
-      wallColorPicker = createColorPicker('#' + wallColor.getHexString(), function(hex){
+      var onWallColorPicked = function(hex){
         if (!selectedWall) return;
         var idx = selectedWall.userData.logicalWallIndex;
         var hexNum = parseInt(hex.replace('#', ''), 16);
@@ -2767,13 +3668,64 @@
           wallColorOverrides[idx] = hexNum;
           delete wallImageOverrides[idx];
         }
-      });
+        setLastWallStyle({ type:'color', hex:hex });
+      };
+      wallColorPicker = createColorPicker('#' + wallColor.getHexString(), onWallColorPicked);
       wallColorPanel.appendChild(wallColorPicker.el);
+
+      // 최근 색상/이미지 버튼 — 마지막으로 벽에 적용한 것이 색이면 "최근 색상", 이미지면 "최근 이미지"
+      // 하나만 보여주고, 다른 벽을 골라서 누르면 그 벽에도 똑같이 적용함(이 화면을 연 동안만 기억).
+      var wallRecentBtn = document.createElement('button');
+      wallRecentBtn.type = 'button';
+      wallRecentBtn.className = 'wall-recent-btn';
+      wallRecentBtn.hidden = true;
+      var wallRecentChip = document.createElement('span');
+      wallRecentChip.className = 'wall-recent-chip';
+      var wallRecentLabel = document.createElement('span');
+      wallRecentBtn.appendChild(wallRecentChip);
+      wallRecentBtn.appendChild(wallRecentLabel);
+      wallColorPicker.el.querySelector('.cp-presets').appendChild(wallRecentBtn);
+      var wallRecentStyle = null;
+      function setLastWallStyle(s){
+        wallRecentStyle = s;
+        if (!s){ wallRecentBtn.hidden = true; return; }
+        wallRecentBtn.hidden = false;
+        if (s.type === 'color'){
+          wallRecentChip.style.backgroundImage = 'none';
+          wallRecentChip.style.backgroundColor = s.hex;
+          wallRecentLabel.textContent = '최근 색상';
+          wallRecentBtn.title = '방금 쓴 색(' + s.hex + ')을 이 벽에도 적용';
+        } else {
+          wallRecentChip.style.backgroundColor = 'transparent';
+          wallRecentChip.style.backgroundImage = 'url("' + s.thumb + '")';
+          wallRecentLabel.textContent = '최근 이미지';
+          wallRecentBtn.title = '방금 쓴 이미지를 이 벽에도 적용';
+        }
+      }
+      wallRecentBtn.addEventListener('click', function(){
+        if (!selectedWall || !wallRecentStyle) return;
+        var s = wallRecentStyle;
+        if (s.type === 'color'){
+          wallColorPicker.setValue(s.hex);
+          onWallColorPicked(s.hex);
+        } else {
+          var ridx = selectedWall.userData.logicalWallIndex;
+          var rpieces = ridx != null ? wallMeshes.filter(function(m){ return m.userData.logicalWallIndex === ridx; }) : [selectedWall];
+          rpieces.forEach(function(m){
+            m.material.map = s.tex;
+            m.material.color.set(0xffffff);
+            m.material.needsUpdate = true;
+          });
+          if (ridx != null) wallImageOverrides[ridx] = s.tex;
+          wallColorPicker.setValue('#ffffff');
+        }
+      });
       container.appendChild(wallColorPanel);
 
       // 초기 기본 가구 배치
       addFurniture('sofa', center.x - size*.18, center.z);
       addFurniture('table', center.x + size*.13, center.z - size*.12);
+      popEnabled = true; // 여기부터 새로 놓는 가구만 애니메이션
       selectFurniture(null);
       selectWall(null);
     }
@@ -2786,6 +3738,18 @@
     var spinning = opts.autoRotate !== false; 
     var userPaused = false;   
     var dragging = false, lastX = 0, lastY = 0, idleTimer = null;
+    // 카메라가 바라보는 지점(기본은 방 중앙 center). F(포커스)로 선택한 가구 쪽으로 옮겨짐.
+    var camTarget = center.clone();
+    // 노클립(자유 비행) 모드 — 평소엔 camTarget 중심의 궤도 카메라, 켜면 flyPos/flyYaw/flyPitch로 직접 조종.
+    var noclipMode = false, lookDragging = false;
+    var flyPos = new THREE.Vector3(), flyYaw = 0, flyPitch = 0;
+    var focusAnim = null;
+    var focusReturn = null, focusedObj = null; // F 포커스 직전 시점(노클립이었는지 포함) — F를 한 번 더 누르면 여기로 복귀
+    var noclipReturn = null; // 노클립을 켜기 직전의 궤도 시점 — 노클립을 끄면 여기로 복귀(포커스를 거쳐도 유지)
+    var heldKeys = {};
+    var tutActive = false, tutIndex = 0, tutProgress = 0, tutBusy = false, tutCard = null, tutKeysEl = null, tutKeysDone = {};
+    var hintTransient = null, hintFocusUsed = false, lastHintText = null;
+    var hintClickTimer = null, hintPending = null, hintPendingT = 0;
 
     // 가구 배치 화면에서는 원래 줌 한계(size*0.8)보다 더 가까이 들어갈 수 있게 하고, 그 대신
     // 그만큼 가까워지면 벽이 시야를 가리지 않도록 점점 투명해지게 함(줌아웃하면 다시 원래대로
@@ -2797,24 +3761,33 @@
     var WALL_FADE_MIN_OPACITY = 0.12;         // 가장 가까이 줌인했을 때 벽 최소 불투명도(완전히 안 없앰 — 위치 감은 남게)
     function updateWallFade(){
       if (!furnitureEditor || !wallMeshes.length) return;
+      if (noclipMode){ wallMeshes.forEach(function(m){ m.material.opacity = 1; }); return; }
       var t = (radius - ZOOM_MIN) / (WALL_FADE_START_RADIUS - ZOOM_MIN);
       t = Math.min(1, Math.max(0, t));
       var op = WALL_FADE_MIN_OPACITY + (1 - WALL_FADE_MIN_OPACITY) * t;
       wallMeshes.forEach(function(m){ m.material.opacity = op; });
     }
 
+    function applyFlyCamera(){
+      camera.up.set(0, 1, 0);
+      camera.rotation.order = 'YXZ';
+      camera.position.copy(flyPos);
+      camera.rotation.set(flyPitch, flyYaw, 0);
+    }
     function updateCamera(){
-      var x = center.x + radius * Math.sin(phi) * Math.cos(theta);
-      var y = radius * Math.cos(phi);
-      var z = center.z + radius * Math.sin(phi) * Math.sin(theta);
+      if (noclipMode){ applyFlyCamera(); return; }
+      var x = camTarget.x + radius * Math.sin(phi) * Math.cos(theta);
+      var y = camTarget.y + radius * Math.cos(phi);
+      var z = camTarget.z + radius * Math.sin(phi) * Math.sin(theta);
       camera.position.set(x, y, z);
       camera.up.set(0, trueTopView ? 0 : 1, trueTopView ? -1 : 0);
-      camera.lookAt(center);
+      camera.lookAt(camTarget);
     }
     updateCamera();
     updateWallFade();
 
     function onDown(x, y){
+      focusAnim = null; // 직접 드래그하면 진행 중이던 카메라 이동은 중단
       dragging = true; lastX = x; lastY = y;
       clearTimeout(idleTimer);
     }
@@ -2825,6 +3798,7 @@
       phi = Math.min(Math.max(phi - dy * 0.006, TOP_PHI), Math.PI/2 - 0.05);
       lastX = x; lastY = y;
       updateCamera();
+      tutNotify('rotate', Math.abs(dx) + Math.abs(dy));
     }
     function onUp(){
       dragging = false;
@@ -2841,6 +3815,8 @@
       // 전혀 안 건드림. 예전엔 이 체크 없이 모든 pointerdown에서 탑뷰 고정을 풀어버려서, 탑뷰
       // 상태에서 가구만 옮겨도 화면이 뚝 하고 삐딱한 각도로 튀어버리는 버그가 있었음.
       if (furnitureEditor && beginFurnitureDrag(e)) return;
+      // 노클립 중에는 캔버스 드래그가 "시선 돌리기"(궤도 회전 아님)
+      if (noclipMode){ lookDragging = true; lastX = e.clientX; lastY = e.clientY; return; }
       // 여기부터는 진짜로 캔버스를 드래그해서 "카메라" 각도를 바꾸려는 경우 — 이때만 탑뷰 고정을 해제함.
       if (trueTopView){
         trueTopView = false;
@@ -2854,17 +3830,37 @@
     });
     window.addEventListener("pointermove", function(e){
       if (furnitureEditor && dragFurniture(e)) return;
+      if (noclipMode){
+        if (lookDragging){
+          flyYaw -= (e.clientX - lastX) * 0.004;
+          flyPitch = Math.min(Math.max(flyPitch - (e.clientY - lastY) * 0.004, -1.55), 1.55);
+          lastX = e.clientX; lastY = e.clientY;
+          applyFlyCamera();
+        }
+        return;
+      }
       onMove(e.clientX, e.clientY);
     });
     window.addEventListener("pointerup", function(e){
       if (furnitureEditor && endFurnitureDrag(e)) return;
+      if (noclipMode){ lookDragging = false; return; }
       onUp();
     });
     canvas.addEventListener("wheel", function(e){
       e.preventDefault();
+      if (noclipMode){
+        // 노클립 중 휠 = 바라보는 방향으로 앞/뒤 이동
+        var wf = new THREE.Vector3(-Math.sin(flyYaw)*Math.cos(flyPitch), Math.sin(flyPitch), -Math.cos(flyYaw)*Math.cos(flyPitch));
+        flyPos.addScaledVector(wf, -e.deltaY * 0.01 * (size*0.05));
+        focusAnim = null;
+        applyFlyCamera();
+        return;
+      }
+      focusAnim = null; // 사용자가 직접 조작하면 진행 중이던 카메라 이동은 중단
       radius = Math.min(Math.max(radius + e.deltaY * 0.01 * (size*0.05), ZOOM_MIN), size*3.2);
       updateCamera();
       updateWallFade();
+      tutNotify('zoom', Math.abs(e.deltaY));
     }, { passive:false });
 
     // 가구 팔레트 버튼을 캔버스로 드래그해서 놓으면 그 지점에 바로 배치.
@@ -2907,7 +3903,7 @@
       pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
       raycaster.setFromCamera(pointer, camera);
       var wallHit = raycaster.intersectObjects(wallMeshes, false)[0];
-      if (wallHit) selectWall(wallHit.object, wallHit.point);
+      if (wallHit){ selectWall(wallHit.object, wallHit.point); tutNotify('wallSelect'); hintTransient = null; clearTimeout(hintClickTimer); }
     });
 
     // ---- 탑뷰 / 일시정지-재생 컨트롤 버튼 ----
@@ -2938,6 +3934,8 @@
     // 위쪽 pointerdown 핸들러의 beginFurnitureDrag 체크 참고), 고정된 상태에서 다시 누르면
     // 아이콘이 바뀌면서 원래처럼 자유롭게 드래그로 각도를 바꿀 수 있는 상태로 돌아감.
     topViewBtn.addEventListener("click", function(){
+      focusReturn = null; focusedObj = null; noclipReturn = null;
+      if (noclipMode){ setNoclip(false); focusAnim = null; }
       clearTimeout(idleTimer);
       if (trueTopView){
         trueTopView = false;
@@ -2959,6 +3957,7 @@
       refreshPlayPauseBtn();
     });
     playPauseBtn.addEventListener("click", function(){
+      if (noclipMode) setNoclip(false);
       clearTimeout(idleTimer);
       if (spinning){
         userPaused = true;
@@ -2983,9 +3982,83 @@
 
     var viewControls = document.createElement("div");
     viewControls.className = "view-controls";
-    viewControls.appendChild(topViewBtn);
-    viewControls.appendChild(playPauseBtn);
-    container.appendChild(viewControls);
+    function wrapWithLabel(btn, text){
+      var wrap = document.createElement("div");
+      wrap.className = "view-btn-wrap";
+      var lab = document.createElement("span");
+      lab.className = "view-btn-label";
+      lab.textContent = text;
+      wrap.appendChild(btn);
+      wrap.appendChild(lab);
+      return wrap;
+    }
+    if (furnitureEditor){
+      viewControls.appendChild(wrapWithLabel(topViewBtn, "탑뷰"));
+    } else {
+      viewControls.appendChild(topViewBtn);
+      viewControls.appendChild(playPauseBtn);
+    }
+    var noclipBtn = null, helpBtn = null;
+    if (furnitureEditor){
+      var NOCLIP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>';
+      noclipBtn = document.createElement("button");
+      noclipBtn.type = "button";
+      noclipBtn.className = "view-btn";
+      noclipBtn.title = "노클립 (단축키 V) - WASD로 자유롭게 날아다니기";
+      noclipBtn.innerHTML = NOCLIP_ICON;
+      noclipBtn.addEventListener("click", function(){ setNoclip(!noclipMode); noclipBtn.blur(); });
+      viewControls.appendChild(wrapWithLabel(noclipBtn, "노클립 (V)"));
+      var HELP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.4a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.2.9-1.2 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1.1" fill="currentColor"/></svg>';
+      helpBtn = document.createElement("button");
+      helpBtn.type = "button";
+      helpBtn.className = "view-btn";
+      helpBtn.title = "튜토리얼 (조작법을 직접 해보며 배우기)";
+      helpBtn.innerHTML = HELP_ICON;
+      helpBtn.addEventListener("click", function(){ toggleTutorial(); helpBtn.blur(); });
+      viewControls.appendChild(wrapWithLabel(helpBtn, "튜토리얼"));
+    }
+    // 도면 보이기/숨기기 — 노클립 버튼 바로 아래. 평소(꺼짐)엔 바닥에 원본 도면 사진이 항상 보이고,
+    // 누르면(켜짐) 도면 사진은 숨고 기존 격자만 보임. 도면 사진이 없는 경우엔 버튼도 안 만듦.
+    var planBtn = null, planWrap = null;
+    if (furnitureEditor && plan.floorplanImageUrl && plan.imageBBox){
+      var PLAN_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="1.6" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12.2h6.6M14 12.2h6.5M10.1 12.2v8.3M14 3.5v8.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      var PLAN_OFF_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="1.6" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12.2h6.6M14 12.2h6.5M10.1 12.2v8.3M14 3.5v8.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".55"/><path d="M3 21L21 3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+      planBtn = document.createElement("button");
+      planBtn.type = "button";
+      planBtn.className = "view-btn";
+      planBtn.innerHTML = PLAN_ICON;
+      planBtn.title = "바닥의 도면 사진 숨기기 (격자만 보기)";
+      planWrap = wrapWithLabel(planBtn, "도면 숨기기");
+      var planLabelEl = planWrap.querySelector(".view-btn-label");
+      planBtn.addEventListener("click", function(){
+        planHidden = !planHidden;
+        if (photoFloorMesh) photoFloorMesh.visible = !planHidden;
+        planBtn.classList.toggle("active", planHidden);
+        planBtn.innerHTML = planHidden ? PLAN_OFF_ICON : PLAN_ICON;
+        planBtn.title = planHidden ? "바닥의 도면 사진 다시 보이기" : "바닥의 도면 사진 숨기기 (격자만 보기)";
+        planLabelEl.textContent = planHidden ? "도면 보이기" : "도면 숨기기";
+        planBtn.blur();
+      });
+    }
+    // 가구 배치 화면에서는 전체화면 버튼과 버튼줄을 한 묶음으로 만들어 오른쪽 위에 둠
+    var topRightStack = null;
+    if (furnitureEditor && typeof fullscreenBtn !== 'undefined' && fullscreenBtn){
+      topRightStack = document.createElement("div");
+      topRightStack.className = "furniture-top-right";
+      topRightStack.appendChild(fullscreenBtn);
+      topRightStack.appendChild(viewControls);
+      if (planWrap){ // 노클립(가운데) 버튼 바로 아래 한 줄
+        var planRow = document.createElement("div");
+        planRow.className = "view-controls plan-row";
+        planRow.appendChild(planWrap);
+        topRightStack.appendChild(planRow);
+      }
+      if (typeof sizePanel !== 'undefined' && sizePanel) topRightStack.appendChild(sizePanel);
+      container.appendChild(topRightStack);
+    } else {
+      if (planWrap) viewControls.appendChild(planWrap);
+      container.appendChild(viewControls);
+    }
 
     var ro = new ResizeObserver(function(){
       var w = container.clientWidth, h = container.clientHeight;
@@ -2993,6 +4066,7 @@
       camera.aspect = w/h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
+      if (fxRenderer) fxRenderer.setSize(w, h, false);
     });
     ro.observe(container);
 
@@ -3012,6 +4086,56 @@
       var sx = (rotatePanelAnchor.x * 0.5 + 0.5) * w;
       var sy = (1 - (rotatePanelAnchor.y * 0.5 + 0.5)) * h;
       positionFloatingPanel(rotatePanel, sx, sy, w, h);
+      if (rotatePanelOffset.x || rotatePanelOffset.y){
+        // 손잡이로 옮긴 만큼 이동 — 화면 밖으로는 못 나가게 clamp하고, clamp된 만큼은 오프셋에서도 빼서 커서와 어긋나지 않게 함
+        var bx = parseFloat(rotatePanel.style.left) || 0, by = parseFloat(rotatePanel.style.top) || 0;
+        var pw = rotatePanel.offsetWidth || 180, ph = rotatePanel.offsetHeight || 260, mg = 10;
+        var fx2 = Math.min(Math.max(bx + rotatePanelOffset.x, pw/2 + mg), w - pw/2 - mg);
+        var flipped = rotatePanel.classList.contains('flip-below');
+        var fy2 = flipped
+          ? Math.min(Math.max(by + rotatePanelOffset.y, mg - 14), h - ph - 14 - mg)
+          : Math.min(Math.max(by + rotatePanelOffset.y, ph + 14 + mg), h - mg);
+        rotatePanelOffset.x = fx2 - bx; rotatePanelOffset.y = fy2 - by;
+        rotatePanel.style.left = fx2 + 'px'; rotatePanel.style.top = fy2 + 'px';
+      }
+    }
+
+    // 가구 주변 이동 화살표 위치 갱신 — 각 화살표는 "그 방향으로 가구를 밀 때 가구가 가는 쪽"의 바닥 지점
+    // (가구 가장자리 + 여유)을 화면 좌표로 투영해서 놓음. 바닥 가구를 선택했을 때만 보이고, 선택 해제/드래그 중/
+    // 벽 아이템(창문·문·콘센트는 팝업 패드 사용)이면 숨김.
+    var _arrowV = furnitureEditor ? new THREE.Vector3() : null;
+    function updateMoveArrows(){
+      if (!moveArrows || !_arrowV) return;
+      var obj = selectedFurniture;
+      var show = !!(obj && !obj.userData.isWallItem && !furnitureDragging);
+      if (!show){
+        if (moveArrows._shown){
+          for (var k in moveArrowBtns) moveArrowBtns[k].classList.remove('show');
+          moveArrows._shown = false;
+        }
+        return;
+      }
+      moveArrows._shown = true;
+      if (moveArrowsHeld) return; // 누르고 있는 동안은 위치 고정
+      var w = container.clientWidth, h = container.clientHeight;
+      if (!w || !h) return;
+      var dims = obj.userData.size || { w:.6, d:.6, h:.6 };
+      var rot = obj.rotation.y;
+      var ex = { x:Math.cos(rot), z:-Math.sin(rot) }, ez = { x:Math.sin(rot), z:Math.cos(rot) };
+      var vd = viewFloorDirs();
+      var dirs = { up:[vd.fx, vd.fz], down:[-vd.fx, -vd.fz], left:[-vd.rx, -vd.rz], right:[vd.rx, vd.rz] };
+      for (var name in dirs){
+        var dx = dirs[name][0], dz = dirs[name][1];
+        var ext = Math.abs(dx*ex.x + dz*ex.z) * dims.w / 2 + Math.abs(dx*ez.x + dz*ez.z) * dims.d / 2;
+        var off = ext + 0.2;
+        _arrowV.set(obj.position.x + dx*off, obj.position.y + 0.03, obj.position.z + dz*off).project(camera);
+        var btn = moveArrowBtns[name];
+        if (_arrowV.z > 1){ btn.classList.remove('show'); continue; }
+        var sx = (_arrowV.x * 0.5 + 0.5) * w, sy = (1 - (_arrowV.y * 0.5 + 0.5)) * h;
+        sx = Math.min(Math.max(sx, 20), w - 20); sy = Math.min(Math.max(sy, 20), h - 20);
+        btn.style.left = sx + 'px'; btn.style.top = sy + 'px';
+        btn.classList.add('show');
+      }
     }
 
     // 선택된 벽 위에 뜨는 색상 팔레트도 같은 방식 — wallColorWorldAnchor(클릭한 3D 지점, selectWall()
@@ -3061,32 +4185,629 @@
       positionFloatingPanel(furnitureColorPanel, sx, sy, w, h);
     }
 
+    // ---- 노클립(자유 비행) + F 포커스 ----
+    var NOCLIP_SPEED = Math.max(2.5, size * 0.45); // m/s
+    var DEFAULT_HINT_TEXT = (typeof wallHintBadge !== 'undefined') ? wallHintBadge.textContent : '';
+    function setNoclip(on, keepView, resume){
+      if (!furnitureEditor || on === noclipMode) return;
+      if (!keepView){ focusReturn = null; focusedObj = null; } // 노클립/탑뷰를 직접 바꾸면 포커스 해제 기억은 버림
+      focusAnim = null; lookDragging = false; heldKeys = {};
+      if (on){
+        flyPos.copy(camera.position);
+        var d0 = new THREE.Vector3();
+        camera.getWorldDirection(d0);
+        flyYaw = Math.atan2(-d0.x, -d0.z);
+        flyPitch = Math.min(Math.max(Math.asin(Math.max(-1, Math.min(1, d0.y))), -1.55), 1.55);
+        noclipMode = true;
+        clearTimeout(idleTimer);
+        spinning = false; userPaused = true;
+        if (trueTopView){
+          trueTopView = false;
+          if (phi < TOP_PHI) phi = TOP_PHI;
+          topViewBtn.classList.remove("active");
+          topViewBtn.innerHTML = TOP_ICON;
+          topViewBtn.title = "탑뷰 (바로 위에서 보기)";
+        }
+        // 켜기 직전의 궤도 시점을 기억(포커스 해제로 노클립에 다시 들어올 땐 원래 기억을 그대로 유지)
+        if (!resume || !noclipReturn) noclipReturn = { target: camTarget.clone(), radius: radius, theta: theta, phi: phi };
+        refreshPlayPauseBtn();
+        if (noclipBtn) noclipBtn.classList.add("active");
+      } else {
+        // 노클립 해제 → 노클립을 켜기 전 시점으로 부드럽게 복귀
+        var fromPos = camera.position.clone(), fromQuat = camera.quaternion.clone();
+        noclipMode = false;
+        if (keepView){ // F 포커스로 해제하는 경우: 기본 시점으로 되돌리지 않고, 호출한 쪽에서 포커스 시점을 지정
+          if (noclipBtn) noclipBtn.classList.remove("active");
+          updateCamera(); updateWallFade(); tutNotify('noclipOff');
+          return;
+        }
+        // 노클립을 켜기 직전의 시점으로 복귀(기억이 없으면 기본 시점)
+        var nr = noclipReturn; noclipReturn = null;
+        if (nr){ camTarget.copy(nr.target); radius = nr.radius; theta = nr.theta; phi = nr.phi; }
+        else { camTarget.copy(center); radius = size * 1.85; theta = Math.PI/4; phi = Math.PI/4.3; }
+        if (noclipBtn) noclipBtn.classList.remove("active");
+        updateCamera(); // 복귀할 시점의 카메라 위치/방향을 계산해 목표로 저장
+        focusAnim = { mode:'cam', t0:performance.now(), dur:600,
+          fromPos: fromPos, toPos: camera.position.clone(),
+          fromQuat: fromQuat, toQuat: camera.quaternion.clone() };
+        camera.position.copy(fromPos); camera.quaternion.copy(fromQuat);
+      }
+      if (!focusAnim) updateCamera();
+      updateWallFade();
+      tutNotify(on ? 'noclipOn' : 'noclipOff');
+    }
+    function stepNoclipMove(dt){
+      var h = heldKeys;
+      var fwd = (h.KeyW ? 1 : 0) - (h.KeyS ? 1 : 0);
+      var side = (h.KeyD ? 1 : 0) - (h.KeyA ? 1 : 0);
+      var vert = (h.Space ? 1 : 0) - (h.KeyC ? 1 : 0);
+      if (!fwd && !side && !vert) return;
+      focusAnim = null;
+      var cp = Math.cos(flyPitch);
+      var fx = -Math.sin(flyYaw) * cp, fy = Math.sin(flyPitch), fz = -Math.cos(flyYaw) * cp;
+      var rx = Math.cos(flyYaw), rz = -Math.sin(flyYaw);
+      var mx = fx*fwd + rx*side, my = fy*fwd + vert, mz = fz*fwd + rz*side;
+      var len = Math.hypot(mx, my, mz);
+      if (len < 1e-6) return;
+      var step = NOCLIP_SPEED * (h.shift ? 2.5 : 1) * dt / len;
+      flyPos.x += mx*step; flyPos.y += my*step; flyPos.z += mz*step;
+      applyFlyCamera();
+      tutNotify('fly', NOCLIP_SPEED * (h.shift ? 2.5 : 1) * dt);
+    }
+    // F 포커스 — 마야/유니티/언리얼처럼 지금 보던 방향은 그대로 두고, 선택한 가구가 화면에 꽉 차게
+    // 가까이 다가감(궤도 모드: 회전 중심+거리를 옮김 / 노클립 모드: 카메라를 가구 앞으로 이동).
+    function focusSelectedFurniture(){
+      if (!selectedFurniture) return;
+      var box = new THREE.Box3().setFromObject(selectedFurniture);
+      if (box.isEmpty()) return;
+      var c = new THREE.Vector3(); box.getCenter(c);
+      var sz = new THREE.Vector3(); box.getSize(sz);
+      var r = Math.max(sz.length() / 2, 0.15);
+      tutNotify('focus');
+      hintFocusUsed = true;
+      if (!focusReturn){ // 처음 포커스할 때만 직전 시점을 기억(다른 가구로 연달아 포커스해도 원래 시점은 유지)
+        focusReturn = noclipMode
+          ? { kind:'noclip', pos:flyPos.clone(), yaw:flyYaw, pitch:flyPitch }
+          : { kind:'orbit', target:camTarget.clone(), radius:radius, theta:theta, phi:phi, top:trueTopView };
+      }
+      focusedObj = selectedFurniture;
+      var vHalf = camera.fov * Math.PI / 360;
+      var hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
+      var dist = (r / Math.sin(Math.min(vHalf, hHalf))) * 1.15;
+      if (noclipMode){
+        // 노클립 중 F: 노클립을 해제하고, 지금 위치/시선에서 그 가구를 중심으로 하는 일반(궤도) 카메라로 부드럽게 전환
+        var fromPos = camera.position.clone(), fromQuat = camera.quaternion.clone();
+        var rel = fromPos.clone().sub(c);
+        var rl = rel.length();
+        var newTheta = theta, newPhi = phi;
+        if (rl > 1e-4){
+          newTheta = Math.atan2(rel.z, rel.x);
+          newPhi = Math.min(Math.max(Math.acos(Math.max(-1, Math.min(1, rel.y / rl))), TOP_PHI), Math.PI/2 - 0.05);
+        }
+        setNoclip(false, true);
+        camTarget.copy(c);
+        radius = Math.min(Math.max(dist, ZOOM_MIN), size*3.2);
+        theta = newTheta; phi = newPhi;
+        updateCamera(); // 목표 카메라 위치/방향 계산
+        focusAnim = { mode:'cam', t0:performance.now(), dur:450,
+          fromPos: fromPos, toPos: camera.position.clone(),
+          fromQuat: fromQuat, toQuat: camera.quaternion.clone() };
+        camera.position.copy(fromPos); camera.quaternion.copy(fromQuat);
+        clearTimeout(idleTimer);
+        spinning = false; userPaused = true; refreshPlayPauseBtn();
+      } else {
+        focusAnim = { mode:'orbit', t0:performance.now(), dur:350,
+          fromTarget: camTarget.clone(), toTarget: c.clone(),
+          fromRadius: radius, toRadius: Math.min(Math.max(dist, ZOOM_MIN), size*3.2) };
+        clearTimeout(idleTimer);
+        spinning = false; userPaused = true; refreshPlayPauseBtn();
+      }
+    }
+    // F 포커스 해제 — 포커스 직전 시점으로 부드럽게 복귀. 노클립에서 포커스했다면 노클립 상태까지 그대로 이어서 복귀.
+    function releaseFocus(){
+      var r = focusReturn;
+      if (!r) return;
+      focusReturn = null; focusedObj = null;
+      tutNotify('unfocus');
+      if (r.kind === 'noclip'){
+        if (!noclipMode) setNoclip(true, false, true); // 현재 카메라 위치/시선에서 비행 모드로 다시 진입(노클립 전 시점 기억은 유지)
+        focusAnim = { mode:'flyFull', t0:performance.now(), dur:520,
+          fromPos:flyPos.clone(), toPos:r.pos.clone(),
+          fromYaw:flyYaw, toYaw:flyYaw + ((r.yaw - flyYaw + Math.PI*3) % (Math.PI*2) - Math.PI),
+          fromPitch:flyPitch, toPitch:r.pitch };
+      } else {
+        if (noclipMode) return; // (포커스 뒤 노클립을 켰다면 이미 기억을 버렸으므로 도달하지 않음)
+        var dT = ((r.theta - theta) % (Math.PI*2) + Math.PI*3) % (Math.PI*2) - Math.PI;
+        focusAnim = { mode:'orbit', t0:performance.now(), dur:450,
+          fromTarget:camTarget.clone(), toTarget:r.target.clone(),
+          fromRadius:radius, toRadius:r.radius,
+          fromTheta:theta, toTheta:theta + dT,
+          fromPhi:phi, toPhi:trueTopView ? phi : r.phi };
+      }
+      clearTimeout(idleTimer);
+      spinning = false; userPaused = true; refreshPlayPauseBtn();
+    }
+    function stepFocusAnim(now){
+      var a = focusAnim;
+      if (!a) return;
+      var k = Math.min(1, (now - a.t0) / a.dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      if (a.mode === 'flyFull'){
+        flyPos.lerpVectors(a.fromPos, a.toPos, e);
+        flyYaw = a.fromYaw + (a.toYaw - a.fromYaw) * e;
+        flyPitch = a.fromPitch + (a.toPitch - a.fromPitch) * e;
+        applyFlyCamera();
+        updateWallFade();
+        if (k >= 1) focusAnim = null;
+        return;
+      }
+      if (a.mode === 'cam'){
+        camera.position.lerpVectors(a.fromPos, a.toPos, e);
+        camera.quaternion.slerpQuaternions(a.fromQuat, a.toQuat, e);
+        updateWallFade();
+        if (k >= 1){ focusAnim = null; updateCamera(); }
+        return;
+      }
+      if (a.mode === 'fly'){
+        flyPos.lerpVectors(a.fromPos, a.toPos, e);
+      } else {
+        camTarget.lerpVectors(a.fromTarget, a.toTarget, e);
+        radius = a.fromRadius + (a.toRadius - a.fromRadius) * e;
+        if (a.toTheta !== undefined){
+          theta = a.fromTheta + (a.toTheta - a.fromTheta) * e;
+          phi = a.fromPhi + (a.toPhi - a.fromPhi) * e;
+        }
+      }
+      updateCamera();
+      updateWallFade();
+      if (k >= 1) focusAnim = null;
+    }
+    // R = 카메라 리셋: 처음 들어왔을 때의 기본 시점(방 중앙, 기본 각도·거리)으로 부드럽게 복귀
+    function resetCameraView(){
+      tutNotify('reset');
+      focusReturn = null; focusedObj = null; noclipReturn = null;
+      if (noclipMode){ setNoclip(false); return; } // R은 항상 "기본 시점"으로(노클립 중이면 해제하면서 기본 시점으로)
+      var wasTop = trueTopView;
+      if (trueTopView){
+        trueTopView = false;
+        topViewBtn.classList.remove("active");
+        topViewBtn.innerHTML = TOP_ICON;
+        topViewBtn.title = "탑뷰 (바로 위에서 보기)";
+      }
+      var toTheta = Math.PI/4;
+      var dT = ((toTheta - theta) % (Math.PI*2) + Math.PI*3) % (Math.PI*2) - Math.PI; // 가장 짧은 회전 방향
+      focusAnim = { mode:'orbit', t0:performance.now(), dur:450,
+        fromTarget: camTarget.clone(), toTarget: center.clone(),
+        fromRadius: radius, toRadius: size * 1.85,
+        fromTheta: theta, toTheta: theta + dT,
+        fromPhi: wasTop ? TOP_PHI : phi, toPhi: Math.PI/4.3 };
+      if (wasTop){ phi = TOP_PHI; updateCamera(); }
+      clearTimeout(idleTimer);
+      spinning = false; userPaused = true; refreshPlayPauseBtn();
+    }
+    // ---- 튜토리얼: 단계마다 안내하고, 사용자가 실제로 그 조작을 하면 자동으로 다음 단계로 ----
+    var TUT_STEPS = [
+      { title:'시점 돌리기', text:'3D 화면의 빈 곳을 마우스로 <b>드래그</b>해서 방을 돌려보세요.', evt:'rotate', need:250 },
+      { title:'확대 / 축소', text:'마우스 <b>휠</b>을 굴려서 방을 가까이 보거나 멀리 봐보세요.', evt:'zoom', need:300 },
+      { title:'가구 놓기', text:'아래 가구 버튼을 화면 위로 <b>끌어다 놓아</b>보세요.', note:'버튼을 눌러도 놓여요.', evt:'furnitureAdded', pulse:'bottom' },
+      { title:'가구 옮기기', text:'가구를 <b>클릭해서 선택</b>하면 주변 바닥에 <b>▲▼◀▶ 화살표</b>가 떠요. 눌러서 조금씩 옮겨보세요.', note:'키보드 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 방향키도 같아요. <kbd>Shift</kbd>를 같이 누르면 더 크게, 누르고 있으면 계속 움직여요.', evt:'move', need:4 },
+      { title:'가구 삭제', text:'가구를 <b>꾹 눌러 끌면</b> 아래에서 <b>🗑️ 휴지통</b>이 올라와요. 거기에 놓으면 삭제돼요.', note:'가구를 선택했을 때 팝업의 🗑️ 버튼도 같아요. 지우고 나면 다음 단계를 위해 가구를 하나 더 놓아주세요.', evt:'delete' },
+      { title:'F 포커스', text:'가구를 <b>클릭해서 선택</b>한 다음 키보드 <kbd>F</kbd>를 눌러보세요. 선택한 가구 쪽으로 카메라가 다가가요.', note:'가구가 없으면 먼저 하나 놓아주세요.', evt:'focus', bigKey:{ code:'KeyF', label:'F · 포커스' } },
+      { title:'F 한 번 더 — 포커스 해제', text:'<kbd>F</kbd>를 <b>한 번 더</b> 눌러보세요. 포커스하기 전 시점으로 부드럽게 돌아와요.', note:'노클립에서 포커스했다면 노클립 상태 그대로 돌아와요.', evt:'unfocus', bigKey:{ code:'KeyF', label:'F · 해제' }, skipIf:function(){ return !focusReturn; } },
+      { title:'노클립 켜기', text:'오른쪽 위 <b>노클립</b> 버튼이나 키보드 <kbd>V</kbd>를 눌러보세요. 벽도 통과하며 날아다니는 모드예요.', evt:'noclipOn', pulse:'noclip', bigKey:{ code:'KeyV', label:'V · 노클립 켜기' }, skipIf:function(){ return noclipMode; } },
+      { title:'날아다니기', text:'화면에 크게 뜬 키를 하나씩 눌러보세요. <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동, <kbd>Space</kbd> 상승, <kbd>C</kbd> 하강, <kbd>Shift</kbd> 빠르게예요.', note:'누른 키는 초록색으로 바뀌어요. 마우스 드래그로 시선도 돌려보세요.', evt:'keys', keys:['KeyW','KeyA','KeyS','KeyD','Space','KeyC','Shift'], delay:1000, skipIf:function(){ return !noclipMode; } },
+      { title:'원래 시점으로', text:'<b>노클립</b> 버튼이나 <kbd>V</kbd>를 한 번 더 눌러 노클립을 켜기 전 시점으로 돌아와보세요.', evt:'noclipOff', pulse:'noclip', bigKey:{ code:'KeyV', label:'V · 노클립 끄기' }, skipIf:function(){ return !noclipMode; } },
+      { title:'R 카메라 리셋', text:'시점을 이리저리 돌려놓은 뒤 키보드 <kbd>R</kbd>을 눌러보세요. 처음 시점으로 부드럽게 돌아와요.', note:'노클립 중에 눌러도 해제되면서 돌아와요.', evt:'reset', bigKey:{ code:'KeyR', label:'R · 카메라 리셋' } },
+      { title:'벽 색상 바꾸기', text:'벽을 <b>더블클릭</b>해보세요. 그 벽만 색이나 사진으로 바꿀 수 있어요.', evt:'wallSelect' }
+    ];
+    function tutClearPulse(){
+      var ps = container.querySelectorAll('.tut-pulse');
+      for (var i = 0; i < ps.length; i++) ps[i].classList.remove('tut-pulse');
+    }
+    function tutApplyPulse(kind){
+      tutClearPulse();
+      var target = null;
+      if (kind === 'bottom' && typeof bottomPanel !== 'undefined') target = bottomPanel;
+      else if (kind === 'noclip' && noclipBtn) target = noclipBtn.parentNode;
+      if (target) target.classList.add('tut-pulse');
+    }
+    function tutRender(){
+      if (!tutCard) return;
+      var total = TUT_STEPS.length;
+      if (tutIndex >= total){
+        tutCard.innerHTML =
+          '<div class="tut-head"><span class="tut-step">튜토리얼 완료</span></div>' +
+          '<div class="tut-title">이제 실전이에요!</div>' +
+          '<div class="tut-text">기본 조작을 모두 해봤어요. 헷갈리면 언제든 오른쪽 위 <b>튜토리얼</b> 버튼을 다시 눌러보세요.</div>' +
+          '<div class="tut-bar"><span style="width:100%"></span></div>' +
+          '<div class="tut-actions"><button type="button" class="tut-btn primary" data-tut="finish">실전 시작하기</button></div>';
+        return;
+      }
+      var s = TUT_STEPS[tutIndex];
+      tutCard.innerHTML =
+        '<div class="tut-head"><span class="tut-step">튜토리얼 ' + (tutIndex + 1) + ' / ' + total + '</span>' +
+        '<button type="button" class="tut-close" data-tut="quit" aria-label="튜토리얼 닫기">×</button></div>' +
+        '<div class="tut-title">' + s.title + '</div>' +
+        '<div class="tut-text">' + s.text + (s.note ? '<span class="tut-note">' + s.note + '</span>' : '') + '</div>' +
+        '<div class="tut-bar"><span style="width:' + Math.round(tutIndex / total * 100) + '%"></span></div>' +
+        '<div class="tut-actions"><button type="button" class="tut-btn" data-tut="skip">건너뛰기</button></div>';
+    }
+    function tutHideKeys(){
+      if (tutKeysEl && tutKeysEl.parentNode) tutKeysEl.parentNode.removeChild(tutKeysEl);
+      tutKeysEl = null;
+    }
+    // WASD 단계: 화면 가운데에 큰 키캡을 띄우고, 눌린 키는 초록색으로 바뀌게 함(전부 눌러야 통과)
+    function tutShowKeys(){
+      tutHideKeys();
+      tutKeysDone = {};
+      tutKeysEl = document.createElement('div');
+      tutKeysEl.className = 'tut-keys';
+      tutKeysEl.innerHTML =
+        '<div class="tut-key-row"><span class="tut-key" data-k="KeyW">W</span></div>' +
+        '<div class="tut-key-row"><span class="tut-key" data-k="KeyA">A</span><span class="tut-key" data-k="KeyS">S</span><span class="tut-key" data-k="KeyD">D</span></div>' +
+        '<div class="tut-key-row"><span class="tut-key sm" data-k="Space">Space · 상승</span><span class="tut-key sm" data-k="KeyC">C · 하강</span><span class="tut-key sm" data-k="Shift">Shift · 빠르게</span></div>';
+      container.appendChild(tutKeysEl);
+    }
+    function tutShowBigKey(bk){
+      tutHideKeys();
+      tutKeysEl = document.createElement('div');
+      tutKeysEl.className = 'tut-keys';
+      tutKeysEl.innerHTML = '<div class="tut-key-row"><span class="tut-key big" data-k="' + bk.code + '">' + bk.label + '</span></div>';
+      container.appendChild(tutKeysEl);
+    }
+    function tutFlashKey(code){ // 키를 누를 때 화면의 키캡이 같이 눌림
+      if (!tutKeysEl) return;
+      var el = tutKeysEl.querySelector('[data-k="' + code + '"]');
+      if (!el) return;
+      el.classList.add('press');
+      setTimeout(function(){ el.classList.remove('press'); }, 160);
+    }
+    function tutNotifyKey(code){
+      if (!tutActive || tutBusy || !tutKeysEl) return;
+      var s = TUT_STEPS[tutIndex];
+      if (!s || s.evt !== 'keys' || s.keys.indexOf(code) === -1) return;
+      tutKeysDone[code] = true;
+      var el = tutKeysEl.querySelector('[data-k="' + code + '"]');
+      if (el) el.classList.add('done');
+      for (var i = 0; i < s.keys.length; i++){ if (!tutKeysDone[s.keys[i]]) return; }
+      tutComplete();
+    }
+    function tutGo(i){
+      tutHideKeys();
+      tutBusy = false; tutProgress = 0;
+      while (i < TUT_STEPS.length && TUT_STEPS[i].skipIf && TUT_STEPS[i].skipIf()) i++;
+      tutIndex = i;
+      tutApplyPulse(i < TUT_STEPS.length ? TUT_STEPS[i].pulse : null);
+      if (tutCard) tutCard.classList.remove('tut-ok');
+      tutRender();
+      if (i < TUT_STEPS.length && TUT_STEPS[i].evt === 'keys') tutShowKeys();
+      else if (i < TUT_STEPS.length && TUT_STEPS[i].bigKey) tutShowBigKey(TUT_STEPS[i].bigKey);
+    }
+    function tutComplete(){
+      if (tutBusy || !tutCard) return;
+      tutBusy = true;
+      tutCard.classList.add('tut-ok');
+      if (tutKeysEl) Array.prototype.forEach.call(tutKeysEl.querySelectorAll('.tut-key'), function(k){ k.classList.add('done'); }); // 성공하면 키캡이 초록색
+      var curStep = TUT_STEPS[tutIndex];
+      setTimeout(function(){ if (tutActive) tutGo(tutIndex + 1); }, (curStep && curStep.delay) || 700);
+    }
+    function tutNotify(evt, amt){
+      if (!tutActive || tutBusy) return;
+      var s = TUT_STEPS[tutIndex];
+      if (!s || s.evt !== evt) return;
+      var need = s.need || 1;
+      tutProgress += (amt == null ? need : amt);
+      if (tutProgress >= need) tutComplete();
+    }
+    function tutStart(silent){
+      if (!furnitureEditor) return;
+      if (noclipMode) setNoclip(false);
+      tutActive = true;
+      if (!tutCard){
+        tutCard = document.createElement('div');
+        tutCard.className = 'tut-card' + (silent ? '' : ' pop-in'); // 시작 안내 팝업에서 날아오는 경우(silent)는 그쪽 애니메이션이 대신함
+        tutCard.setAttribute('role', 'dialog');
+        tutCard.setAttribute('aria-live', 'polite');
+        tutCard.addEventListener('click', function(e){
+          var b = e.target.closest ? e.target.closest('[data-tut]') : null;
+          if (!b) return;
+          var act = b.getAttribute('data-tut');
+          if (act === 'skip') tutGo(tutIndex + 1);
+          else tutEnd();
+        });
+        container.appendChild(tutCard);
+      }
+      if (helpBtn) helpBtn.classList.add('active');
+      tutGo(0);
+    }
+    function tutEnd(){
+      tutActive = false; tutBusy = false;
+      tutHideKeys();
+      tutClearPulse();
+      var oldCard = tutCard;
+      tutCard = null;
+      if (oldCard && oldCard.parentNode){
+        var reduceOut = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceOut) oldCard.parentNode.removeChild(oldCard);
+        else {
+          oldCard.classList.remove('pop-in'); oldCard.classList.add('tut-out'); // 뿅 하고 사라짐
+          setTimeout(function(){ if (oldCard.parentNode) oldCard.parentNode.removeChild(oldCard); }, 280);
+        }
+      }
+      if (helpBtn) helpBtn.classList.remove('active');
+    }
+    function toggleTutorial(){ if (tutActive) tutEnd(); else tutStart(); }
+
+    // ---- 상황에 맞게 바뀌는 상단 안내 문구 ----
+    // 우선순위: 튜토리얼 중(숨김) > 노클립 > 벽 한 번 클릭 > 벽 선택(더블클릭) > 가구 선택 > 아무것도 안 한 상태
+    function computeContextHint(){
+      if (tutActive) return '';
+      if (focusReturn && !noclipMode) return '💡 F를 한 번 더 누르면 포커스 전 시점으로 돌아가요';
+      if (noclipMode) return '🎮 노클립 · WASD 이동 · Space/C 상하 · Shift 빠르게 · F 포커스 · R 리셋 · V 해제';
+      if (hintTransient){
+        if (performance.now() >= hintTransient.until) hintTransient = null;
+        else if (hintTransient.kind === 'wallClick' && !selectedWall) return '💡 벽을 더블클릭하면 색상을 바꿀 수 있어요';
+      }
+      if (selectedWall) return '💡 액자(🖼️)를 눌러 이미지로 벽을 꾸며보세요';
+      if (selectedFurniture){
+        var ht = selectedFurniture.userData.type;
+        if (ht === 'door') return '💡 "🚪 열기" 버튼으로 문을 열고 닫아보세요';
+        if (ht === 'window') return '💡 창문은 벽을 따라 끌어 옮기고 ↑↓로 높이를 조절해요';
+        if (ht === 'outlet') return '💡 콘센트는 벽을 따라 끌어 옮기고 ↑↓로 높이를 조절해요';
+        if (ht === 'plant') return '💡 화분은 테이블 위에 올릴 수 있어요 · F로 정밀하게 맞춰보세요';
+        if (!hintFocusUsed) return '💡 정밀하게 조정하려면 F로 가구에 포커스해보세요';
+        return '💡 화살표/방향키로 이동 · ↺↻ 회전 · 오른쪽 패널로 크기 조절';
+      }
+      var isFs = document.fullscreenElement === container || document.webkitFullscreenElement === container;
+      return isFs ? '💡 아래 가구를 끌어다 놓아 방을 꾸며보세요' : '💡 전체화면으로 가구를 배치해보세요';
+    }
+    // 도움말 배지: 글자가 바뀌면 이전 글자가 사라지고 -> 배지가 새 글자 길이에 맞게 부드럽게 늘었다/줄었다 -> 새 글자가 나타남.
+    // 전구를 누르면 배지가 전구 하나로 작아지며 꺼지고(회색), 도움말은 다시 누를 때까지 안 뜸.
+    var hintOff = false, hintRendered = false, hintSeq = 0;
+    try { hintOff = localStorage.getItem('ohHintOff') === '1'; } catch(e){}
+    function hintReduceMotion(){ return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    // mutate()가 배지 안 내용/상태를 바꾸는 동안의 크기 변화를 width/height 애니메이션으로 이어줌
+    // 반환값: 실제로 크기 애니메이션을 돌렸는지(안 돌렸으면 글자를 바로 보여줘도 됨)
+    function hintMorph(mutate){
+      var b = wallHintBadge;
+      var hidden = b.classList.contains('hint-hidden');
+      var ow = b.offsetWidth, oh = b.offsetHeight;
+      mutate();
+      if (hidden || hintReduceMotion() || !b.animate || !ow) return null;
+      var nw = b.offsetWidth, nh = b.offsetHeight;
+      if (Math.abs(nw - ow) < 1 && Math.abs(nh - oh) < 1) return null;
+      var shrinking = nw < ow - 1;
+      if (shrinking) b.style.overflow = 'hidden'; // 줄어들 때는 창 밖으로 삐져나온 이전 글자(잔상)를 잘라냄
+      var a = b.animate([{ width:ow + 'px', height:oh + 'px' }, { width:nw + 'px', height:nh + 'px' }], { duration:300, easing:'cubic-bezier(.22,1,.36,1)' });
+      if (shrinking){
+        var restore = function(){ b.style.overflow = ''; };
+        a.onfinish = restore; a.oncancel = restore;
+      }
+      return a;
+    }
+    // 크기 애니메이션이 끝난 "뒤에" 글자를 보여줌(없으면 바로)
+    function hintFadeAfter(anim, seq){
+      if (!anim){ hintFadeIn(0, seq); return; }
+      var done = false;
+      var go = function(){ if (done) return; done = true; hintFadeIn(0, seq); };
+      anim.onfinish = go; anim.oncancel = go;
+      setTimeout(go, 500); // 안전장치
+    }
+    // 글자는 배지가 다 늘어난(줄어든) 뒤에 나타나게 해서, 뒤가 잘려 보이는 구간이 없게 함
+    function hintFadeIn(delay, seq){
+      setTimeout(function(){
+        if (seq !== hintSeq) return;
+        wallHintInner.style.transitionDuration = '.2s';
+        wallHintInner.style.opacity = '1';
+      }, delay);
+    }
+    function renderHint(text){
+      if (typeof wallHintBadge === 'undefined') return;
+      var b = wallHintBadge, inner = wallHintInner;
+      var seq = ++hintSeq;
+      var first = !hintRendered; hintRendered = true;
+      if (!text){ b.classList.add('hint-hidden'); return; }
+      var plain = text.replace(/^💡\s*/, '');
+      var wasHidden = b.classList.contains('hint-hidden');
+      b.classList.toggle('hint-off', hintOff);
+      if (hintOff || first || wasHidden || hintReduceMotion()){
+        inner.style.opacity = '1';
+        inner.textContent = plain;
+        b.classList.remove('hint-hidden');
+        return;
+      }
+      if (inner.textContent === plain) return;
+      // 이전 글자(유령 복사본)는 그 자리에서 서서히 사라지고, 새 글자는 겹쳐서 서서히 나타나면서
+      // 창 폭도 같은 시간 동안 새 길이로 늘어나거나 줄어듦 — 글자가 한 번도 완전히 꺼지지 않아 깜빡이지 않음.
+      var curOp = parseFloat(getComputedStyle(inner).opacity); if (isNaN(curOp)) curOp = 1;
+      if (inner._fade){ inner._fade.cancel(); inner._fade = null; }
+      var ghost = document.createElement('span');
+      ghost.className = 'hint-text-inner hint-ghost';
+      ghost.textContent = inner.textContent;
+      inner.parentNode.appendChild(ghost);
+      var gAnim = ghost.animate([{ opacity:curOp }, { opacity:0 }], { duration:160, easing:'ease-out', fill:'forwards' });
+      gAnim.onfinish = function(){ if (ghost.parentNode) ghost.parentNode.removeChild(ghost); };
+      hintMorph(function(){ inner.textContent = plain; });
+      inner._fade = inner.animate([{ opacity:0 }, { opacity:1 }], { duration:240, easing:'ease' });
+    }
+    function updateContextHint(){
+      if (typeof wallHintBadge === 'undefined') return;
+      var text = computeContextHint();
+      if (text === lastHintText){ hintPending = null; return; }
+      // 문구가 짧은 시간 안에 연달아 바뀌면(예: 더블클릭) 중간 문구는 건너뛰고, 잠깐 안정된 뒤에 한 번만 바꿈 → 도움말끼리 겹치지 않음
+      if (lastHintText !== null){
+        if (text !== hintPending){ hintPending = text; hintPendingT = performance.now(); return; }
+        if (performance.now() - hintPendingT < 140) return;
+      }
+      hintPending = null;
+      lastHintText = text;
+      renderHint(text);
+    }
+    if (typeof wallHintBulb !== 'undefined' && wallHintBulb){
+      wallHintBadge.classList.toggle('hint-off', hintOff);
+      wallHintBulb.addEventListener('click', function(e){
+        e.stopPropagation();
+        var seq = ++hintSeq;
+        var turningOff = !hintOff;
+        var doToggle = function(){
+          var anim = hintMorph(function(){
+            hintOff = !hintOff;
+            wallHintBadge.classList.toggle('hint-off', hintOff);
+            if (!hintOff && lastHintText) wallHintInner.textContent = lastHintText.replace(/^💡\s*/, '');
+          });
+          if (!hintOff) hintFadeAfter(anim, seq); else wallHintInner.style.opacity = '1';
+        };
+        if (turningOff && !hintReduceMotion()){ // 끌 때는 글자가 먼저 사라진 뒤에 작아짐
+          wallHintInner.style.transitionDuration = '.11s';
+          wallHintInner.style.opacity = '0';
+          setTimeout(doToggle, 120);
+        } else {
+          if (!turningOff) wallHintInner.style.opacity = '0';
+          doToggle();
+        }
+        try { localStorage.setItem('ohHintOff', turningOff ? '1' : '0'); } catch(err){}
+        wallHintBulb.blur();
+      });
+    }
+    // 벽을 "한 번만" 클릭했는지(드래그 아님) 감지 — 더블클릭 안내를 띄우기 위함. 가구가 더 앞에 있으면 무시.
+    var hintDownX = 0, hintDownY = 0;
+    canvas.addEventListener('pointerdown', function(e){ hintDownX = e.clientX; hintDownY = e.clientY; });
+    canvas.addEventListener('click', function(e){
+      if (!furnitureEditor) return;
+      if (Math.hypot(e.clientX - hintDownX, e.clientY - hintDownY) > 5) return;
+      var rect = canvas.getBoundingClientRect();
+      pointer.x = ((e.clientX-rect.left)/rect.width)*2-1; pointer.y = -((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(pointer, camera);
+      var wHit = raycaster.intersectObjects(wallMeshes, false)[0];
+      var fHit = furniture.length ? raycaster.intersectObjects(furniture, true)[0] : null;
+      clearTimeout(hintClickTimer);
+      if (wHit && (!fHit || wHit.distance < fHit.distance)){
+        // 더블클릭일 수 있으니 바로 안 띄우고 잠깐 기다림 — 곧 더블클릭이 오면 이 안내는 취소됨
+        hintClickTimer = setTimeout(function(){ if (!selectedWall) hintTransient = { kind:'wallClick', until: performance.now() + 6000 }; }, 340);
+      } else hintTransient = null;
+    });
+
+    var editorKeydown = null, editorKeyup = null, editorBlur = null;
+    var lastArrowKeyT = 0;
+    if (furnitureEditor){
+      var isTypingTarget = function(t){
+        if (!t) return false;
+        var tag = (t.tagName || '').toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
+      };
+      editorKeydown = function(e){
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (isTypingTarget(e.target)) return;
+        if (container.getClientRects().length === 0) return; // 화면에 안 보이는 상태면 무시
+        if (document.getElementById('tutWelcome')) return; // 시작 안내 팝업이 떠 있는 동안은 무시
+        if (e.code === 'KeyF'){
+          if (!e.repeat){
+            if (tutActive) tutFlashKey('KeyF');
+            if (focusReturn){
+              // 포커스 중: 다른 가구를 골랐으면 그 가구로 다시 포커스, 아니면 해제(포커스 전 시점으로 복귀)
+              if (selectedFurniture && selectedFurniture !== focusedObj) focusSelectedFurniture();
+              else releaseFocus();
+            } else if (selectedFurniture){ focusSelectedFurniture(); }
+          }
+          e.preventDefault();
+          return;
+        }
+        if (e.code === 'KeyR'){
+          if (!e.repeat){ if (tutActive) tutFlashKey('KeyR'); resetCameraView(); }
+          e.preventDefault();
+          return;
+        }
+        // V = 노클립 켜기/끄기 (소스엔진 계열 게임에서 노클립을 흔히 V에 바인딩하는 것과 같은 방식)
+        if (e.code === 'KeyV'){
+          if (!e.repeat){ if (tutActive) tutFlashKey('KeyV'); setNoclip(!noclipMode); }
+          e.preventDefault();
+          return;
+        }
+        // 방향키 = 선택한 가구를 화면 기준으로 5cm씩 이동(Shift: 20cm). 꾹 누르면 일정 간격으로 반복.
+        // 벽 아이템(창문/문/콘센트)은 기존 팝업 패드와 같은 규칙(↑↓ 높이, ←→ 벽 따라 이동).
+        var arrowDir = e.code === 'ArrowUp' ? 'up' : e.code === 'ArrowDown' ? 'down' : e.code === 'ArrowLeft' ? 'left' : e.code === 'ArrowRight' ? 'right' : null;
+        if (arrowDir && selectedFurniture){
+          e.preventDefault();
+          var nowA = performance.now();
+          if (e.repeat && nowA - lastArrowKeyT < 80) return;
+          lastArrowKeyT = nowA;
+          nudgeFurniture(arrowDir, e.shiftKey ? MOVE_ARROW_STEP * 4 : MOVE_ARROW_STEP);
+          return;
+        }
+        if (!noclipMode) return;
+        if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD' || e.code === 'KeyC' || e.code === 'Space'){
+          heldKeys[e.code] = true;
+          heldKeys.shift = e.shiftKey;
+          tutNotifyKey(e.code);
+          e.preventDefault();
+        } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight'){
+          heldKeys.shift = true;
+          tutNotifyKey('Shift');
+        }
+      };
+      editorKeyup = function(e){
+        delete heldKeys[e.code];
+        heldKeys.shift = e.shiftKey;
+      };
+      editorBlur = function(){ heldKeys = {}; };
+      document.addEventListener('keydown', editorKeydown);
+      document.addEventListener('keyup', editorKeyup);
+      window.addEventListener('blur', editorBlur);
+    }
+
     var rafId;
+    var lastTickT = performance.now();
     function tick(){
       rafId = requestAnimationFrame(tick);
-      if (spinning && !reducedMotion){
+      var nowT = performance.now();
+      if (popAnims.length) stepPopAnims(nowT);
+      if (dragActive) stepDragWiggle(nowT);
+      var dtT = Math.min((nowT - lastTickT) / 1000, 0.1);
+      lastTickT = nowT;
+      if (focusAnim) stepFocusAnim(nowT);
+      if (noclipMode){
+        stepNoclipMove(dtT);
+      } else if (spinning && !reducedMotion){
         theta += 0.0022;
         updateCamera();
       }
       if (furnitureEditor){
+        updateContextHint();
+        if (tutCard) tutCard.classList.toggle('trash-up', !!(dropTrash && dropTrash.classList.contains('show')));
         updateRotatePanelPosition();
+        updateMoveArrows();
         updateWallColorPanelPosition();
         updateFurnitureColorPanelPosition();
       }
       renderer.render(scene, camera);
+      if (fxActive) renderFxOverlay();
     }
     tick();
 
     return {
+      startTutorial: function(silent){ tutStart(silent); return tutCard; },
+      setDoneLabel: function(t){ if (doneBtnEl) doneBtnEl.textContent = t; },
       dispose: function(){
         cancelAnimationFrame(rafId);
+        if (editorKeydown) document.removeEventListener('keydown', editorKeydown);
+        if (editorKeyup) document.removeEventListener('keyup', editorKeyup);
+        if (editorBlur) window.removeEventListener('blur', editorBlur);
+        if (tutCard && tutCard.parentNode) tutCard.parentNode.removeChild(tutCard);
+        if (tutKeysEl && tutKeysEl.parentNode) tutKeysEl.parentNode.removeChild(tutKeysEl);
         ro.disconnect();
+        if (fxRenderer){
+          if (fxRenderer.domElement.parentNode) fxRenderer.domElement.parentNode.removeChild(fxRenderer.domElement);
+          fxRenderer.dispose(); fxRenderer = null; fxActive = false;
+        }
         renderer.dispose();
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
         if (viewControls.parentNode) viewControls.parentNode.removeChild(viewControls);
+        if (topRightStack && topRightStack.parentNode) topRightStack.parentNode.removeChild(topRightStack);
         if (typeof bottomPanel !== 'undefined' && bottomPanel.parentNode) bottomPanel.parentNode.removeChild(bottomPanel);
         if (sizePanel && sizePanel.parentNode) sizePanel.parentNode.removeChild(sizePanel);
         if (rotatePanel && rotatePanel.parentNode) rotatePanel.parentNode.removeChild(rotatePanel);
+        if (dropTrash && dropTrash.parentNode) dropTrash.parentNode.removeChild(dropTrash);
+        if (moveArrows && moveArrows.parentNode) moveArrows.parentNode.removeChild(moveArrows);
         if (wallColorPanel && wallColorPanel.parentNode) wallColorPanel.parentNode.removeChild(wallColorPanel);
         if (typeof wallHintBadge !== 'undefined' && wallHintBadge.parentNode) wallHintBadge.parentNode.removeChild(wallHintBadge);
         if (typeof fullscreenBtn !== 'undefined' && fullscreenBtn.parentNode) fullscreenBtn.parentNode.removeChild(fullscreenBtn);
@@ -3194,26 +4915,129 @@
   var furnitureMode = false;
   var furniturePublished = false; 
 
+  // 팝업 화면 전환 시 "떠나는 화면"을 복제해 제자리에 남겨두고 페이드아웃시킴 — 실제 화면은 즉시 바뀌므로
+  // 기존 로직(도면 캔버스 크기 측정 등)에는 영향이 없음. 복제본의 id는 지워서 getElementById와 안 겹치게 함.
+  var modalGhost = null, modalGhostTimer = null, suppressGhost = false;
+  function spawnModalGhost(opt){
+    var slow = !!(opt && opt.slow); // 가구 배치 화면 진입처럼 큰 전환은 더 천천히
+    var cross = !!(opt && opt.cross); // 비슷한 크기끼리 넘어갈 땐 교차(크로스페이드)
+    if (suppressGhost || overlay.hidden || overlay.classList.contains("closing")) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var src = !modalResultBox.hidden ? modalResultBox : (!modalBox.hidden ? modalBox : null);
+    if (!src) return;
+    var r = src.getBoundingClientRect();
+    if (r.width < 20 || r.height < 20) return;
+    clearTimeout(modalGhostTimer);
+    if (modalGhost && modalGhost.parentNode) modalGhost.parentNode.removeChild(modalGhost);
+    var g = src.cloneNode(true);
+    g.removeAttribute("id");
+    Array.prototype.forEach.call(g.querySelectorAll("[id]"), function(n){ n.removeAttribute("id"); });
+    g.removeAttribute("role"); g.removeAttribute("aria-modal"); g.removeAttribute("aria-labelledby");
+    g.setAttribute("aria-hidden", "true");
+    g.hidden = false;
+    // 캔버스(도면/3D)는 복제하면 비어버리므로 현재 화면 그대로 복사
+    var sc = src.querySelectorAll("canvas"), dc = g.querySelectorAll("canvas");
+    for (var i = 0; i < sc.length && i < dc.length; i++){
+      try { dc[i].width = sc[i].width; dc[i].height = sc[i].height; dc[i].getContext("2d").drawImage(sc[i], 0, 0); } catch(e){}
+    }
+    g.classList.add("modal-ghost");
+    if (slow) g.classList.add("slow");
+    if (cross) g.classList.add("cross");
+    overlay.classList.toggle("ghost-cross", cross);
+    g.style.cssText = "position:fixed;left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px;right:auto;bottom:auto;max-width:none;max-height:none;margin:0;";
+    overlay.appendChild(g);
+    modalGhost = g;
+    overlay.classList.add("ghosting");
+    // 주의: "ghosting" 클래스는 여기서 제거하지 않음 — 화면이 떠 있는 동안 지우면 새 창의 등장 애니메이션 이름이 바뀌면서
+    // 처음부터 다시 재생되어(투명→불투명) 중간에 한 번 깜빡이게 됨. 팝업을 새로 열거나 닫힌 뒤에만 제거함.
+    modalGhostTimer = setTimeout(function(){
+      if (g.parentNode) g.parentNode.removeChild(g);
+      if (modalGhost === g) modalGhost = null;
+    }, slow ? 1000 : 480);
+
+    // 크기가 다른 화면끼리 넘어갈 때 "작은 창이 큰 창으로 펼쳐지는" 효과: 실제 화면의 크기/레이아웃은 건드리지 않고
+    // clip-path(보이는 영역)만 이전 창 크기에서 새 창 크기까지 넓혀서 보여줌 → 도면 캔버스 크기 측정에 영향 없음.
+    // (새 화면 내용이 다 채워진 다음 프레임에 새 창의 최종 크기를 재서 계산)
+    var oldRect = { left:r.left, top:r.top, right:r.right, bottom:r.bottom };
+    if (!g.animate) return;
+    requestAnimationFrame(function(){
+      try {
+        var nowEl = !modalResultBox.hidden ? modalResultBox : (!modalBox.hidden ? modalBox : null);
+        if (!nowEl || !g.parentNode) return;
+        var prevAnim = nowEl.style.animation;
+        nowEl.style.animation = "none"; // 떠오르는 이동(translate)이 섞이지 않은 최종 위치를 재기 위해 잠깐 끔
+        var nr = nowEl.getBoundingClientRect();
+        nowEl.style.animation = prevAnim;
+        var insetOf = function(inner, outer, round){
+          var t = Math.max(0, inner.top - outer.top), l = Math.max(0, inner.left - outer.left);
+          var rr = Math.max(0, outer.right - inner.right), b = Math.max(0, outer.bottom - inner.bottom);
+          return { str: "inset(" + t + "px " + rr + "px " + b + "px " + l + "px round " + round + "px)", sum: t + l + rr + b };
+        };
+        var ease = slow ? "cubic-bezier(.45,.05,.2,1)" : "cubic-bezier(.22,1,.36,1)";
+        var dur = slow ? 950 : 460;
+        var grow = insetOf(oldRect, nr, 18); // 새 창이 더 클 때: 이전 창 영역에서 시작해 활짝 펼침
+        if (grow.sum > 8) nowEl.animate([{ clipPath: grow.str }, { clipPath: "inset(-60px round 18px)" }], { duration: dur, easing: ease });
+        var shrink = insetOf(nr, oldRect, 18); // 새 창이 더 작을 때: 이전 창이 새 창 크기로 오므라들며 사라짐
+        if (shrink.sum > 8 && grow.sum <= 8) g.classList.add("keepframe");
+        if (shrink.sum > 8) g.animate([{ clipPath: "inset(-60px round 18px)" }, { clipPath: shrink.str }], { duration: dur, easing: ease, fill: "forwards" });
+      } catch (e) {}
+    });
+  }
+
   function showOnly(panel){
+    spawnModalGhost();
     [panelSearch, panelLoading, panelTrace].forEach(function(p){ p.hidden = (p !== panel); });
     modalBox.classList.toggle("wide", panel === panelTrace);
     modalBox.hidden = false;
     modalResultBox.hidden = true;
   }
 
+  var closeModalTimer = null;
   function openModal(){
+    clearTimeout(closeModalTimer);
+    overlay.classList.remove("closing", "ghosting"); // 아직 안 보이는 상태에서 정리해야 깜빡임이 없음
     overlay.hidden = false;
     searchInput.value = "";
+    suppressGhost = true; // 팝업을 새로 여는 거라 이전 화면 잔상은 필요 없음
     showOnly(panelSearch);
+    suppressGhost = false;
     modalBox.hidden = false;
     modalResultBox.hidden = true;
     setTimeout(function(){ searchInput.focus(); }, 30);
     renderSuggestions("");
   }
   function closeModal(){
-    overlay.hidden = true;
     if (resultScene){ resultScene.dispose(); resultScene = null; }
+    if (overlay.hidden) return;
+    // 바로 사라지지 않고 살짝 아래로 가라앉으며 페이드아웃한 뒤 숨김
+    overlay.classList.add("closing");
+    clearTimeout(closeModalTimer);
+    closeModalTimer = setTimeout(function(){ overlay.hidden = true; overlay.classList.remove("closing", "ghosting"); }, 200);
   }
+
+  // 메인 페이지 스크롤 등장 효과 — 처음부터 화면 안에 있는 요소는 건드리지 않고, 아래쪽 요소만 숨겨뒀다가 보이는 순간 등장시킴
+  (function(){
+    if (!("IntersectionObserver" in window)) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var targets = document.querySelectorAll(".section-head, .step, .feature-card, .demo-panel");
+    var vh = window.innerHeight || 800;
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var el = en.target;
+        io.unobserve(el);
+        el.classList.add("reveal-in");
+        setTimeout(function(){ el.classList.remove("reveal-pending", "reveal-in"); el.style.removeProperty("--rd"); }, 1150);
+      });
+    }, { threshold: 0.08, rootMargin: "0px 0px -4% 0px" });
+    Array.prototype.forEach.call(targets, function(el){
+      if (el.getBoundingClientRect().top < vh * 1.0) return; // 이미 보이는 건 그대로
+      var idx = Array.prototype.indexOf.call(el.parentNode.children, el);
+      el.style.setProperty("--rd", Math.min(idx, 5) * 0.065 + "s");
+      el.classList.add("reveal-pending");
+      io.observe(el);
+    });
+  })();
 
   document.querySelectorAll(".js-open-modal").forEach(function(b){ b.addEventListener("click", openModal); });
   document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
@@ -3400,9 +5224,135 @@
   searchInput.addEventListener("input", function(){ renderSuggestions(searchInput.value); });
 
   document.querySelector('[data-back="search-from-result"]').addEventListener("click", function(){
+    // 가구 배치 화면에서는 "메인화면으로" — 팝업을 닫고 첫 화면으로 돌아감
+    if (furnitureMode){ closeModal(); return; }
     if (resultScene){ resultScene.dispose(); resultScene = null; }
     openModal();
   });
+
+  /* 가구 배치 화면에 들어오면 먼저 뜨는 튜토리얼 안내 팝업 — 배경은 블러, 팝업 밖을 눌러도 안 닫힘.
+     [튜토리얼 시작하기] 또는 ×를 누를 수 있고, ×를 누르면 "다시 볼 수 있어요" 안내 후 3초 카운트다운
+     (버튼으로 바로 배치 시작 가능). "3일 동안 이 창을 열지 않음"을 체크하면 3일간 팝업 없이 바로 배치 시작. */
+  document.addEventListener("contextmenu", function(e){
+    if (!furnitureMode) return;
+    var t = e.target;
+    if (!t || !t.closest || t.closest("input,textarea,[contenteditable]")) return;
+    if (t.closest("#modalResultBox") || t.closest(".oh-dialog-overlay") || t.closest(".tut-welcome-overlay")) e.preventDefault();
+  });
+  var TUT_SKIP_KEY = "ohTutSkipUntil";
+  function tutSkipActive(){
+    try { return parseInt(localStorage.getItem(TUT_SKIP_KEY) || "0", 10) > Date.now(); } catch(e){ return false; }
+  }
+  function showTutorialWelcome(){
+    if (tutSkipActive() || document.getElementById("tutWelcome")) return;
+    var overlayEl = document.createElement("div");
+    overlayEl.className = "tut-welcome-overlay";
+    overlayEl.id = "tutWelcome";
+    overlayEl.innerHTML =
+      '<div class="tut-welcome-box" role="dialog" aria-modal="true" aria-labelledby="tutWelcomeTitle">' +
+        '<button type="button" class="tut-welcome-close" aria-label="닫기">×</button>' +
+        '<div class="tut-welcome-body"></div>' +
+        '<label class="tut-welcome-skip"><input type="checkbox"> 3일 동안 이 창을 열지 않음</label>' +
+      '</div>';
+    document.body.appendChild(overlayEl);
+    var bodyEl = overlayEl.querySelector(".tut-welcome-body");
+    var closeBtnEl = overlayEl.querySelector(".tut-welcome-close");
+    var skipInput = overlayEl.querySelector("input");
+    var timer = null;
+    var flying = false;
+    /* 시작 안내 팝업이 작아지며 튜토리얼 카드 자리로 날아가고, 블러는 서서히 걷히면서 카드가 이어받음 */
+    function flyToTutorialCard(card){
+      var boxEl = overlayEl.querySelector(".tut-welcome-box");
+      var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!card || !boxEl || !boxEl.animate || reduce){ closeWelcome(); return; }
+      var from = boxEl.getBoundingClientRect();
+      var to = card.getBoundingClientRect();
+      if (!to.width || !to.height){ closeWelcome(); return; }
+      flying = true;
+      card.style.visibility = "hidden";
+      var cs = getComputedStyle(boxEl), ts = getComputedStyle(card);
+      // 팝업을 현재 자리에 고정해 두고, 카드의 위치/크기/모양으로 변형
+      boxEl.style.position = "fixed"; boxEl.style.margin = "0"; boxEl.style.boxSizing = "border-box"; boxEl.style.overflow = "hidden";
+      boxEl.style.left = from.left + "px"; boxEl.style.top = from.top + "px";
+      boxEl.style.width = from.width + "px"; boxEl.style.height = from.height + "px";
+      overlayEl.style.pointerEvents = "none";
+      overlayEl.style.transition = "background-color .5s ease, backdrop-filter .5s ease, -webkit-backdrop-filter .5s ease";
+      overlayEl.style.backgroundColor = "transparent";
+      overlayEl.style.backdropFilter = "blur(0px)"; overlayEl.style.webkitBackdropFilter = "blur(0px)";
+      var kids = Array.prototype.slice.call(boxEl.children);
+      kids.forEach(function(k){ k.animate([{ opacity:1 }, { opacity:0 }], { duration:200, easing:"ease", fill:"forwards" }); });
+      var fin = false;
+      function finish(){
+        if (fin) return; fin = true;
+        card.style.visibility = "";
+        if (card.animate) Array.prototype.forEach.call(card.children, function(k){ k.animate([{ opacity:0 }, { opacity:1 }], { duration:240, easing:"ease" }); });
+        requestAnimationFrame(closeWelcome);
+      }
+      var anim = boxEl.animate([
+        { left:from.left+"px", top:from.top+"px", width:from.width+"px", height:from.height+"px", padding:cs.padding, borderRadius:cs.borderRadius, borderColor:cs.borderTopColor, boxShadow:cs.boxShadow },
+        { left:to.left+"px", top:to.top+"px", width:to.width+"px", height:to.height+"px", padding:ts.padding, borderRadius:ts.borderRadius, borderColor:ts.borderTopColor, boxShadow:ts.boxShadow }
+      ], { duration:620, easing:"cubic-bezier(.22,1,.36,1)", fill:"forwards" });
+      anim.onfinish = finish;
+      setTimeout(finish, 900); // 안전장치
+    }
+    function closeWelcome(){
+      clearInterval(timer);
+      if (overlayEl.parentNode) overlayEl.parentNode.removeChild(overlayEl);
+    }
+    function renderIntro(){
+      bodyEl.innerHTML =
+        '<div class="tut-welcome-badge">처음 오셨나요?</div>' +
+        '<h3 id="tutWelcomeTitle">1분이면 방을 자유롭게 둘러볼 수 있어요</h3>' +
+        '<p>시점 돌리기, 가구 놓기, 벽을 통과하는 노클립 비행, 벽 색 바꾸기까지 직접 해보면서 따라오면 돼요.</p>' +
+        '<button type="button" class="btn btn-primary tut-welcome-start">튜토리얼 시작하기</button>';
+      var startBtn = bodyEl.querySelector(".tut-welcome-start");
+      startBtn.addEventListener("click", function(){
+        if (flying) return;
+        var card = null;
+        if (resultScene && resultScene.startTutorial) card = resultScene.startTutorial(true);
+        flyToTutorialCard(card);
+      });
+      setTimeout(function(){ startBtn.focus(); }, 30);
+    }
+    function renderClosedNotice(){
+      var left = 5;
+      closeBtnEl.hidden = true;
+      bodyEl.innerHTML =
+        '<div class="tut-welcome-badge">알려드려요</div>' +
+        '<h3 id="tutWelcomeTitle">튜토리얼은 가구 배치 화면에서도 다시 볼 수 있어요!</h3>' +
+        '<p>화면 오른쪽 위의 <b>튜토리얼</b> 버튼을 누르면 언제든 다시 시작할 수 있어요.</p>' +
+        '<button type="button" class="btn btn-primary tut-welcome-start"></button>';
+      var goBtn = bodyEl.querySelector(".tut-welcome-start");
+      function paint(){ goBtn.textContent = "바로 배치 시작 (" + left + "초)"; }
+      paint();
+      goBtn.addEventListener("click", closeWelcome);
+      timer = setInterval(function(){
+        left--;
+        if (left <= 0) closeWelcome(); else paint();
+      }, 1000);
+    }
+    closeBtnEl.addEventListener("click", renderClosedNotice);
+    skipInput.addEventListener("change", function(){
+      try {
+        if (skipInput.checked) localStorage.setItem(TUT_SKIP_KEY, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+        else localStorage.removeItem(TUT_SKIP_KEY);
+      } catch(e){}
+      // 체크하면 팝업을 그냥 닫음(체크 표시가 보이도록 잠깐 뒤에, 작아지며 사라짐)
+      if (skipInput.checked && !flying){
+        flying = true;
+        setTimeout(function(){
+          var boxEl = overlayEl.querySelector(".tut-welcome-box");
+          var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (reduce || !boxEl || !boxEl.animate){ closeWelcome(); return; }
+          overlayEl.style.pointerEvents = "none";
+          boxEl.animate([{ opacity:1, transform:"scale(1)" }, { opacity:0, transform:"scale(.86) translateY(14px)" }], { duration:230, easing:"cubic-bezier(.4,0,1,1)", fill:"forwards" });
+          overlayEl.animate([{ opacity:1 }, { opacity:0 }], { duration:260, easing:"ease", fill:"forwards" }).onfinish = closeWelcome;
+          setTimeout(closeWelcome, 450); // 안전장치
+        }, 220);
+      }
+    });
+    renderIntro();
+  }
 
   /* "다음: 가구 배치 시작하기" — 3D 변환 결과 화면을 가구 배치 전용 풀스크린으로 전환하고,
      동일한 createWallScene을 furnitureEditor:true로 다시 띄움 (팀원 구현 이식) */
@@ -3413,14 +5363,20 @@
       return;
     }
     if (!furnitureMode){
+      spawnModalGhost({ slow:true }); // 일반 결과 화면이 사라지며 가구 배치 전체화면으로 넘어감(조금 더 천천히)
       furnitureMode = true;
       modalResultBox.classList.add("furniture-fullscreen");
+      modalResultBox.classList.remove("pop-in"); void modalResultBox.offsetWidth; modalResultBox.classList.add("pop-in"); // 가구 배치 화면으로 넘어갈 때 부드럽게 떠오름
       document.getElementById("resultStageTitle").innerHTML = '가구 배치 작업 화면 <small style="font-weight:400;color:var(--ink-soft);">· 드래그 앤 드롭</small>';
-      document.getElementById("furnitureNote").textContent = "* 가구를 추가한 뒤 3D 화면에서 위치를 드래그해 배치하세요. 가구를 선택하면 위에 뜨는 핸들로 회전(↺↻)과 미세 위치 조정도 가능합니다.";
-      btn.textContent = "가구 배치 완료";
+      document.getElementById("furnitureNote").style.display = "none"; // 가구 배치 화면에서는 안내 문구를 숨김(튜토리얼/상황별 힌트가 대신 안내)
+      btn.textContent = "✅ 가구 배치 완료";
+      document.querySelector('[data-back="search-from-result"]').textContent = "메인화면으로";
       if (resultScene){ resultScene.dispose(); resultScene = null; }
       resultStage.innerHTML = '<span class="canvas-hint">가구를 하단에서 드래그해서 배치 및 회전</span>';
-      resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true });
+      resultScene = createWallScene(resultStage, furniturePlan, { autoRotate:false, furnitureEditor:true, onComplete: function(){ document.getElementById("nextStepBtn").click(); }, onBack: function(){ document.getElementById("editWallsBtn").click(); } });
+      // 화면이 다 펼쳐진 뒤에 시작 안내 팝업을 띄움(전환 중에 겹쳐 뜨지 않게)
+      var enteredScene = resultScene;
+      setTimeout(function(){ if (furnitureMode && resultScene === enteredScene) showTutorialWelcome(); }, 900);
     } else if (furniturePublished){
       location.href = "/gallery";
     } else {
@@ -3472,6 +5428,7 @@
       ohSavePosts(posts);
       furniturePublished = true;
       btn.textContent = "게시 완료 ✓ · 갤러리로 이동";
+      if (resultScene && resultScene.setDoneLabel) resultScene.setDoneLabel("✓ 게시 완료 · 갤러리로");
 
       if (await ohConfirm("게시가 완료됐어요! 갤러리로 이동해서 확인해볼까요?")){
         location.href = "/gallery";
@@ -3976,15 +5933,18 @@
   });
 
   function showResult(complex, plan){
+    spawnModalGhost({ cross: !modalBox.hidden && modalBox.classList.contains("wide") }); // 도면 그리기(넓은 창) → 결과(넓은 창)는 교차 전환
     modalBox.hidden = true;
     modalResultBox.hidden = false;
     furnitureMode = false;
     furniturePublished = false;
     furniturePlan = plan.wallData || (!plan.isReal ? plan : null);
-    modalResultBox.classList.remove("furniture-fullscreen");
+    modalResultBox.classList.remove("furniture-fullscreen", "pop-in");
     document.getElementById("nextStepBtn").textContent = "다음: 가구 배치 시작하기";
+    document.querySelector('[data-back="search-from-result"]').textContent = "다른 매물 검색하기";
     document.getElementById("resultStageTitle").textContent = "자동 변환 결과 (3D)";
     document.getElementById("furnitureNote").textContent = "* 3D 변환 결과를 확인한 뒤, 가구 배치 화면에서 실제 배치를 시작할 수 있어요.";
+    document.getElementById("furnitureNote").style.display = "";
 
     resultTitle.textContent = complex.name;
     resultSubtitle.textContent = planLabelText(plan) + " · " + planAreaText(plan);
@@ -4004,6 +5964,8 @@
           svgHost.innerHTML = '<p class="empty-msg" style="padding:24px;">이미지를 불러오지 못했어요.</p>';
         };
         img.src = plan.floorplanImageUrl;
+        // 방금 도면 그리기 화면에서 이미 불러온 이미지면(캐시) "불러오는 중..." 문구가 깜빡이지 않게 바로 붙임
+        if (img.complete && img.naturalWidth > 0){ svgHost.innerHTML = ""; svgHost.appendChild(img); }
       } else {
         svgHost.innerHTML = '<p class="empty-msg" style="padding:24px;">이미지 정보가 없어요.</p>';
       }
