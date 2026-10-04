@@ -255,6 +255,15 @@
   .footer-row{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
   footer .logo{font-size:1rem;}
   footer p{color:var(--ink-soft); font-size:.82rem;}
+  /* ---------- 다크/라이트 전환 애니메이션 ---------- */
+  /* 지원하는 브라우저(View Transitions): 테마 버튼 자리에서 새 테마가 원으로 퍼져나감(JS가 clip-path를 움직임) */
+  ::view-transition-old(root), ::view-transition-new(root){ animation:none; mix-blend-mode:normal; }
+  ::view-transition-old(root){ z-index:1; }
+  ::view-transition-new(root){ z-index:2; }
+  /* 지원 안 하는 브라우저: 전환하는 0.4초 동안만 색이 서서히 바뀌게 함 */
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after{
+    transition:background-color .55s ease, color .55s ease, border-color .55s ease, fill .55s ease, stroke .55s ease, box-shadow .55s ease !important;
+  }
 </style>
 
 <header class="site">
@@ -510,11 +519,36 @@
   function applyIcon(){
     themeToggle.innerHTML = currentTheme() === "dark" ? SUN_ICON : MOON_ICON;
   }
+  function switchTheme(next, fromEl){
+    var apply = function(){
+      document.documentElement.setAttribute("data-theme", next);
+      try{ localStorage.setItem("oh-theme", next); } catch(e){}
+      applyIcon();
+    };
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce){ apply(); return; }
+    if (document.startViewTransition){
+      // 1순위: 버튼 위치에서 원이 퍼져나가며 새 테마로 바뀜
+      var rect = fromEl.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      var endR = Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy));
+      var vt = document.startViewTransition(apply);
+      vt.ready.then(function(){
+        document.documentElement.animate(
+          { clipPath: ["circle(0px at " + cx + "px " + cy + "px)", "circle(" + endR + "px at " + cx + "px " + cy + "px)"] },
+          { duration: 900, easing: "cubic-bezier(.4,.05,.3,1)", pseudoElement: "::view-transition-new(root)" }
+        );
+      }).catch(function(){});
+      return;
+    }
+    // 2순위: 지원 안 하면 색이 서서히 바뀌는 전환
+    var root = document.documentElement;
+    root.classList.add("theme-fade");
+    apply();
+    setTimeout(function(){ root.classList.remove("theme-fade"); }, 700);
+  }
   themeToggle.addEventListener("click", function(){
-    var next = currentTheme() === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    try{ localStorage.setItem("oh-theme", next); } catch(e){}
-    applyIcon();
+    switchTheme(currentTheme() === "dark" ? "light" : "dark", themeToggle);
   });
   applyIcon();
 

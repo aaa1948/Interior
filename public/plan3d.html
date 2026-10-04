@@ -185,6 +185,8 @@
   .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
   .btn-ghost:hover{border-color:var(--ink-soft);}
   .btn-sm{padding:9px 14px; font-size:.85rem; border-radius:8px;}
+  .btn .btn-ic{ flex:none; display:block; }
+  #traceBoxModeBtn{ display:inline-flex; align-items:center; gap:7px; }
   .btn:disabled{opacity:.5; cursor:not-allowed; transform:none;}
 
   /* ---------- hero ---------- */
@@ -367,7 +369,9 @@
   .oh-dialog-message{
     font-size:.94rem; line-height:1.55; color:var(--ink); white-space:pre-line; margin:0 0 16px;
   }
-  .oh-dialog-box .oh-dialog-input{ margin-bottom:18px; }
+  .oh-dialog-box .oh-dialog-input{ margin-bottom:14px; }
+  .oh-dialog-check{ display:flex; align-items:center; gap:9px; margin:0 2px 18px; font-size:.92rem; color:var(--ink); cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .oh-dialog-check input{ width:17px; height:17px; margin:0; accent-color:var(--blueprint); cursor:pointer; flex:none; }
   .oh-dialog-actions{ display:flex; justify-content:flex-end; gap:8px; }
   .modal-close{
     position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
@@ -646,6 +650,33 @@
   @keyframes trashGulp{ 0%{ transform:scale(1); } 25%{ transform:scale(.72); } 55%{ transform:scale(1.32) rotate(-6deg); } 100%{ transform:scale(1); } }
   @keyframes trashSpark{ 0%{ opacity:1; transform:translate(0,0) rotate(0deg) scale(1.1); } 70%{ opacity:1; } 100%{ opacity:0; transform:translate(var(--tx),var(--ty)) rotate(var(--rot,0deg)) scale(.5); } }
   @media (prefers-reduced-motion: reduce){ .drop-trash, .drop-trash .ic, .trash-spark{ animation:none !important; transition:opacity .1s !important; } }
+  /* 포커스(F) / 노클립(V) 상태 표시 — 휴지통과 같은 자리에서 키캡이 올라왔다가, 해제되면 휴지통처럼 내려가며 사라짐.
+     가구를 끌어 휴지통이 올라오면 이 키 표시가 위로 밀려나고, 튜토리얼 카드가 떠 있으면 그 카드 위에 얹힘. */
+  .mode-keys{
+    position:absolute; left:50%; bottom:128px; width:0; height:92px; z-index:11; pointer-events:none;
+    transition:bottom .4s cubic-bezier(.22,1,.36,1) .3s;
+  }
+  .mode-keys.up{ transition-delay:0s; transition-timing-function:cubic-bezier(.34,1.4,.64,1); }
+  .mode-key{
+    position:absolute; left:0; bottom:0; width:84px; margin-left:-42px;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    opacity:0; transform:translate(var(--mx,0px),240%) scale(.7);
+    transition:transform .42s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
+  }
+  .mode-key.show{ opacity:1; transform:translate(var(--mx,0px),0) scale(1); }
+  .mode-key .cap{
+    width:58px; height:58px; border-radius:14px; text-align:center;
+    background:var(--blueprint); color:var(--paper-raised);
+    border-bottom:6px solid color-mix(in srgb, var(--blueprint) 68%, #000);
+    box-shadow:0 8px 20px var(--shadow);
+    font:700 1.6rem/52px system-ui,'Apple SD Gothic Neo',sans-serif;
+  }
+  .mode-key .lb{
+    padding:3px 10px; border-radius:999px; white-space:nowrap;
+    background:var(--paper-raised); color:var(--ink); border:1px solid var(--line); box-shadow:0 4px 12px var(--shadow);
+    font:700 .74rem/1.3 system-ui,'Apple SD Gothic Neo',sans-serif;
+  }
+  @media (prefers-reduced-motion:reduce){ .mode-keys, .mode-key{ transition:opacity .1s !important; } .mode-key, .mode-key.show{ transform:translate(var(--mx,0px),0) !important; } }
   /* 가구 주변 바닥에 뜨는 이동 화살표 — 가구를 선택했을 때만 보이고, 선택이 풀리면 사라짐 */
   .furniture-move-arrows{ position:absolute; left:0; top:0; width:0; height:0; z-index:3; pointer-events:none; }
   .move-arrow{
@@ -889,7 +920,8 @@
   }
   .tut-card.tut-ok{ border-color:#3fa66a; }
   /* 가구를 끌어 휴지통이 올라오면 튜토리얼 카드는 그 위로 비켜났다가, 휴지통이 내려가면 원래 자리로 돌아옴 */
-  .tut-card{ transition:bottom .4s cubic-bezier(.22,1,.36,1) .3s; }
+  .tut-card{ transition:bottom .4s cubic-bezier(.22,1,.36,1) .3s, height .4s cubic-bezier(.34,1.18,.64,1) 0s; }
+  .tut-card.resizing{ overflow:hidden; }
   .tut-card.trash-up{ bottom:228px; transition-delay:0s; transition-timing-function:cubic-bezier(.34,1.4,.64,1); }
   @media (prefers-reduced-motion:reduce){ .tut-card{ transition:none; } }
   @keyframes tutCardIn{ from{ opacity:0; transform:translateX(-50%) translateY(34px) scale(.78); } 55%{ opacity:1; } to{ opacity:1; transform:translateX(-50%) translateY(0) scale(1); } }
@@ -937,7 +969,7 @@
     font:700 1.8rem/64px system-ui,'Apple SD Gothic Neo',sans-serif; transition:background .15s ease, color .15s ease;
   }
   .tut-key.sm{ width:auto; padding:0 14px; font-size:1rem; }
-  .tut-key.done{ background:#3fa66a; border-color:#2e8a54; color:#fff; }
+  .tut-key.done{ background:var(--blueprint); border-color:color-mix(in srgb, var(--blueprint) 68%, #000); color:var(--paper-raised); }
   .tut-key.press{ transform:translateY(4px); border-bottom-width:2px; background:var(--blueprint-soft); }
   .tut-key.big{ width:auto; min-width:150px; padding:0 22px; font-size:1.5rem; }
   .tut-key{ transition:background .15s ease, color .15s ease, transform .08s ease, border-bottom-width .08s ease; }
@@ -1152,6 +1184,15 @@
     .oh-dialog-overlay, .oh-dialog-box{ animation:none !important; }
     .reveal-pending{ opacity:1 !important; transform:none !important; }
   }
+  /* ---------- 다크/라이트 전환 애니메이션 ---------- */
+  /* 지원하는 브라우저(View Transitions): 테마 버튼 자리에서 새 테마가 원으로 퍼져나감(JS가 clip-path를 움직임) */
+  ::view-transition-old(root), ::view-transition-new(root){ animation:none; mix-blend-mode:normal; }
+  ::view-transition-old(root){ z-index:1; }
+  ::view-transition-new(root){ z-index:2; }
+  /* 지원 안 하는 브라우저: 전환하는 0.4초 동안만 색이 서서히 바뀌게 함 */
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after{
+    transition:background-color .55s ease, color .55s ease, border-color .55s ease, fill .55s ease, stroke .55s ease, box-shadow .55s ease !important;
+  }
 </style>
 
 <header class="site">
@@ -1365,7 +1406,7 @@
         <svg id="traceSvg"></svg>
       </div>
       <div class="trace-toolbar">
-        <button type="button" class="btn btn-ghost btn-sm" id="traceBoxModeBtn" aria-pressed="false">▭ 사각형으로 그리기</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="traceBoxModeBtn" aria-pressed="false"><svg class="btn-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="6.5" width="15" height="11" rx="1.6" stroke="currentColor" stroke-width="1.8" stroke-dasharray="0"/><circle cx="4.5" cy="6.5" r="2.1" fill="currentColor"/><circle cx="19.5" cy="17.5" r="2.1" fill="currentColor"/></svg><span>사각형으로 그리기</span></button>
         <button type="button" class="btn btn-ghost btn-sm" id="traceNewChainBtn">새 벽 시작</button>
         <button type="button" class="btn btn-ghost btn-sm" id="traceUndoBtn">되돌리기</button>
         <button type="button" class="btn btn-ghost btn-sm" id="traceClearBtn">전체 지우기</button>
@@ -1482,7 +1523,7 @@
     return seeded;
   }
   function ohSavePosts(posts){
-    try{ localStorage.setItem(OH_POSTS_KEY, JSON.stringify(posts)); } catch(e){}
+    try{ localStorage.setItem(OH_POSTS_KEY, JSON.stringify(posts)); return true; } catch(e){ return false; }
   }
   function ohGetPost(id){
     var posts = ohLoadPosts();
@@ -1541,6 +1582,19 @@
      기존 #overlay(검색·도면 그리기·가구 배치 모달)보다 위에 떠야 해서 document.body에 직접
      붙이고 z-index도 그보다 높게 둠(.overlay가 100이라 500으로).
   */
+  // 이미지의 일부(sx,sy,sw,sh)를 maxPx 이하로 줄여서 JPEG data URL로 만듦(게시물 저장 용량을 아끼기 위함).
+  // 캔버스가 오염돼(다른 서버 이미지 CORS) 못 뽑으면 null.
+  function imageToJpegDataUrl(img, sx, sy, sw, sh, maxPx, quality){
+    try{
+      var sc = Math.min(1, maxPx / Math.max(sw, sh));
+      var c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(sw * sc)); c.height = Math.max(1, Math.round(sh * sc));
+      var ctx = c.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", quality);
+    } catch(e){ return null; }
+  }
   function ohDialog(opts){
     return new Promise(function(resolve){
       var overlay = document.createElement("div");
@@ -1562,6 +1616,20 @@
         input.className = "search-input oh-dialog-input";
         input.value = opts.inputValue || "";
         box.appendChild(input);
+      }
+
+      var checkEl = null;
+      if (opts.checkbox){
+        var checkLabel = document.createElement("label");
+        checkLabel.className = "oh-dialog-check";
+        checkEl = document.createElement("input");
+        checkEl.type = "checkbox";
+        checkEl.checked = opts.checkbox.checked !== false;
+        var checkText = document.createElement("span");
+        checkText.textContent = opts.checkbox.label || "";
+        checkLabel.appendChild(checkEl);
+        checkLabel.appendChild(checkText);
+        box.appendChild(checkLabel);
       }
 
       var actions = document.createElement("div");
@@ -1605,6 +1673,7 @@
       okBtn.className = "btn btn-primary";
       okBtn.textContent = opts.okText || "확인";
       okBtn.addEventListener("click", function(){
+        if (opts.showInput && checkEl){ close({ value: input ? input.value : "", checked: checkEl.checked }); return; }
         close(opts.showInput ? (input ? input.value : "") : true);
       });
       actions.appendChild(okBtn);
@@ -1641,6 +1710,11 @@
   function ohPrompt(message, defaultValue){
     return ohDialog({ message: message, showCancel: true, showInput: true, inputValue: defaultValue || "", okText: "확인", cancelText: "취소" });
   }
+  // 입력창 아래에 체크박스가 하나 더 붙은 prompt — 취소하면 null, 확인하면 { value, checked }
+  function ohPromptWithCheck(message, defaultValue, checkLabel, checked){
+    return ohDialog({ message: message, showCancel: true, showInput: true, inputValue: defaultValue || "", okText: "확인", cancelText: "취소",
+      checkbox: { label: checkLabel, checked: checked !== false } });
+  }
   function ohGetName(){
     try{ return (localStorage.getItem(OH_NAME_KEY) || "").trim(); } catch(e){ return ""; }
   }
@@ -1663,11 +1737,36 @@
     function applyIcon(){
       themeToggle.innerHTML = currentTheme() === "dark" ? SUN_ICON : MOON_ICON;
     }
+    function switchTheme(next, fromEl){
+      var apply = function(){
+        document.documentElement.setAttribute("data-theme", next);
+        try{ localStorage.setItem("oh-theme", next); } catch(e){}
+        applyIcon();
+      };
+      var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce){ apply(); return; }
+      if (document.startViewTransition){
+        // 1순위: 버튼 위치에서 원이 퍼져나가며 새 테마로 바뀜
+        var rect = fromEl.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        var endR = Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy));
+        var vt = document.startViewTransition(apply);
+        vt.ready.then(function(){
+          document.documentElement.animate(
+            { clipPath: ["circle(0px at " + cx + "px " + cy + "px)", "circle(" + endR + "px at " + cx + "px " + cy + "px)"] },
+            { duration: 900, easing: "cubic-bezier(.4,.05,.3,1)", pseudoElement: "::view-transition-new(root)" }
+          );
+        }).catch(function(){});
+        return;
+      }
+      // 2순위: 지원 안 하면 색이 서서히 바뀌는 전환
+      var root = document.documentElement;
+      root.classList.add("theme-fade");
+      apply();
+      setTimeout(function(){ root.classList.remove("theme-fade"); }, 700);
+    }
     themeToggle.addEventListener("click", function(){
-      var next = currentTheme() === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      try{ localStorage.setItem("oh-theme", next); } catch(e){}
-      applyIcon();
+      switchTheme(currentTheme() === "dark" ? "light" : "dark", themeToggle);
     });
     applyIcon();
   })();
@@ -1902,6 +2001,7 @@
     // 게시 썸네일 캡처 때만 잠깐 숨기려고 참조를 남겨둠(screenshot() 참고) — 에디터 화면 자체엔
     // 그대로 원본 도면 사진이 깔려서 보임, 갤러리 카드 썸네일에서만 빼고 찍음.
     var photoFloorMesh = null;
+    var photoFloorTex = null; // 게시할 때 도면 이미지를 잘라서 같이 저장하기 위해 원본 텍스처를 붙잡아둠
     var planHidden = false; // 도면 on/off 버튼 — 켜면(true) 바닥의 도면 사진을 숨기고 격자만 보임
     if (plan.floorplanImageUrl && plan.imageBBox){
       var texLoader = new THREE.TextureLoader();
@@ -1936,6 +2036,7 @@
         photoFloor.position.set(center.x, -0.008, center.z);
         scene.add(photoFloor);
         photoFloorMesh = photoFloor;
+        photoFloorTex = tex;
         photoFloor.visible = !planHidden; // 텍스처가 늦게 로드돼도 버튼 상태를 따름
       }, undefined, function(err){ console.error("[oh-floor-photo] load FAILED", textureSrc.slice(0,60), err); });
     }
@@ -2286,6 +2387,12 @@
     // 가구/문/창문/콘센트를 새로 놓을 때: 작게 시작해서 살짝 튀어 오르며 제자리 크기로 커지고(easeOutBack),
     // 바닥 가구는 놓인 자리에서 파문(링)이 퍼져나감. 크기는 group.scale 그대로 배율만 곱하므로, 사용자가 정한
     // 크기(가로/세로/높이)는 건드리지 않음.
+    // 배치할 때 생기는 아우라 링 색 — 현재 테마(라이트/다크)의 하이라이트 색(--blueprint)을 그대로 따라감
+    function accentThreeColor(){
+      var v = '';
+      try{ v = getComputedStyle(document.documentElement).getPropertyValue('--blueprint').trim(); }catch(e){}
+      return new THREE.Color(/^#[0-9a-fA-F]{3,8}$/.test(v) ? v : '#5b8dd9');
+    }
     function startPopAnim(obj, durMs){
       if (!popEnabled || !obj) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -2297,7 +2404,7 @@
       if (!obj.userData.isWallItem){
         ring = new THREE.Mesh(
           new THREE.RingGeometry(0.88, 1, 48),
-          new THREE.MeshBasicMaterial({ color: 0x5b8dd9, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false })
+          new THREE.MeshBasicMaterial({ color: accentThreeColor(), transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false })
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.set(obj.position.x, obj.position.y + 0.02, obj.position.z);
@@ -2643,6 +2750,7 @@
     var rotatePanel;
     var moveArrows = null, moveArrowBtns = null, moveArrowsHeld = false;
     var doneBtnEl = null;
+    var modeKeysEl = null, modeKeyF = null, modeKeyV = null, modeKeysBottom = -1; // F 포커스 / V 노클립 상태 키캡
     var dropTrash = null, dragActive = false, dragObj = null, dragSX = 0, dragSY = 0, dragActT = 0; // 끌기 효과
     var fxRenderer = null, fxActive = false; // 휴지통 위로 빨려 들어가는 가구만 따로 그리는 투명 오버레이 렌더러(떨림 + 휴지통)
     var popEnabled = false, popAnims = []; // 새로 놓을 때 "뿅" 하고 나타나는 애니메이션(초기 기본 가구는 제외)
@@ -3597,6 +3705,21 @@
       dropTrash.innerHTML = '<span class="ic">🗑️</span>';
       container.appendChild(dropTrash);
 
+      // 5-1. 포커스(F)/노클립(V) 상태 키캡 — 휴지통과 같은 자리. 상태가 켜져 있는 동안만 올라와 있음.
+      modeKeysEl = document.createElement('div');
+      modeKeysEl.className = 'mode-keys';
+      modeKeysEl.setAttribute('aria-hidden', 'true');
+      function makeModeKey(k, label){
+        var el = document.createElement('div');
+        el.className = 'mode-key';
+        el.innerHTML = '<span class="cap">' + k + '</span><span class="lb">' + label + '</span>';
+        modeKeysEl.appendChild(el);
+        return el;
+      }
+      modeKeyF = makeModeKey('F', '포커스');
+      modeKeyV = makeModeKey('V', '노클립');
+      container.appendChild(modeKeysEl);
+
       // 4-1. 가구 색상 팝업 — 벽 색상 팔레트(wall-color-panel)와 똑같은 떠다니는 카드 스타일을
       //      그대로 재사용(clamp/flip-below 위치 로직도 공용 positionFloatingPanel로 공유).
       //      평소엔 숨겨져 있다가 위 색상 원형 버튼을 누르면 그 버튼 바로 위/아래에 나타남.
@@ -4207,6 +4330,24 @@
     // ---- 노클립(자유 비행) + F 포커스 ----
     var NOCLIP_SPEED = Math.max(2.5, size * 0.45); // m/s
     var DEFAULT_HINT_TEXT = (typeof wallHintBadge !== 'undefined') ? wallHintBadge.textContent : '';
+    // 포커스(F)/노클립(V) 상태 키캡 표시 — 둘 다 켜져 있으면 나란히, 하나면 가운데. 휴지통이 올라오면 위로 밀려나고
+    // 튜토리얼 카드가 떠 있으면 그 카드 위에 얹힘(카드와 겹치지 않게).
+    function updateModeKeys(){
+      if (!modeKeysEl) return;
+      // 튜토리얼이 화면 가운데에 큰 키 패널(WASD, F, V, R)을 띄워둔 동안은 내용이 겹치므로 상태 키캡을 잠깐 내려서 숨김
+      var tutKeysUp = !!tutKeysEl;
+      var f = !!focusReturn && !tutKeysUp, v = !!noclipMode && !tutKeysUp, both = f && v;
+      modeKeyF.classList.toggle('show', f);
+      modeKeyV.classList.toggle('show', v);
+      modeKeyF.style.setProperty('--mx', both ? '-48px' : '0px');
+      modeKeyV.style.setProperty('--mx', both ? '48px' : '0px');
+      var trashUp = !!(dropTrash && dropTrash.classList.contains('show'));
+      var b;
+      if (tutCard && tutCard.parentNode && !tutCard.classList.contains('tut-out')) b = (trashUp ? 228 : 130) + tutCard.offsetHeight + 14;
+      else b = trashUp ? 226 : 128;
+      modeKeysEl.classList.toggle('up', trashUp);
+      if (b !== modeKeysBottom){ modeKeysBottom = b; modeKeysEl.style.bottom = b + 'px'; }
+    }
     function setNoclip(on, keepView, resume){
       if (!furnitureEditor || on === noclipMode) return;
       if (!keepView){ focusReturn = null; focusedObj = null; } // 노클립/탑뷰를 직접 바꾸면 포커스 해제 기억은 버림
@@ -4414,7 +4555,7 @@
       { title:'F 포커스', text:'가구를 <b>클릭해서 선택</b>한 다음 키보드 <kbd>F</kbd>를 눌러보세요. 선택한 가구 쪽으로 카메라가 다가가요.', note:'가구가 없으면 먼저 하나 놓아주세요.', evt:'focus', bigKey:{ code:'KeyF', label:'F · 포커스' } },
       { title:'F 한 번 더 — 포커스 해제', text:'<kbd>F</kbd>를 <b>한 번 더</b> 눌러보세요. 포커스하기 전 시점으로 부드럽게 돌아와요.', note:'노클립에서 포커스했다면 노클립 상태 그대로 돌아와요.', evt:'unfocus', bigKey:{ code:'KeyF', label:'F · 해제' }, skipIf:function(){ return !focusReturn; } },
       { title:'노클립 켜기', text:'오른쪽 위 <b>노클립</b> 버튼이나 키보드 <kbd>V</kbd>를 눌러보세요. 벽도 통과하며 날아다니는 모드예요.', evt:'noclipOn', pulse:'noclip', bigKey:{ code:'KeyV', label:'V · 노클립 켜기' }, skipIf:function(){ return noclipMode; } },
-      { title:'날아다니기', text:'화면에 크게 뜬 키를 하나씩 눌러보세요. <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동, <kbd>Space</kbd> 상승, <kbd>C</kbd> 하강, <kbd>Shift</kbd> 빠르게예요.', note:'누른 키는 초록색으로 바뀌어요. 마우스 드래그로 시선도 돌려보세요.', evt:'keys', keys:['KeyW','KeyA','KeyS','KeyD','Space','KeyC','Shift'], delay:1000, skipIf:function(){ return !noclipMode; } },
+      { title:'날아다니기', text:'화면에 크게 뜬 키를 하나씩 눌러보세요. <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동, <kbd>Space</kbd> 상승, <kbd>C</kbd> 하강, <kbd>Shift</kbd> 빠르게예요.', note:'누른 키는 하이라이트 색으로 채워져요. 마우스 드래그로 시선도 돌려보세요.', evt:'keys', keys:['KeyW','KeyA','KeyS','KeyD','Space','KeyC','Shift'], delay:1000, skipIf:function(){ return !noclipMode; } },
       { title:'원래 시점으로', text:'<b>노클립</b> 버튼이나 <kbd>V</kbd>를 한 번 더 눌러 노클립을 켜기 전 시점으로 돌아와보세요.', evt:'noclipOff', pulse:'noclip', bigKey:{ code:'KeyV', label:'V · 노클립 끄기' }, skipIf:function(){ return !noclipMode; } },
       { title:'R 카메라 리셋', text:'시점을 이리저리 돌려놓은 뒤 키보드 <kbd>R</kbd>을 눌러보세요. 처음 시점으로 부드럽게 돌아와요.', note:'노클립 중에 눌러도 해제되면서 돌아와요.', evt:'reset', bigKey:{ code:'KeyR', label:'R · 카메라 리셋' } },
       { title:'벽 색상 바꾸기', text:'벽을 <b>더블클릭</b>해보세요. 그 벽만 색이나 사진으로 바꿀 수 있어요.', evt:'wallSelect' }
@@ -4430,7 +4571,34 @@
       else if (kind === 'noclip' && noclipBtn) target = noclipBtn.parentNode;
       if (target) target.classList.add('tut-pulse');
     }
+    // 단계가 바뀌어 내용이 달라질 때 카드가 뚝 바뀌지 않고, 이전 높이에서 새 높이로 부드럽게 늘었다 줄어들며
+    // 새 내용이 살짝 떠오르며 나타남(도면 팝업들이 크기가 바뀌는 것과 같은 느낌). 카드는 아래쪽 기준이라 위로 자람.
+    var tutResizeTimer = null;
     function tutRender(){
+      if (!tutCard) return;
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var h0 = tutCard.offsetHeight;
+      var hadContent = tutCard.firstChild && h0 > 0;
+      if (reduce || !hadContent){ tutCard.style.height = ''; tutCard.classList.remove('resizing'); tutRenderInner(); return; }
+      clearTimeout(tutResizeTimer);
+      tutCard.classList.add('resizing');
+      tutCard.style.height = h0 + 'px';          // 지금(진행 중이던 애니메이션 포함) 높이로 고정
+      tutRenderInner();
+      tutCard.style.height = 'auto';
+      var h1 = tutCard.offsetHeight;             // 새 내용의 원래 높이 측정
+      tutCard.style.height = h0 + 'px';
+      void tutCard.offsetHeight;                 // 리플로우로 시작점 확정
+      if (Math.abs(h1 - h0) > 1) tutCard.style.height = h1 + 'px';
+      Array.prototype.forEach.call(tutCard.children, function(c, i){
+        if (c.animate) c.animate([{ opacity:0, transform:'translateY(6px)' }, { opacity:1, transform:'none' }],
+          { duration:260, delay:70 + i * 25, easing:'cubic-bezier(.22,1,.36,1)', fill:'backwards' });
+      });
+      tutResizeTimer = setTimeout(function(){
+        if (!tutCard) return;
+        tutCard.style.height = ''; tutCard.classList.remove('resizing');
+      }, 480);
+    }
+    function tutRenderInner(){
       if (!tutCard) return;
       var total = TUT_STEPS.length;
       if (tutIndex >= total){
@@ -4455,7 +4623,7 @@
       if (tutKeysEl && tutKeysEl.parentNode) tutKeysEl.parentNode.removeChild(tutKeysEl);
       tutKeysEl = null;
     }
-    // WASD 단계: 화면 가운데에 큰 키캡을 띄우고, 눌린 키는 초록색으로 바뀌게 함(전부 눌러야 통과)
+    // WASD 단계: 화면 가운데에 큰 키캡을 띄우고, 눌린 키는 하이라이트 색으로 바뀌게 함(전부 눌러야 통과)
     function tutShowKeys(){
       tutHideKeys();
       tutKeysDone = {};
@@ -4506,7 +4674,7 @@
       if (tutBusy || !tutCard) return;
       tutBusy = true;
       tutCard.classList.add('tut-ok');
-      if (tutKeysEl) Array.prototype.forEach.call(tutKeysEl.querySelectorAll('.tut-key'), function(k){ k.classList.add('done'); }); // 성공하면 키캡이 초록색
+      if (tutKeysEl) Array.prototype.forEach.call(tutKeysEl.querySelectorAll('.tut-key'), function(k){ k.classList.add('done'); }); // 성공하면 키캡이 하이라이트 색
       var curStep = TUT_STEPS[tutIndex];
       setTimeout(function(){ if (tutActive) tutGo(tutIndex + 1); }, (curStep && curStep.delay) || 700);
     }
@@ -4793,6 +4961,7 @@
       if (furnitureEditor){
         updateContextHint();
         if (tutCard) tutCard.classList.toggle('trash-up', !!(dropTrash && dropTrash.classList.contains('show')));
+        updateModeKeys();
         updateRotatePanelPosition();
         updateMoveArrows();
         updateWallColorPanelPosition();
@@ -4826,6 +4995,7 @@
         if (sizePanel && sizePanel.parentNode) sizePanel.parentNode.removeChild(sizePanel);
         if (rotatePanel && rotatePanel.parentNode) rotatePanel.parentNode.removeChild(rotatePanel);
         if (dropTrash && dropTrash.parentNode) dropTrash.parentNode.removeChild(dropTrash);
+        if (modeKeysEl && modeKeysEl.parentNode) modeKeysEl.parentNode.removeChild(modeKeysEl);
         if (moveArrows && moveArrows.parentNode) moveArrows.parentNode.removeChild(moveArrows);
         if (wallColorPanel && wallColorPanel.parentNode) wallColorPanel.parentNode.removeChild(wallColorPanel);
         if (typeof wallHintBadge !== 'undefined' && wallHintBadge.parentNode) wallHintBadge.parentNode.removeChild(wallHintBadge);
@@ -4845,6 +5015,25 @@
         });
       },
       getBounds: function(){ return { w: b.w, d: b.d }; },
+      // 게시용: 도면 이미지가 있는지 / 벽 영역만 잘라낸 도면 이미지(JPEG data URL) / 벽에 붙인 이미지들.
+      // 이미지 서버가 CORS를 막아 캔버스가 오염되면 null(그럴 땐 도면 없이 게시됨).
+      hasFloorPhoto: function(){ return !!(photoFloorTex && photoFloorTex.image && plan.imageBBox); },
+      getFloorPhoto: function(maxPx){
+        if (!(photoFloorTex && photoFloorTex.image && plan.imageBBox)) return null;
+        var img = photoFloorTex.image, bb = plan.imageBBox;
+        var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+        if (!W || !H) return null;
+        return imageToJpegDataUrl(img, bb.minU * W, bb.minV * H, (bb.maxU - bb.minU) * W, (bb.maxV - bb.minV) * H, maxPx || 1100, 0.8);
+      },
+      // wallColors와 같은 순서(outer 먼저, inner)로, 이미지 벽지가 입혀진 벽만 data URL, 나머진 null.
+      getWallImages: function(){
+        return wallSegments.map(function(seg, i){
+          var t = wallImageOverrides[i];
+          if (!t || !t.image) return null;
+          var im = t.image, W = im.naturalWidth || im.width, H = im.naturalHeight || im.height;
+          return (W && H) ? imageToJpegDataUrl(im, 0, 0, W, H, 900, 0.8) : null;
+        });
+      },
       // 벽마다 지금 실제로 적용된 색을 순서대로(outer 먼저, 그다음 inner — wallSegments가 그
       // 순서 그대로임) 뽑아냄. wallMeshes(실제로 그려진 조각들)가 아니라 논리적 벽(wallSegments)
       // 기준으로 하나씩 뽑아야, 문/창문 때문에 벽 하나가 여러 조각으로 갈라져 있어도 항상
@@ -4863,10 +5052,10 @@
       // 캡처 직전에 잠깐 숨겼다가 캡처 후 바로 다시 보여줌). 렌더러가 alpha:true라 빈 곳이 JPEG로
       // 구우면 검게 뭉개지는데, 그걸 막으려고 캔버스를 그리기 전에 먼저 테마 배경색을 깔아둠 —
       // 라이트 모드는 흰색, 다크 모드는 검은색.
-      screenshot: function(maxW){
+      screenshot: function(maxW, withPhoto){
         maxW = maxW || 480;
         var hadPhotoFloor = !!(photoFloorMesh && photoFloorMesh.visible);
-        if (photoFloorMesh) photoFloorMesh.visible = false;
+        if (photoFloorMesh) photoFloorMesh.visible = !!withPhoto; // 도면 이미지를 같이 게시할 때만 썸네일에도 넣음
         // 썸네일은 게시하는 순간 카메라가 어느 각도를 보고 있었든 상관없이 항상 탑뷰(바로 위에서 본
         // 모습)로 찍음 — 갤러리에서 한눈에 배치를 알아보기 좋게 하기 위함. 탑뷰 버튼과 똑같은
         // 방식(phi≈0)으로 잠깐 전환해서 찍고, 찍은 뒤에는 원래 보던 각도로 되돌려서 편집 화면
@@ -5401,8 +5590,19 @@
     } else {
       if (!resultScene){ return; }
       var defaultTitle = "내 배치 · " + new Date().toLocaleDateString("ko-KR", { month:"long", day:"numeric" });
-      var title = await ohPrompt("게시물 제목을 입력해주세요.", defaultTitle);
-      if (title === null) return; // 취소하면 아무 것도 안 하고 계속 편집 가능
+      // 도면 사진이나 벽에 붙인 이미지가 하나라도 있을 때만 "함께 게시할까요?" 체크박스를 보여줌
+      var hasPhoto = !!(resultScene.hasFloorPhoto && resultScene.hasFloorPhoto()) ||
+        !!(resultScene.getWallImages && resultScene.getWallImages().some(function(x){ return !!x; }));
+      var title, includePlan = false;
+      if (hasPhoto){
+        // 프라이버시: 도면 사진과 벽에 붙인 이미지는 기본은 같이 게시하지만, 체크를 풀면 둘 다 갤러리에 안 올림
+        var titleRes = await ohPromptWithCheck("게시물 제목을 입력해주세요.", defaultTitle, "도면과 벽 이미지도 함께 게시할까요?", true);
+        if (titleRes === null) return; // 취소하면 아무 것도 안 하고 계속 편집 가능
+        title = titleRes.value; includePlan = titleRes.checked;
+      } else {
+        title = await ohPrompt("게시물 제목을 입력해주세요.", defaultTitle);
+        if (title === null) return;
+      }
       title = title.trim() || defaultTitle;
 
       var author = ohGetName();
@@ -5415,7 +5615,10 @@
 
       var bounds = resultScene.getBounds ? resultScene.getBounds() : { w:0, d:0 };
       var furnitureData = resultScene.getFurnitureData ? resultScene.getFurnitureData() : [];
-      var thumbDataUrl = resultScene.screenshot ? resultScene.screenshot(640) : null;
+      var thumbDataUrl = resultScene.screenshot ? resultScene.screenshot(640, includePlan) : null;
+      var floorPhotoUrl = (includePlan && resultScene.getFloorPhoto) ? resultScene.getFloorPhoto(1100) : null;
+      var wallImagesData = resultScene.getWallImages ? resultScene.getWallImages() : [];
+      var hasWallImages = includePlan && wallImagesData.some(function(x){ return !!x; });
 
       var post = {
         id: "post_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
@@ -5434,7 +5637,11 @@
           depth: bounds.d,
           // outer 벽들 색 다음 inner 벽들 색 순서로 이어진 배열(getWallColors 참고) — 사용자가
           // 가구 배치 화면에서 바꾼 벽 색을 게시물 상세 페이지에서도 그대로 재현하기 위함.
-          wallColors: resultScene.getWallColors ? resultScene.getWallColors() : []
+          wallColors: resultScene.getWallColors ? resultScene.getWallColors() : [],
+          // 도면 이미지(벽 영역만 잘라서 줄인 것)는 "도면 이미지도 함께 게시" 체크했을 때만 저장,
+          // 벽지로 붙인 이미지는 벽 순서대로(없는 벽은 null) 저장 — 게시물 상세에서 그대로 재현.
+          floorPhoto: floorPhotoUrl || null,
+          wallImages: hasWallImages ? wallImagesData : null
         },
         furniture: furnitureData,
         thumb: thumbDataUrl ? { dataUrl: thumbDataUrl } : { variant: 1, icon: "house" },
@@ -5444,7 +5651,18 @@
 
       var posts = ohLoadPosts();
       posts.unshift(post);
-      ohSavePosts(posts);
+      var saved = ohSavePosts(posts);
+      if (!saved && (post.wallData.floorPhoto || post.wallData.wallImages)){
+        // 브라우저 저장 공간이 모자라면 용량이 큰 이미지(도면/벽지)만 빼고 다시 저장
+        post.wallData.floorPhoto = null; post.wallData.wallImages = null;
+        saved = ohSavePosts(posts);
+        if (saved) ohAlert("저장 공간이 부족해서 도면/벽 이미지는 빼고 게시했어요.");
+      }
+      if (!saved){
+        posts.shift();
+        await ohAlert("저장 공간이 부족해서 게시하지 못했어요. 갤러리에서 예전 게시물을 지우고 다시 시도해주세요.");
+        return;
+      }
       furniturePublished = true;
       btn.textContent = "게시 완료 ✓ · 갤러리로 이동";
       if (resultScene && resultScene.setDoneLabel) resultScene.setDoneLabel("✓ 게시 완료 · 갤러리로");
