@@ -30,16 +30,16 @@
     --paper-raised:#FFFFFF;
     --ink:#23262B;
     --ink-soft:#5B6169;
-    --blueprint:#2F5D8A;
-    --blueprint-deep:#1C3A57;
-    --blueprint-soft:#E4ECF3;
+    --blueprint:#C4703F;
+    --blueprint-deep:#8F4A22;
+    --blueprint-soft:#F6E6DA;
     --terra:#C4703F;
     --terra-soft:#F3E3D6;
     --line:#DAD3C3;
     --wall-floor:#EFE9DA;
     --success:#3C7A5B;
     --shadow:rgba(35,38,43,.10);
-    --focus:#2F5D8A;
+    --focus:#C4703F;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -142,6 +142,21 @@
     box-shadow:0 14px 36px -14px var(--shadow); padding:28px;
   }
   @media (max-width:500px){ .login-dropdown{width:calc(100vw - 40px);} }
+  /* 열고 닫을 때 다른 팝업들처럼 오른쪽 위(로그인 버튼)에서 뿅 튀어나왔다가 쏙 들어가는 효과.
+     display:none 토글은 애니메이션이 안 먹으니 opacity/visibility/transform으로 처리 */
+  .login-dropdown{
+    transform-origin:top right; opacity:0; visibility:hidden; pointer-events:none;
+    transform:translateY(-8px) scale(.9);
+    transition:opacity .16s ease, transform .18s ease, visibility 0s linear .18s;
+  }
+  .login-dropdown.open{
+    opacity:1; visibility:visible; pointer-events:auto; transform:none;
+    transition:opacity .18s ease, transform .38s cubic-bezier(.34,1.56,.64,1), visibility 0s;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .login-dropdown, .login-dropdown.open{ transform:none; transition:opacity .12s linear, visibility 0s linear .12s; }
+    .login-dropdown.open{ transition:opacity .12s linear, visibility 0s; }
+  }
   .login-field{display:block; margin-bottom:16px;}
   .login-field span{display:block; font-size:.85rem; color:var(--ink-soft); margin-bottom:7px;}
   .login-field input{
@@ -174,6 +189,9 @@
 
   /* ---------- hero ---------- */
   .hero{padding-top:clamp(48px,7vw,88px);}
+  /* 메인 화면에서 '사용 흐름'이 너무 아래에 있어서, 히어로 아래쪽과 사용 흐름 위쪽 여백을 줄여 조금 끌어올림 */
+  .hero{padding-bottom:clamp(32px,5vw,64px);}
+  #steps{padding-top:clamp(32px,5vw,64px);}
   .hero-head{margin-bottom:clamp(28px,4vw,40px);}
   .hero-grid{
     display:flex; flex-wrap:wrap; gap:clamp(32px,5vw,64px);
@@ -1151,7 +1169,7 @@
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="다크·라이트 모드 전환"></button>
       <div class="nav-auth">
         <button type="button" class="btn btn-primary btn-sm" id="loginBtn" aria-haspopup="true" aria-expanded="false">로그인</button>
-        <div class="login-dropdown" id="loginDropdown" hidden>
+        <div class="login-dropdown" id="loginDropdown">
           <form id="loginForm">
             <label class="login-field">
               <span>아이디</span>
@@ -1661,21 +1679,22 @@
     var loginForm = document.getElementById("loginForm");
     if (!loginBtn || !loginDropdown) return;
 
+    function isOpen(){ return loginDropdown.classList.contains("open"); }
     function setOpen(open){
-      loginDropdown.hidden = !open;
+      loginDropdown.classList.toggle("open", open);
       loginBtn.setAttribute("aria-expanded", open ? "true" : "false");
     }
     loginBtn.addEventListener("click", function(e){
       e.stopPropagation();
-      setOpen(loginDropdown.hidden);
+      setOpen(!isOpen());
     });
     document.addEventListener("click", function(e){
-      if (!loginDropdown.hidden && !loginDropdown.contains(e.target) && e.target !== loginBtn){
+      if (isOpen() && !loginDropdown.contains(e.target) && e.target !== loginBtn){
         setOpen(false);
       }
     });
     document.addEventListener("keydown", function(e){
-      if (e.key === "Escape" && !loginDropdown.hidden) setOpen(false);
+      if (e.key === "Escape" && isOpen()) setOpen(false);
     });
     if (loginForm){
       loginForm.addEventListener("submit", function(e){
@@ -5752,6 +5771,7 @@
   }
 
   var traceHintFree = "모서리마다 클릭해서 벽 선을 이어가세요. 벽이 끊기는 곳(다른 벽으로 넘어갈 때)은 \"새 벽 시작\"을 누른 뒤 다시 클릭해서 이어가면 돼요.";
+  var traceHintDone = "방이 만들어졌어요! 벽을 클릭해서 선택하면 위치를 옮기거나 삭제할 수 있어요~ 사각형을 더 그리려면 \"사각형으로 그리기\"를 다시 눌러주세요.";
   var traceHintBox = "사각형 모드 — 방의 대각선 모서리 두 곳을 순서대로 클릭하면 벽 4개짜리 방이 한 번에 만들어져요.";
 
   function setTraceBoxMode(on){
@@ -5799,11 +5819,13 @@
       traceChains.push([
         startCorner, { u:x2, v:y1 }, { u:x2, v:y2 }, { u:x1, v:y2 }, startCorner
       ]);
-      traceBoxStart = null;
-      traceHoverPoint = null;
-      traceRedraw();
+      // 방이 완성되면 사각형 모드를 자동으로 해제하고, 다음에 뭘 할 수 있는지 안내 문구로 알려줌
+      setTraceBoxMode(false);
+      traceHint.textContent = traceHintDone;
       return;
     }
+    // 자유 그리기를 다시 시작하면 "방이 만들어졌어요" 안내는 원래 설명으로 되돌림
+    if (traceHint.textContent === traceHintDone) traceHint.textContent = traceHintFree;
     // 지금 그리고 있는 체인이 2점 이상이고, 새로 찍은 점이 그 체인의 시작점과 거의 겹치면
     // 자동으로 시작점 객체를 그대로 재사용해서 닫아줌(사각형 도구와 동일한 이유 —
     // 값만 같은 별개 점이면 나중에 벽을 밀 때 그 모서리가 떨어져 버림).
@@ -5842,6 +5864,7 @@
 
   traceUndoBtn.addEventListener("click", function(){
     selectedWallSeg = null;
+    if (traceHint.textContent === traceHintDone) traceHint.textContent = traceHintFree;
     if (traceBoxStart){ traceBoxStart = null; traceHoverPoint = null; } // 찍어둔 첫 모서리부터 취소
     else if (traceCurrent.length > 0) traceCurrent.pop();
     else if (traceChains.length > 0) traceCurrent = traceChains.pop();
@@ -5849,6 +5872,7 @@
   });
 
   traceClearBtn.addEventListener("click", function(){
+    if (traceHint.textContent === traceHintDone) traceHint.textContent = traceHintFree;
     traceChains = [];
     traceCurrent = [];
     traceBoxStart = null;

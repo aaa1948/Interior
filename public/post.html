@@ -29,14 +29,14 @@
     --paper-raised:#FFFFFF;
     --ink:#23262B;
     --ink-soft:#5B6169;
-    --blueprint:#2F5D8A;
-    --blueprint-deep:#1C3A57;
-    --blueprint-soft:#E4ECF3;
+    --blueprint:#C4703F;
+    --blueprint-deep:#8F4A22;
+    --blueprint-soft:#F6E6DA;
     --terra:#C4703F;
     --terra-soft:#F3E3D6;
     --line:#DAD3C3;
     --shadow:rgba(35,38,43,.10);
-    --focus:#2F5D8A;
+    --focus:#C4703F;
     --wall-floor:#EFE9DA;
   }
   @media (prefers-color-scheme: dark){
@@ -138,6 +138,21 @@
     box-shadow:0 14px 36px -14px var(--shadow); padding:28px;
   }
   @media (max-width:500px){ .login-dropdown{width:calc(100vw - 40px);} }
+  /* 열고 닫을 때 다른 팝업들처럼 오른쪽 위(로그인 버튼)에서 뿅 튀어나왔다가 쏙 들어가는 효과.
+     display:none 토글은 애니메이션이 안 먹으니 opacity/visibility/transform으로 처리 */
+  .login-dropdown{
+    transform-origin:top right; opacity:0; visibility:hidden; pointer-events:none;
+    transform:translateY(-8px) scale(.9);
+    transition:opacity .16s ease, transform .18s ease, visibility 0s linear .18s;
+  }
+  .login-dropdown.open{
+    opacity:1; visibility:visible; pointer-events:auto; transform:none;
+    transition:opacity .18s ease, transform .38s cubic-bezier(.34,1.56,.64,1), visibility 0s;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .login-dropdown, .login-dropdown.open{ transform:none; transition:opacity .12s linear, visibility 0s linear .12s; }
+    .login-dropdown.open{ transition:opacity .12s linear, visibility 0s; }
+  }
   .login-field{display:block; margin-bottom:16px;}
   .login-field span{display:block; font-size:.85rem; color:var(--ink-soft); margin-bottom:7px;}
   .login-field input{
@@ -398,7 +413,7 @@
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="다크·라이트 모드 전환"></button>
       <div class="nav-auth">
         <button type="button" class="btn btn-primary btn-sm" id="loginBtn" aria-haspopup="true" aria-expanded="false">로그인</button>
-        <div class="login-dropdown" id="loginDropdown" hidden>
+        <div class="login-dropdown" id="loginDropdown">
           <form id="loginForm">
             <label class="login-field">
               <span>아이디</span>
@@ -587,21 +602,22 @@
     var loginForm = document.getElementById("loginForm");
     if (!loginBtn || !loginDropdown) return;
 
+    function isOpen(){ return loginDropdown.classList.contains("open"); }
     function setOpen(open){
-      loginDropdown.hidden = !open;
+      loginDropdown.classList.toggle("open", open);
       loginBtn.setAttribute("aria-expanded", open ? "true" : "false");
     }
     loginBtn.addEventListener("click", function(e){
       e.stopPropagation();
-      setOpen(loginDropdown.hidden);
+      setOpen(!isOpen());
     });
     document.addEventListener("click", function(e){
-      if (!loginDropdown.hidden && !loginDropdown.contains(e.target) && e.target !== loginBtn){
+      if (isOpen() && !loginDropdown.contains(e.target) && e.target !== loginBtn){
         setOpen(false);
       }
     });
     document.addEventListener("keydown", function(e){
-      if (e.key === "Escape" && !loginDropdown.hidden) setOpen(false);
+      if (e.key === "Escape" && isOpen()) setOpen(false);
     });
     if (loginForm){
       loginForm.addEventListener("submit", function(e){
